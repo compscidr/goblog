@@ -1,24 +1,10 @@
 package main
 
 import (
-  "time"
   "github.com/gin-gonic/gin"
   "github.com/jinzhu/gorm"
   _ "github.com/jinzhu/gorm/dialects/sqlite"
 )
-
-type Post struct {
-  gorm.Model
-  Title       string
-  Slug        string
-  Posted      *time.Time
-  Modified    *time.Time
-}
-
-type Tag struct {
-  gorm.Model
-  Name        string
-}
 
 func main() {
 
@@ -73,6 +59,10 @@ func specific_post(c *gin.Context) {
 }
 
 func list_tags(c *gin.Context) {
+  //var tags []Tag
+
+
+
   c.String(200, "TAGS")
 }
 

@@ -10,3 +10,9 @@ http requests.
 - Buffalo: https://github.com/gobuffalo/buffalo
 - Go-Web-Api: https://rshipp.com/go-web-api/
 - Go-Web-Api Integration Testing: https://rshipp.com/go-api-integration-testing/
+
+## Building and running:
+```
+go build
+goblog
+```
