@@ -122,13 +122,13 @@ func (a *App) create_post(c *gin.Context) {
 }
 
 func (a *App) create_tag(c *gin.Context) {
-  name := c.PostForm("tag")
+  name := c.PostForm("name")
+  log.Print("CREATING TAG WITH NAME: '" + name + "'")
   a.DB.Create(&Tag{Name: name})
 
   // Read from DB.
   var tag Tag
   a.DB.First(&tag, "name = ?", name)
-
 
   c.JSON(http.StatusOK, tag)
 }
