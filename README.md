@@ -1,4 +1,6 @@
 # goblog
+![Go](https://github.com/compscidr/goblog/workflows/Go/badge.svg)
+
 Simple blogging platform built with go
 
 ## Other tools used:
