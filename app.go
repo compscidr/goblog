@@ -1,6 +1,7 @@
 package main
 
 import (
+  "log"
   "strconv"
   "time"
   "net/http"
@@ -12,6 +13,7 @@ import (
 
 type App struct {
   DB *gorm.DB
+  R *gin.Engine
 }
 
 func (a *App) Initialize(dbDriver string, dbURI string) {
@@ -26,30 +28,30 @@ func (a *App) Initialize(dbDriver string, dbURI string) {
   // Migrate the schema
   a.DB.AutoMigrate(&Post{})
   a.DB.AutoMigrate(&Tag{})
-}
 
-func (a *App) Listen(httpPort int) {
-  r := gin.New()
+  a.R = gin.New()
 
   //see more at: https://github.com/gin-gonic/gin
-  r.GET("/", a.default_route)
+  a.R.GET("/", a.default_route)
 
   //list all posts and tags
-  r.GET("/posts", a.list_posts)
-  r.GET("/tags", a.list_tags)
+  a.R.GET("/posts", a.list_posts)
+  a.R.GET("/tags", a.list_tags)
 
   //retrieve specific post and tags
-  r.GET("/posts/:yyyy/:mm/:dd/:slug", a.specific_post)
-  r.GET("/tags/:tag", a.specific_tag)
+  a.R.GET("/posts/:yyyy/:mm/:dd/:slug", a.specific_post)
+  a.R.GET("/tags/:tag", a.specific_tag)
 
   //create a post or tag
-  r.POST("/post", a.create_post)
-  r.POST("/tag", a.create_tag)
+  a.R.POST("/post", a.create_post)
+  a.R.POST("/tag", a.create_tag)
   //
   // r.DELETE("/posts/:yyyy/:mm/:dd/:slug", delete_post)
   // r.DELETE("/tags/:tag", delete_tag)
+}
 
-	r.Run(":8000") // listen and serve on 0.0.0.0:8080
+func (a *App) Listen(httpPort int) {
+	a.R.Run(":8000") // listen and serve on 0.0.0.0:8080
 }
 
 func (a *App) default_route(c *gin.Context) {
@@ -80,7 +82,7 @@ func (a *App) specific_post(c *gin.Context) {
     return
   }
   slug := c.Param("slug")
-  if err := a.DB.Where("Posted > ? AND Slug = ?", time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).First(&post).Error; err != nil {
+  if err := a.DB.Where("CreatedAt > ? AND Slug = ?", time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).First(&post).Error; err != nil {
     c.JSON(http.StatusNotFound, "Post Not Found")
     return
   }
@@ -104,23 +106,29 @@ func (a *App) specific_tag(c *gin.Context) {
 }
 
 func (a *App) create_post(c *gin.Context) {
-  title := c.Param("title")
+  title := c.PostForm("title")
   slug := url.QueryEscape(title)
+  log.Print("CREATING POST WITH TITLE: " + title + " SLUG: " + slug)
   a.DB.Create(&Post{
     Title: title,
     Slug: slug,
-    Posted: time.Now(),
-    Modified: time.Now(),
   })
+
+  // Read from DB.
+  var post Post
+  a.DB.First(&post, "title = ?", title)
+
+  c.JSON(http.StatusOK, post)
 }
 
 func (a *App) create_tag(c *gin.Context) {
-  name := c.Param("tag")
+  name := c.PostForm("tag")
   a.DB.Create(&Tag{Name: name})
 
   // Read from DB.
   var tag Tag
   a.DB.First(&tag, "name = ?", name)
+
 
   c.JSON(http.StatusOK, tag)
 }
