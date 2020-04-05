@@ -4,6 +4,7 @@ import (
   "strconv"
   "time"
   "net/http"
+  "net/url"
   "github.com/gin-gonic/gin"
   "github.com/jinzhu/gorm"
   _ "github.com/jinzhu/gorm/dialects/sqlite"
@@ -33,17 +34,17 @@ func (a *App) Listen(httpPort int) {
   //see more at: https://github.com/gin-gonic/gin
   r.GET("/", a.default_route)
 
-  //list all posts
+  //list all posts and tags
   r.GET("/posts", a.list_posts)
-  //specific post
-  r.GET("/posts/:yyyy/:mm/:dd/:slug", a.specific_post)
-  //list all tags
   r.GET("/tags", a.list_tags)
-  //specifc tag
+
+  //retrieve specific post and tags
+  r.GET("/posts/:yyyy/:mm/:dd/:slug", a.specific_post)
   r.GET("/tags/:tag", a.specific_tag)
 
+  //create a post or tag
   r.POST("/post", a.create_post)
-  // r.POST("/tag", create_tag)
+  r.POST("/tag", a.create_tag)
   //
   // r.DELETE("/posts/:yyyy/:mm/:dd/:slug", delete_post)
   // r.DELETE("/tags/:tag", delete_tag)
@@ -99,5 +100,27 @@ func (a *App) specific_tag(c *gin.Context) {
     c.JSON(http.StatusNotFound, "Tag Not Found")
     return
   }
+  c.JSON(http.StatusOK, tag)
+}
+
+func (a *App) create_post(c *gin.Context) {
+  title := c.Param("title")
+  slug := url.QueryEscape(title)
+  a.DB.Create(&Post{
+    Title: title,
+    Slug: slug,
+    Posted: time.Now(),
+    Modified: time.Now(),
+  })
+}
+
+func (a *App) create_tag(c *gin.Context) {
+  name := c.Param("tag")
+  a.DB.Create(&Tag{Name: name})
+
+  // Read from DB.
+  var tag Tag
+  a.DB.First(&tag, "name = ?", name)
+
   c.JSON(http.StatusOK, tag)
 }
