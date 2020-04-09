@@ -3,6 +3,17 @@
 
 Simple blogging platform built with go
 
+What works:
+- List
+- Create
+- Delete
+- Local sqlite3 db in a file
+
+Todo:
+- Update
+- Templates
+- mysql, postgres, other dbs
+
 ## Other tools used:
 - Gin: https://github.com/gin-gonic/gin. Used for multiplexing / routing the
 http requests.
