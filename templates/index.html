@@ -1,0 +1,27 @@
+{{ template "header.html" .}}
+
+{{ if .logged_in }}
+    Logged in: {{ .login }} ({{ .name }}) <br/>
+    <a href="posts/">Posts</a>
+    <a href="tags/">Tags</a>
+
+
+    <h3>Post a new Post</h3>
+    <form action="post" method="POST">
+      <input type="text" name="Title" placeholder="Post Title"> <br/>
+      <textarea name="Content" rows="8" cols="80">Post Content</textarea> <br/>
+      <input type="text" name="Tags" placeholder="Comma-Separated Tags"> <br/>
+      <input type="submit"/>
+    </form>
+
+    <h3>Add a new Tag</h3>
+    <form action="tag" method="POST">
+      <input type="text" name="Name" placeholder="Tag Name"> <br/>
+      <input type="submit"/>
+    </form>
+
+{{ else }}
+  <a href="/signin">Sign in with GitHub</a>
+{{ end }}
+
+{{ template "footer.html" .}}

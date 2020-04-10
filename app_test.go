@@ -28,8 +28,10 @@ func TestCreatePost(t *testing.T) {
 	app := setup()
 
   testTitle := "This is a test title"
+  testContent := "This is some test content"
 	data := url.Values{
-    "title": {testTitle},
+    "Title": {testTitle},
+    "Content": {testContent},
   }
   form := strings.NewReader(data.Encode())
 
@@ -52,6 +54,7 @@ func TestCreatePost(t *testing.T) {
     t.Errorf("Error while reading request JSON: %s", err)
   }
   assert.Equal(t, testTitle, reqJson.GetPath("Title").MustString())
+  assert.Equal(t, testContent, reqJson.GetPath("Content").MustString())
 
 	teardown(app)
 }
@@ -61,7 +64,7 @@ func TestCreateTag(t *testing.T) {
 
   testTag := "This is a test tag"
 	data := url.Values{
-    "name": {testTag},
+    "Name": {testTag},
   }
   form := strings.NewReader(data.Encode())
 

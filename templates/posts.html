@@ -1,0 +1,11 @@
+<!-- posts.html -->
+
+{{ template "header.html" .}}
+
+<!--Loop over the `payload` variable, which is the list of posts-->
+{{range .payload }}
+  <a href="{{. | get_post_url}}"><h2>{{.Title}}</h2></a>
+  <p>{{.Content}}</p>
+{{end}}
+
+{{ template "footer.html" .}}
