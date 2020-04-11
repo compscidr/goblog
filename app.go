@@ -163,42 +163,6 @@ func (a *App) default_route(c *gin.Context) {
       },
     )
   }
-
-
-
-  /*
-  session := sessions.Default(c)
-  token := session.Get("token")
-
-  if token == nil {
-    c.HTML(
-      http.StatusOK,
-      "index.html",
-      gin.H {
-        "logged_in": false,
-        "title": "Home Page",
-      },
-    )
-  } else {
-    oauthClient := a.OAuthConf.Client(oauth2.NoContext, &oauth2.Token{AccessToken: token.(string)})
-    client := github.NewClient(oauthClient)
-    user, _, err := client.Users.Get(oauth2.NoContext, "")
-    if err != nil {
-			c.String(http.StatusNotFound, "User not found")
-			return
-		}
-
-    c.HTML(
-      http.StatusOK,
-      "index.html",
-      gin.H {
-        "title": "Home Page",
-        "logged_in": true,
-				"login":     user.Login,
-				"name":      user.Name,
-      },
-    )
-  }*/
 }
 
 func get_post_url(post Post) string {
