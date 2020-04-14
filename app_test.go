@@ -6,6 +6,7 @@ import (
   "net/url"
   "net/http"
   "net/http/httptest"
+  "io"
   "github.com/stretchr/testify/assert"
   "github.com/bitly/go-simplejson"
 )
@@ -24,6 +25,17 @@ func teardown(app *App) {
 	app.DB.Close()
 }
 
+func request(app *App, requestType string, url string, form io.Reader) (*httptest.ResponseRecorder, error){
+  req, err := http.NewRequest(requestType, url, form)
+  if err != nil {
+    return nil, err
+  }
+  req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+  w := httptest.NewRecorder()
+  app.R.ServeHTTP(w, req)
+  return w, nil
+}
+
 func TestCreatePost(t *testing.T) {
 	app := setup()
 
@@ -35,17 +47,7 @@ func TestCreatePost(t *testing.T) {
   }
   form := strings.NewReader(data.Encode())
 
-  // Set up a new request.
-	req, err := http.NewRequest("POST", "/post", form)
-	if err != nil {
-		t.Fatal(err)
-	}
-  // Our API expects a form body, so set the content-type header to make sure it's treated as one.
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-  w := httptest.NewRecorder()
-
-  app.R.ServeHTTP(w, req)
-
+  w, err := request(app, "POST", "/post", form)
   assert.Equal(t, 200, w.Code)
 
   //https://medium.com/@xoen/go-testing-technique-testing-json-http-requests-76d9ce0e11f
@@ -69,16 +71,7 @@ func TestCreateTag(t *testing.T) {
   form := strings.NewReader(data.Encode())
 
   // Set up a new request.
-	req, err := http.NewRequest("POST", "/tag", form)
-	if err != nil {
-		t.Fatal(err)
-	}
-  // Our API expects a form body, so set the content-type header to make sure it's treated as one.
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-  w := httptest.NewRecorder()
-
-  app.R.ServeHTTP(w, req)
-
+  w, err := request(app, "POST", "/tag", form)
   assert.Equal(t, 200, w.Code)
 
   //https://medium.com/@xoen/go-testing-technique-testing-json-http-requests-76d9ce0e11f
