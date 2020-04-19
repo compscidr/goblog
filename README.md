@@ -33,3 +33,16 @@ http requests.
 go build
 goblog
 ```
+
+## Testing
+```
+go test
+```
+
+## Coverage:
+More details here: https://blog.golang.org/cover
+```
+go test -coverprofile=coverage.out
+go tool cover -func=coverage.out
+go tool cover -html=coverage.out
+```
