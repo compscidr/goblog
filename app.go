@@ -17,6 +17,7 @@ import (
   "github.com/gin-gonic/gin"
   "github.com/google/go-github/github"
   "github.com/gin-gonic/contrib/sessions"
+  "github.com/gin-gonic/contrib/static"
   "github.com/jinzhu/gorm"
   _ "github.com/jinzhu/gorm/dialects/sqlite"
   "golang.org/x/oauth2"
