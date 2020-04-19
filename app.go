@@ -110,6 +110,13 @@ func (a *App) Initialize(dbDriver string, dbURI string) {
 		c.Redirect(http.StatusMovedPermanently, url)
 	})
 
+  a.R.GET("/signout", func(c *gin.Context) {
+    session := sessions.Default(c)
+		session.Delete("token")
+    session.Save()
+    c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
+	})
+
   a.R.GET("/callback", func(c *gin.Context) {
 		code := c.Query("code")
 
@@ -182,8 +189,11 @@ func (a *App) is_admin(c *gin.Context) (*github.User, error) {
     user, _, err := client.Users.Get(oauth2.NoContext, "")
     if err != nil {
 			return nil, err
-		}
-    return user, nil
+		} else if (*user.Login == "compscidr") {
+      return user, nil
+    } else {
+      return nil, errors.New("Not an admin user")
+    }
   }
 }
 

@@ -1,11 +1,9 @@
 {{ template "header.html" .}}
 
+<a href="posts/">Posts</a>
+<a href="tags/">Tags</a>
+
 {{ if .logged_in }}
-    Logged in: {{ .login }} ({{ .name }}) <br/>
-    <a href="posts/">Posts</a>
-    <a href="tags/">Tags</a>
-
-
     <h3>Post a new Post</h3>
     <form action="post" method="POST">
       <input type="text" name="Title" placeholder="Post Title"> <br/>
@@ -19,9 +17,6 @@
       <input type="text" name="Name" placeholder="Tag Name"> <br/>
       <input type="submit"/>
     </form>
-
-{{ else }}
-  <a href="/signin">Sign in with GitHub</a>
 {{ end }}
 
 {{ template "footer.html" .}}

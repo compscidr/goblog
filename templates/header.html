@@ -1,0 +1,7 @@
+{{ if .logged_in }}
+    Logged in: {{ .login }} ({{ .name }}). <a href="/signout">Sign out</a>
+{{ else }}
+    <a href="/signin">Sign in with GitHub</a>
+{{ end }}
+
+<br/>
