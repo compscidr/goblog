@@ -4,6 +4,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,6 +14,126 @@ import (
 
 	"github.com/rs/cors"
 )
+
+//AccessTokenResponse comes from Github OAuth API when the user has successfully
+//authenticated - note the github api provides more fields but we can just leave
+//them out and it will parse just fine - cool!
+type AccessTokenResponse struct {
+	AccessToken string `json:"access_token"`
+}
+
+//GithubUser specifies the fields we will use to map a github identity to users
+//in the blog. The only really important one is the admin, otherwise they're
+//just used for comments at the moment.
+type GithubUser struct {
+	Login       string `json:"login"`
+	AvatarURL   string `json:"avatar_url"`
+	Name        string `json:"name"`
+	Email       string `json:"email"`
+	AccessToken string `json:"access_token"`
+}
+
+//use the Github app credentials + the code we received from javascript
+//client side to make the access token (bearer) request
+func requestAccessToken(parsedCode string) (*AccessTokenResponse, error) {
+	data := &AccessTokenResponse{}
+
+	//todo: move these out of the code and into environment variables
+	formData := url.Values{
+		"client_id":     {"9a4892a7a4a8c4646225"},
+		"client_secret": {"cfe1fa8128e81caf81b21645c0784231751b3627"},
+		"code":          {parsedCode},
+	}
+	req, err := http.NewRequest("POST", "https://github.com/login/oauth/access_token", strings.NewReader(formData.Encode()))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Accept", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	bodyString := string(bodyBytes)
+	fmt.Println("post:\n", bodyString) //todo: remove - just for debugging
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(bodyString)
+	}
+
+	json.Unmarshal(bodyBytes, &data)
+	return data, nil
+}
+
+// formatRequest generates ascii representation of a request
+func formatRequest(r *http.Request) string {
+	// Create return string
+	var request []string // Add the request string
+	url := fmt.Sprintf("%v %v %v", r.Method, r.URL, r.Proto)
+	request = append(request, url)                             // Add the host
+	request = append(request, fmt.Sprintf("Host: %v", r.Host)) // Loop through headers
+	for name, headers := range r.Header {
+		name = strings.ToLower(name)
+		for _, h := range headers {
+			request = append(request, fmt.Sprintf("%v: %v", name, h))
+		}
+	}
+
+	// If this is a POST, add post data
+	if r.Method == "POST" {
+		r.ParseForm()
+		request = append(request, "\n")
+		request = append(request, r.Form.Encode())
+	} // Return the request as a string
+	return strings.Join(request, "\n")
+}
+
+//todo: make these request functions generalized
+func requestUser(accessToken string) (*GithubUser, error) {
+	data := &GithubUser{}
+	//get the user info from Github
+	req, err := http.NewRequest("GET", "https://api.github.com/user", strings.NewReader(""))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "token "+accessToken)
+	fmt.Println("REQ" + formatRequest(req))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	bodyString := string(bodyBytes)
+	fmt.Println("post:\n", bodyString) //todo: remove - just for debugging
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(bodyString)
+	}
+
+	json.Unmarshal(bodyBytes, &data)
+	data.AccessToken = accessToken
+	return data, nil
+}
 
 //user provides code from the initial call to github
 //we use the code to obtain a bearer token which is passed back to the user
@@ -42,46 +163,25 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//use the Github app credentials + the code we received from javascript
-	//client side to make the access token (bearer) request
-	formData := url.Values{
-		"client_id":     {"9a4892a7a4a8c4646225"},
-		"client_secret": {"cfe1fa8128e81caf81b21645c0784231751b3627"},
-		"code":          {parsedCode},
-	}
-	req, err := http.NewRequest("POST", "https://github.com/login/oauth/access_token", strings.NewReader(formData.Encode()))
+	data, err := requestAccessToken(parsedCode)
 	if err != nil {
-		panic(err)
+		http.Error(w, "Error requesting token access: "+err.Error(), http.StatusUnauthorized)
+		return
 	}
-	req.Header.Set("Accept", "application/json")
-	client := &http.Client{}
-	resp, err := client.Do(req)
 
+	user, err := requestUser(data.AccessToken)
+
+	js, err := json.Marshal(user)
 	if err != nil {
-		panic(err)
-	}
-
-	bodyString := ""
-	if resp.StatusCode == http.StatusOK {
-		//log.Println(resp)
-		defer resp.Body.Close()
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-
-		if err != nil {
-			panic(err)
-		}
-		bodyString = string(bodyBytes)
-		fmt.Println("post:\n", bodyString)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	//everything went well, send back the bearer token + user info for the website
 	//to use if it wants
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-
-	if err := json.NewEncoder(w).Encode(bodyString); err != nil {
-		panic(err)
-	}
+	w.Write(js)
 }
 
 func main() {
