@@ -17,6 +17,7 @@ import (
 func main() {
 
 	//https://gorm.io/docs/
+	//todo - convert this to a non-local db when not running locally
 	db, err := gorm.Open("sqlite3", "test.db")
 	if err != nil {
 		panic("failed to connect database")

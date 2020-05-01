@@ -34,8 +34,12 @@ type AccessTokenResponse struct {
 //GithubUser specifies the fields we will use to map a github identity to users
 //in the blog. The only really important one is the admin, otherwise they're
 //just used for comments at the moment.
+//eventually we'll support other services, so we want to make sure we're
+//explicit about the ID from the other system so we can map our internal ID to
+//all of the other system IDs. I've used too many systems where this is broken
 type GithubUser struct {
 	ID          string `gorm:"primary_key"`
+	GithubID    string `json:"id"`
 	Login       string `json:"login"`
 	AvatarURL   string `json:"avatar_url"`
 	Name        string `json:"name"`
@@ -181,11 +185,19 @@ func (a Auth) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := a.requestUser(data.AccessToken)
-
 	js, err := json.Marshal(user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	//check if user exists, if not add them, if they do update access token
+	var existingUser GithubUser
+	err = a.db.Where("github_id = ?", user.GithubID).First(&existingUser).Error
+	if err != nil {
+		a.db.Create(&user)
+	} else {
+		a.db.Model(&user).Where("github_id = ?", user.GithubID).Updates(&user)
 	}
 
 	//everything went well, send back the bearer token + user info for the website
