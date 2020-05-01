@@ -12,6 +12,9 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/sqlite" // this is the db driver
+
 	"github.com/rs/cors"
 )
 
@@ -26,6 +29,7 @@ type AccessTokenResponse struct {
 //in the blog. The only really important one is the admin, otherwise they're
 //just used for comments at the moment.
 type GithubUser struct {
+	ID          string `gorm:"primary_key"`
 	Login       string `json:"login"`
 	AvatarURL   string `json:"avatar_url"`
 	Name        string `json:"name"`
@@ -185,6 +189,14 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+
+	//https://gorm.io/docs/
+	db, err := gorm.Open("sqlite3", "test.db")
+	if err != nil {
+		panic("failed to connect database")
+	}
+	db.AutoMigrate(&GithubUser{})
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api/login", loginHandler)
@@ -194,4 +206,6 @@ func main() {
 	// bitching about it
 	cors := cors.Default().Handler(mux)
 	http.ListenAndServe(":7000", cors)
+
+	defer db.Close()
 }
