@@ -9,10 +9,19 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/jinzhu/gorm"
 )
 
 //Auth API
 type Auth struct {
+	db *gorm.DB
+}
+
+//New constructs an Auth API
+func New(db *gorm.DB) Auth {
+	api := Auth{db}
+	return api
 }
 
 //AccessTokenResponse comes from Github OAuth API when the user has successfully

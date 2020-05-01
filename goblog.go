@@ -25,8 +25,8 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	auth := auth.Auth{}
-	admin := admin.Admin{}
+	auth := auth.New(db)
+	admin := admin.New(db)
 	mux.HandleFunc("/api/login", auth.LoginHandler)
 	mux.HandleFunc("/api/v1/admin", admin.AdminHandler)
 
