@@ -22,7 +22,7 @@ func main() {
 	if err != nil {
 		panic("failed to connect database")
 	}
-	db.AutoMigrate(&auth.GithubUser{})
+	db.AutoMigrate(&auth.BlogUser{})
 
 	mux := http.NewServeMux()
 

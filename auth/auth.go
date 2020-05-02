@@ -31,22 +31,6 @@ type AccessTokenResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-//GithubUser specifies the fields we will use to map a github identity to users
-//in the blog. The only really important one is the admin, otherwise they're
-//just used for comments at the moment.
-//eventually we'll support other services, so we want to make sure we're
-//explicit about the ID from the other system so we can map our internal ID to
-//all of the other system IDs. I've used too many systems where this is broken
-type GithubUser struct {
-	ID          string `gorm:"primary_key"`
-	GithubID    string `json:"id"`
-	Login       string `json:"login"`
-	AvatarURL   string `json:"avatar_url"`
-	Name        string `json:"name"`
-	Email       string `json:"email"`
-	AccessToken string `json:"access_token"`
-}
-
 //use the Github app credentials + the code we received from javascript
 //client side to make the access token (bearer) request
 func (a Auth) requestAccessToken(parsedCode string) (*AccessTokenResponse, error) {
@@ -112,8 +96,8 @@ func (a Auth) formatRequest(r *http.Request) string {
 }
 
 //todo: make these request functions generalized
-func (a Auth) requestUser(accessToken string) (*GithubUser, error) {
-	data := &GithubUser{}
+func (a Auth) requestUser(accessToken string) (*BlogUser, error) {
+	data := &BlogUser{}
 	//get the user info from Github
 	req, err := http.NewRequest("GET", "https://api.github.com/user", strings.NewReader(""))
 	if err != nil {
@@ -192,7 +176,7 @@ func (a Auth) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//check if user exists, if not add them, if they do update access token
-	var existingUser GithubUser
+	var existingUser BlogUser
 	err = a.db.Where("github_id = ?", user.GithubID).First(&existingUser).Error
 	if err != nil {
 		a.db.Create(&user)
