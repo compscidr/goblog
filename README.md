@@ -39,6 +39,8 @@ http requests.
 - Gorm: https://github.com/jinzhu/gorm. Used for object relational mapping.
 
 ## Other things to consider, take inspiration from
+- Go project structure: https://github.com/golang-standards/project-layout
+
 - Buffalo: https://github.com/gobuffalo/buffalo
 
 - Go-Web-Api: https://rshipp.com/go-web-api/
