@@ -49,7 +49,7 @@ http requests.
 
 ## Building and running:
 ```
-go build
+go build ./cmd/goblog.go
 goblog
 ```
 
