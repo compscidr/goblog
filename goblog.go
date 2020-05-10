@@ -5,8 +5,9 @@ package main
 import (
 	"net/http"
 
-  "goblog/auth"
 	"goblog/admin"
+	"goblog/auth"
+
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite" // this is the db driver
 
@@ -34,11 +35,11 @@ func main() {
 	// this lets us get a request from localhost:8000 without the web browser
 	// bitching about it
 	cors := cors.New(cors.Options{
-	    AllowedOrigins: []string{"http://localhost", "http://localhost:8000"},
-	    AllowCredentials: true,
-			AllowedHeaders: []string{"Authorization"},
-	    // Enable Debugging for testing, consider disabling in production
-	    Debug: true,
+		AllowedOrigins:   []string{"http://localhost", "http://localhost:8000"},
+		AllowCredentials: true,
+		AllowedHeaders:   []string{"Authorization"},
+		// Enable Debugging for testing, consider disabling in production
+		Debug: true,
 	}).Handler(mux)
 	http.ListenAndServe(":7000", cors)
 
