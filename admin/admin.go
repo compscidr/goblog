@@ -37,4 +37,6 @@ func (a Admin) AdminHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println(auth)
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
 }

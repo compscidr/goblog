@@ -33,7 +33,13 @@ func main() {
 	// todo: restrict cors properly to same domain: https://github.com/rs/cors
 	// this lets us get a request from localhost:8000 without the web browser
 	// bitching about it
-	cors := cors.Default().Handler(mux)
+	cors := cors.New(cors.Options{
+	    AllowedOrigins: []string{"http://localhost", "http://localhost:8000"},
+	    AllowCredentials: true,
+			AllowedHeaders: []string{"Authorization"},
+	    // Enable Debugging for testing, consider disabling in production
+	    Debug: true,
+	}).Handler(mux)
 	http.ListenAndServe(":7000", cors)
 
 	defer db.Close()
