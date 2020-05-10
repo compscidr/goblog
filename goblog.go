@@ -5,6 +5,7 @@ package main
 import (
 	"goblog/admin"
 	"goblog/auth"
+	"goblog/blog"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -22,26 +23,34 @@ func main() {
 		panic("failed to connect database")
 	}
 	db.AutoMigrate(&auth.BlogUser{})
+	db.AutoMigrate(&blog.Post{})
 
 	//mux := http.NewServeMux()
 	router := gin.Default()
 
 	auth := auth.New(db)
 	admin := admin.New(db)
+	post := blog.New(db)
 
 	// todo: restrict cors properly to same domain: https://github.com/rs/cors
 	// this lets us get a request from localhost:8000 without the web browser
 	// bitching about it
 	router.Use(cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost", "http://localhost:8000"},
+		AllowedMethods:   []string{"GET", "POST"},
 		AllowCredentials: true,
-		AllowedHeaders:   []string{"Authorization"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 		// Enable Debugging for testing, consider disabling in production
 		Debug: true,
 	}))
 
-	router.POST("/api/login", auth.LoginPostHandler)
+	//just for testing, remove soon
 	router.GET("/api/v1/admin", admin.AdminHandler)
+
+	router.POST("/api/login", auth.LoginPostHandler)
+	router.POST("/api/v1/posts", admin.CreatePost)
+	router.PATCH("/api/v1/posts", admin.UpdatePost)
+	router.GET("/api/v1/posts", post.ListPosts)
 
 	router.Run(":7000")
 
