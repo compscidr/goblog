@@ -1,9 +1,9 @@
 package admin
 
 import (
+	. "goblog/auth"
 	"log"
 	"net/http"
-
 	"github.com/jinzhu/gorm"
 )
 
@@ -29,12 +29,12 @@ func (a Admin) AdminHandler(w http.ResponseWriter, r *http.Request) {
 
 	//check to see if user is logged in (todo add expiry)
 	//can't do this until we publish a version with the auth module in it
-	/*var user auth.BlogUser
-	err = a.db.Where("access_token = ?", auth).First(&existingUser).Error
+	var existingUser BlogUser
+	err := a.db.Where("access_token = ?", auth).First(&existingUser).Error
 	if err != nil {
 		http.Error(w, "Not authorized", http.StatusForbidden)
 		return
-	}*/
+	}
 
 	log.Println(auth)
 }

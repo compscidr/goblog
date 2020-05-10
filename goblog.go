@@ -5,9 +5,8 @@ package main
 import (
 	"net/http"
 
-	"goblog/pkg/admin"
-	"goblog/pkg/auth"
-
+  "goblog/auth"
+	"goblog/admin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite" // this is the db driver
 
