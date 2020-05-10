@@ -3,15 +3,14 @@ package main
 //this implements https://jsonapi.org/format/ as best as possible
 
 import (
-	"net/http"
-
 	"goblog/admin"
 	"goblog/auth"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite" // this is the db driver
 
-	"github.com/rs/cors"
+	cors "github.com/rs/cors/wrapper/gin"
 )
 
 func main() {
@@ -24,24 +23,27 @@ func main() {
 	}
 	db.AutoMigrate(&auth.BlogUser{})
 
-	mux := http.NewServeMux()
+	//mux := http.NewServeMux()
+	router := gin.Default()
 
 	auth := auth.New(db)
 	admin := admin.New(db)
-	mux.HandleFunc("/api/login", auth.LoginHandler)
-	mux.HandleFunc("/api/v1/admin", admin.AdminHandler)
 
 	// todo: restrict cors properly to same domain: https://github.com/rs/cors
 	// this lets us get a request from localhost:8000 without the web browser
 	// bitching about it
-	cors := cors.New(cors.Options{
+	router.Use(cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost", "http://localhost:8000"},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"Authorization"},
 		// Enable Debugging for testing, consider disabling in production
 		Debug: true,
-	}).Handler(mux)
-	http.ListenAndServe(":7000", cors)
+	}))
+
+	router.POST("/api/login", auth.LoginPostHandler)
+	router.GET("/api/v1/admin", admin.AdminHandler)
+
+	router.Run(":7000")
 
 	defer db.Close()
 }

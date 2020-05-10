@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
@@ -122,7 +122,7 @@ func (a Auth) requestUser(accessToken string) (*BlogUser, error) {
 	}
 
 	bodyString := string(bodyBytes)
-	fmt.Println("post:\n", bodyString) //todo: remove - just for debugging
+	fmt.Println("github response:\n", bodyString) //todo: remove - just for debugging
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New(bodyString)
@@ -133,45 +133,23 @@ func (a Auth) requestUser(accessToken string) (*BlogUser, error) {
 	return data, nil
 }
 
-//LoginHandler handles login requests
-//user provides code from the initial call to github
-//we use the code to obtain a bearer token which is passed back to the user
-//and used by us to obtain the user email. We then map the email to the bearer
-//token. When the user logs out, we destroy the bearer token in the database
-//so when they try to use it as an API access token it isn't found and they
-//have to login again. The bearer token is used for all authorized API calls.
-func (a Auth) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	parsedCode := ""
-	if r.Method == "GET" {
-		code, ok := r.URL.Query()["code"]
-		if !ok || len(code[0]) < 1 {
-			log.Println("API parameters 'code' is missing")
-			http.Error(w, "API parameters 'code' is missing", http.StatusBadRequest)
-			return
-		}
-		parsedCode = code[0]
-	} else if r.Method == "POST" {
-		if err := r.ParseForm(); err != nil {
-			http.Error(w, "Error parsing POST request: "+err.Error(), http.StatusBadRequest)
-			return
-		}
-		parsedCode = r.FormValue("code")
-	} else {
-		log.Println("http method not supported: " + r.Method)
-		http.Error(w, "http method not supported: "+r.Method, http.StatusBadRequest)
-		return
-	}
-
+//LoginPostHandler should be called with the code provided by github. After
+//receiving the code, this will reach out to github to retrieve and auth token
+//which is stored in the db along with the user information from github.
+//this can then be used for authoization when the api user supplies the same
+//auth token later on for API access. Only one auth token per user can be used
+//at once. Logout should remove the auth token from the table.
+func (a Auth) LoginPostHandler(c *gin.Context) {
+	parsedCode := c.PostForm("code")
 	data, err := a.requestAccessToken(parsedCode)
 	if err != nil {
-		http.Error(w, "Error requesting token access: "+err.Error(), http.StatusUnauthorized)
+		c.JSON(http.StatusUnauthorized, "Error requesting token access: "+err.Error())
 		return
 	}
 
 	user, err := a.requestUser(data.AccessToken)
-	js, err := json.Marshal(user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -182,11 +160,8 @@ func (a Auth) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		a.db.Create(&user)
 	} else {
 		a.db.Model(&user).Where("github_id = ?", user.GithubID).Updates(&user)
+		existingUser = *user
 	}
 
-	//everything went well, send back the bearer token + user info for the website
-	//to use if it wants
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(js)
+	c.JSON(http.StatusOK, existingUser)
 }

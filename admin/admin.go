@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
@@ -20,24 +21,19 @@ func New(db *gorm.DB) Admin {
 }
 
 // AdminHandler handles admin requests
-func (a Admin) AdminHandler(w http.ResponseWriter, r *http.Request) {
-	token, ok := r.Header["Authorization"]
-
-	if !ok {
-		http.Error(w, "Not authorized", http.StatusForbidden)
-		return
-	}
+//func (a Admin) AdminHandler(w http.ResponseWriter, r *http.Request) {
+func (a Admin) AdminHandler(c *gin.Context) {
+	token := c.Request.Header.Get("Authorization")
 
 	//check to see if user is logged in (todo add expiry)
 	//can't do this until we publish a version with the auth module in it
 	var existingUser auth.BlogUser
 	err := a.db.Where("access_token = ?", token).First(&existingUser).Error
 	if err != nil {
-		http.Error(w, "Not authorized", http.StatusForbidden)
+		c.JSON(http.StatusForbidden, "Not Authorized: "+token)
 		return
 	}
 
 	log.Println("AUTHORZIED: ", token)
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	c.JSON(http.StatusOK, token)
 }
