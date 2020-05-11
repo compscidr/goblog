@@ -30,7 +30,7 @@ func main() {
 
 	auth := auth.New(db)
 	admin := admin.New(db)
-	post := blog.New(db)
+	blog := blog.New(db)
 
 	// todo: restrict cors properly to same domain: https://github.com/rs/cors
 	// this lets us get a request from localhost:8000 without the web browser
@@ -50,7 +50,9 @@ func main() {
 	router.POST("/api/login", auth.LoginPostHandler)
 	router.POST("/api/v1/posts", admin.CreatePost)
 	router.PATCH("/api/v1/posts", admin.UpdatePost)
-	router.GET("/api/v1/posts", post.ListPosts)
+
+	router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", blog.GetPost)
+	router.GET("/api/v1/posts", blog.ListPosts)
 
 	router.Run(":7000")
 
