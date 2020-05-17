@@ -1,0 +1,38 @@
+{{ template "header.html" .}}
+
+<script type="text/javascript">
+  var urlParams = new URLSearchParams(window.location.search);
+  var code = urlParams.get('code');
+
+  if (code) {
+    //todo: get the post to be tied to the uri of the page (so it works on localhost, dev and prod)
+    var post = $.post("http://localhost:7000/api/login", {"code": code});
+    post.done(function(data) {
+      window.location.href = '/';
+    });
+  }
+</script>
+
+<div class="full-height row">
+  <div class="container align-self-center">
+    <h4>Site Login</h4>
+    <div class="clear">
+      &nbsp;
+    </div>
+
+    <img src="img/jason.jpg" class="rounded-circle img-responsive" style="max-width:300px;" alt="Jason Ernst"/>
+
+    <div class="clear">
+      &nbsp;
+    </div>
+
+    <div class="container">
+      <a id="github-button" class="btn btn-social btn-github" href="https://github.com/login/oauth/authorize?client_id=9a4892a7a4a8c4646225&redirect_uri=http://localhost:7000/login">
+        <i class="fa fa-github"></i> Sign in with Github
+      </a>
+
+      <div class="clear">
+        &nbsp;
+      </div>
+
+{{ template "footer.html" .}}

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -62,31 +63,66 @@ func (b Blog) GetPost(c *gin.Context) {
 	c.JSON(http.StatusOK, post)
 }
 
+//Returns true if the user is logged in, false otherwise
+func isLoggedIn(c *gin.Context) bool {
+	session := sessions.Default(c)
+	token := session.Get("token")
+	if token == nil {
+		return false
+	}
+	return true
+}
+
 //////HTML API///////
 
 //Home returns html of the home page using the template
 //if people want to have different stuff show on the home page they probably
 //need to modify this function
 func (b Blog) Home(c *gin.Context) {
-	c.HTML(http.StatusOK, "home.html", gin.H{})
+	c.HTML(http.StatusOK, "home.html", gin.H{
+		"logged_in": isLoggedIn(c),
+	})
 }
 
 //Posts is the index page for blog posts
 func (b Blog) Posts(c *gin.Context) {
-	c.HTML(http.StatusOK, "posts.html", gin.H{})
+	c.HTML(http.StatusOK, "posts.html", gin.H{
+		"logged_in": isLoggedIn(c),
+	})
 }
 
 //Speaking is the index page for presentations
 func (b Blog) Speaking(c *gin.Context) {
-	c.HTML(http.StatusOK, "presentations.html", gin.H{})
+	c.HTML(http.StatusOK, "presentations.html", gin.H{
+		"logged_in": isLoggedIn(c),
+	})
 }
 
 //Projects is the index page for projects / code
 func (b Blog) Projects(c *gin.Context) {
-	c.HTML(http.StatusOK, "projects.html", gin.H{})
+	c.HTML(http.StatusOK, "projects.html", gin.H{
+		"logged_in": isLoggedIn(c),
+	})
 }
 
 //About is the about page
 func (b Blog) About(c *gin.Context) {
-	c.HTML(http.StatusOK, "about.html", gin.H{})
+	c.HTML(http.StatusOK, "about.html", gin.H{
+		"logged_in": isLoggedIn(c),
+	})
+}
+
+//Login to the blog
+func (b Blog) Login(c *gin.Context) {
+	c.HTML(http.StatusOK, "login.html", gin.H{
+		"logged_in": isLoggedIn(c),
+	})
+}
+
+//Logout of the blog
+func (b Blog) Logout(c *gin.Context) {
+	session := sessions.Default(c)
+	session.Delete("token")
+	session.Save()
+	c.Redirect(http.StatusTemporaryRedirect, "/")
 }

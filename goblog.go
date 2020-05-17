@@ -7,6 +7,8 @@ import (
 	"goblog/auth"
 	"goblog/blog"
 
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -28,6 +30,8 @@ func main() {
 
 	//mux := http.NewServeMux()
 	router := gin.Default()
+	store := cookie.NewStore([]byte("changelater"))
+	router.Use(sessions.Sessions("www.jasonernst.com", store))
 
 	auth := auth.New(db)
 	admin := admin.New(db)
@@ -68,6 +72,8 @@ func main() {
 	router.Use(static.Serve("/", static.LocalFile(".", false)))
 
 	router.GET("/", blog.Home)
+	router.GET("/login", blog.Login)
+	router.GET("/logout", blog.Logout)
 
 	//todo all people to register a template mapping to a "page type"
 	router.GET("/posts", blog.Posts)

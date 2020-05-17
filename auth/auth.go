@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -162,6 +163,11 @@ func (a Auth) LoginPostHandler(c *gin.Context) {
 		a.db.Model(&user).Where("github_id = ?", user.GithubID).Updates(&user)
 		existingUser = *user
 	}
+
+	//save the access token in the session
+	session := sessions.Default(c)
+	session.Set("token", data.AccessToken)
+	session.Save()
 
 	c.JSON(http.StatusOK, existingUser)
 }
