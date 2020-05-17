@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="description" content="Jason Ernst's blog, code, projects and publications">
+  <meta name="keywords" content="Jason Ernst, software engineer, computer science">
+  <meta name="author" content="Jason Ernst">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jason Ernst - Software Engineer</title>
+
+  <!-- favicon generated with https://favicon.io/favicon-generator/ -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+
+  <!-- jquery 3.4.1 -->
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+  <!-- boostrap 4 -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+  <script src="https://kit.fontawesome.com/60291a46e2.js" crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="https://unpkg.com/tachyons@4.10.0/css/tachyons.min.css"/>
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-3483823-2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-3483823-2');
+  </script>
+
+  <script>
+  </script>
+  <style>
+  @import url('https://fonts.googleapis.com/css?family=Source+Code+Pro');
+  html { height: 100%; }
+  body { font-family: 'Source Code Pro', monospace; height: 100%; }
+  a { color: rgba(0,0,0,.70); }
+  .logo { background: #777; color: #EEE; font-size: 28px; padding: 10px 15px 10px 15px; float:left; }
+  .logo:hover { background: #333; color: #EEE; text-decoration: none; }
+  .cover { padding-top: 35%; }
+  .menu { padding-top: 20px; }
+  .menu a { padding: 0px 10px 0px 10px; }
+  .full-height { height: 100%; }
+  .keywords {
+    border-right: solid 3px rgba(0,255,0,.75);
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 14px;
+    color: rgba(0,0,0,.70);
+
+    animation: animated-text 4s steps(29,end) 1s 1 normal both,
+               animated-cursor 600ms steps(29,end) infinite;
+  }
+  /* text animation */
+  @keyframes animated-text{
+    from{width: 0;}
+    to{width: 350px;}
+  }
+  /* cursor animations */
+  @keyframes animated-cursor{
+    from{border-right-color: rgba(0,0,0,.75);}
+    to{border-right-color: transparent;}
+  }
+
+  video {
+    left: 50%;
+    min-height: 100%;
+    min-width: 100%;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* 1. No object-fit support: */
+  @media (min-aspect-ratio: 16/9) {
+    #video-bg > video { height: 300%; top: -100%; }
+  }
+  @media (max-aspect-ratio: 16/9) {
+    #video-bg > video { width: 300%; left: -100%; }
+  }
+
+  /* 2. If supporting object-fit, overriding (1): */
+  @supports (object-fit: cover) {
+    #video-bg > video {
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+  }
+  </style>
+</head>
+<body class="text-center">
+  <div class="container">
+      <a href="/" class="logo" title="Home: Jason Ernst">JE</a>
+    </div>
+    <div class="menu clearfix">
+      <a href="/" title="Home: Jason Ernst">Home</a>
+      <a href="/posts" title="Blog posts by Jason Ernst">Writing</a>
+      <a href="/presentations" title="Presentations by Jason Ernst">Speaking</a>
+      <a href="/projects" title="Code and Projects by Jason Ernst">Code</a>
+      <a href="/about" title="About Jason Ernst">About</a>
+    </div>
