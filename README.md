@@ -15,7 +15,14 @@ Users can log into the blog using Github authentication code which is then
 translated by the blog API into an authorization token, which is then stored
 in a session cookie.
 
-Every function in the api should be covered by units and integration tests.
+Creating, modifying and deleting posts and administering comments may only be
+done with the admin user. Presently the user is hardcoded by github email, but
+I'll likely create an initial install onboarding which makes the first logged in
+user the admin.
+
+Other logged in users are able to post, update and delete comments.
+
+Every function in the API should be covered by units and integration tests.
 
 What works:
 - List
@@ -23,9 +30,11 @@ What works:
 - Local sqlite3 db in a file
 
 Todo:
+- Increase test coverage
 - Delete
 - Update
-- Templates
+- User Comments
+- Install onboarding
 - mysql, postgres, other dbs
 
 ## Other tools used:
