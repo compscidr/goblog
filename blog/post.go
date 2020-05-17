@@ -16,11 +16,11 @@ type Post struct {
 
 //PreviewContent gets a shortened version of the content for showing a preview
 //https://stackoverflow.com/questions/23466497/how-to-truncate-a-string-in-a-golang-template
-func (c Post) PreviewContent() string {
+func (c Post) PreviewContent(length int) string {
 	// This cast is O(N)
 	runes := bytes.Runes([]byte(c.Content))
-	if len(runes) > 25 {
-		return string(runes[:25])
+	if len(runes) > length {
+		return string(runes[:length])
 	}
 	return string(runes)
 }

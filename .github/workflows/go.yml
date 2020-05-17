@@ -37,4 +37,4 @@ jobs:
       run: go build -v .
 
     - name: Test
-      run: go test ./test/auth && go test ./test/user
+      run: go test goblog/...
