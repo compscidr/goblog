@@ -1,11 +1,26 @@
-<!-- posts.html -->
-
 {{ template "header.html" .}}
 
-<!--Loop over the `payload` variable, which is the list of posts-->
-{{range .payload }}
-  <a href="{{. | get_post_url}}"><h2>{{.Title}}</h2></a>
-  <p>{{.Content}}</p>
-{{end}}
+  <div style="background-color: black; padding-top: 35%; height: 0px; position: relative; overflow: hidden; width: 100%;">
+    <div>
+      <video loop autoplay muted>
+        <source src="vid/redtree.mp4" type="video/mp4">
+      </video>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <div class="row">
+      <div class="container left">
+        <h1 class="text-left">Blog Posts</h1>
+
+        {{ range .posts }}
+          <h2 class="text-left"><a href="{{ .Permalink }}">{{ .Title }}</a></h2>
+          <p class="text-left">
+            {{ .PreviewContent 100 }}
+          </p>
+        {{ end }}
+      </div>
+    </div>
 
 {{ template "footer.html" .}}
