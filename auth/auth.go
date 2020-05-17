@@ -15,6 +15,12 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+//IAuth interface for auth so that it can be mocked easier
+type IAuth interface {
+	IsAdmin(c *gin.Context) bool
+	IsLoggedIn(c *gin.Context) bool
+}
+
 //Auth API
 type Auth struct {
 	db *gorm.DB
@@ -184,12 +190,19 @@ func (a Auth) DisplayUserTable() {
 }
 
 //IsAdmin returns true if the user logged in is the admin user
+//First tries for a session token, and if that fails falls back on an auth token
 func (a Auth) IsAdmin(c *gin.Context) bool {
-	a.DisplayUserTable()
 	session := sessions.Default(c)
 	token := session.Get("token")
-	var existingUser BlogUser
+	if token == nil {
+		token = c.Request.Header.Get("Authorization")
+	}
+
+	//debug
+	a.DisplayUserTable()
+
 	//todo un-hardcode the admin lol.
+	var existingUser BlogUser
 	err := a.db.Where("access_token = ? AND email = ?", token, "ernstjason1@gmail.com").First(&existingUser).Error
 	if err != nil {
 		return false
