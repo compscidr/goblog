@@ -101,9 +101,12 @@
     <div class="menu clearfix">
       <a href="/" title="Home: Jason Ernst">Home</a>
       <a href="/posts" title="Blog posts by Jason Ernst">Writing</a>
-      <a href="/presentations" title="Presentations by Jason Ernst">Speaking</a>
-      <a href="/projects" title="Code and Projects by Jason Ernst">Code</a>
+      <!-- <a href="/presentations" title="Presentations by Jason Ernst">Speaking</a>
+      <a href="/projects" title="Code and Projects by Jason Ernst">Code</a> -->
       <a href="/about" title="About Jason Ernst">About</a>
+      {{ if .is_admin }}
+      <a href="/admin" title="Admin">Admin</a>
+      {{ end }}
       {{ if .logged_in }}
       <a href="/logout" title="Logout">Logout</a>
       {{ else }}

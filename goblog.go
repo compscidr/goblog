@@ -34,8 +34,8 @@ func main() {
 	router.Use(sessions.Sessions("www.jasonernst.com", store))
 
 	auth := auth.New(db)
-	admin := admin.New(db)
-	blog := blog.New(db)
+	admin := admin.New(db, &auth)
+	blog := blog.New(db, &auth)
 
 	// todo: restrict cors properly to same domain: https://github.com/rs/cors
 	// this lets us get a request from localhost:8000 without the web browser
@@ -70,8 +70,8 @@ func main() {
 
 	//if we use true here - it will override the home route and just show files
 	router.Use(static.Serve("/", static.LocalFile(".", false)))
-
 	router.GET("/", blog.Home)
+	router.GET("/posts/:yyyy/:mm/:dd/:slug", blog.Post)
 	router.GET("/login", blog.Login)
 	router.GET("/logout", blog.Logout)
 
@@ -80,6 +80,8 @@ func main() {
 	router.GET("/presentations", blog.Speaking)
 	router.GET("/projects", blog.Projects)
 	router.GET("/about", blog.About)
+
+	router.GET("/admin", admin.Admin)
 
 	router.Run(":7000")
 

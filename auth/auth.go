@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -131,6 +132,9 @@ func (a Auth) requestUser(accessToken string) (*BlogUser, error) {
 
 	json.Unmarshal(bodyBytes, &data)
 	data.AccessToken = accessToken
+
+	fmt.Println("Parsed user: ", data)
+
 	return data, nil
 }
 
@@ -170,4 +174,42 @@ func (a Auth) LoginPostHandler(c *gin.Context) {
 	session.Save()
 
 	c.JSON(http.StatusOK, existingUser)
+}
+
+//DisplayUserTable is a debug function, shows the user table
+func (a Auth) DisplayUserTable() {
+	var users []BlogUser
+	a.db.Find(&users)
+	log.Println(users)
+}
+
+//IsAdmin returns true if the user logged in is the admin user
+func (a Auth) IsAdmin(c *gin.Context) bool {
+	a.DisplayUserTable()
+	session := sessions.Default(c)
+	token := session.Get("token")
+	var existingUser BlogUser
+	//todo un-hardcode the admin lol.
+	err := a.db.Where("access_token = ? AND email = ?", token, "ernstjason1@gmail.com").First(&existingUser).Error
+	if err != nil {
+		return false
+	}
+	log.Println("TOKEN:", token)
+	log.Println("ADMIN USER:", existingUser)
+	return true
+}
+
+//IsLoggedIn Returns true if the user is logged in, false otherwise
+func (a Auth) IsLoggedIn(c *gin.Context) bool {
+	session := sessions.Default(c)
+	token := session.Get("token")
+	if token == nil {
+		return false
+	}
+	var existingUser BlogUser
+	err := a.db.Where("access_token = ?", token).First(&existingUser).Error
+	if err != nil {
+		return false
+	}
+	return true
 }

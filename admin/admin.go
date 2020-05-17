@@ -8,18 +8,20 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
 // Admin handles admin requests
 type Admin struct {
-	db *gorm.DB
+	db   *gorm.DB
+	auth *auth.Auth
 }
 
 //New constructs an Admin API
-func New(db *gorm.DB) Admin {
-	api := Admin{db}
+func New(db *gorm.DB, auth *auth.Auth) Admin {
+	api := Admin{db, auth}
 	return api
 }
 
@@ -30,10 +32,16 @@ func (a Admin) displayUserTable() {
 	log.Println(users)
 }
 
+//////JSON API///////
+
 //CreatePost adds a post if the user has permission
 func (a Admin) CreatePost(c *gin.Context) {
 	token := c.Request.Header.Get("Authorization")
-	log.Println("CREATE POST, AUTH: ", token)
+	if token == "" {
+		session := sessions.Default(c)
+		token = session.Get("token").(string)
+	}
+	log.Println("CREATE POST, AUTH: ", token, " REQ: ", c.Request)
 	a.displayUserTable()
 
 	//check to see if user is logged in (todo add expiry)
@@ -61,6 +69,7 @@ func (a Admin) CreatePost(c *gin.Context) {
 	c.JSON(http.StatusCreated, post)
 }
 
+//UpdatePost modifies an existing post
 func (a Admin) UpdatePost(c *gin.Context) {
 	token := c.Request.Header.Get("Authorization")
 
@@ -93,4 +102,14 @@ func (a Admin) AdminHandler(c *gin.Context) {
 
 	log.Println("AUTHORZIED: ", token)
 	c.JSON(http.StatusOK, token)
+}
+
+//////HTML API///////
+
+//Admin is the admin dashboard of the website
+func (a Admin) Admin(c *gin.Context) {
+	c.HTML(http.StatusOK, "admin.html", gin.H{
+		"logged_in": a.auth.IsLoggedIn(c),
+		"is_admin":  a.auth.IsAdmin(c),
+	})
 }

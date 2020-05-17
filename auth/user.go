@@ -8,7 +8,7 @@ package auth
 //all of the other system IDs. I've used too many systems where this is broken
 type BlogUser struct {
 	ID          string `gorm:"primary_key"`
-	GithubID    string `json:"id"`
+	GithubID    int    `json:"id"`
 	Login       string `json:"login"`
 	AvatarURL   string `json:"avatar_url"`
 	Name        string `json:"name"`

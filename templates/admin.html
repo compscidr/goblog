@@ -1,0 +1,63 @@
+{{ template "header.html" .}}
+
+<script type="text/javascript">
+
+  function createPost() {
+    var post = {
+      "title": $("#title").val(),
+      "content": $("#content").val(),
+    }
+    console.log("POST: " + JSON.stringify(post));
+
+    $.ajax({
+      url: "/api/v1/posts",
+      type: "post",
+      dataType: "json",
+      contentType: "application/json",
+      success: function(json) {
+        createdAt = json["CreatedAt"].split("-");
+        yyyy = createdAt[0];
+        mm = createdAt[1];
+        dd = createdAt[2];
+        dd = dd.substring(0,2)
+        slug = json["slug"];
+        window.location.href = "/posts/" + yyyy + "/" + mm + "/" + dd + "/" + slug;
+      },
+      data: JSON.stringify(post)
+    });
+  }
+</script>
+
+<div class="container">
+  <h1>Create post</h1>
+
+    <div class="form-group">
+      <label for="title">Title <span class="require">*</span></label>
+      <input type="text" class="form-control" name="title" id="title"/>
+    </div>
+
+    <!-- <div class="form-group">
+      <label for="slug">Slug <span class="require">*</span> <small>(This field is used in url path.)</small></label>
+      <input type="text" class="form-control" name="slug" id="slug"/>
+    </div> -->
+
+    <div class="form-group">
+      <label for="content">Content</label>
+      <textarea rows="5" class="form-control" name="content" id="content"></textarea>
+    </div>
+
+    <div class="form-group">
+      <p><span class="require">*</span> - required fields</p>
+    </div>
+
+    <div class="form-group">
+      <button class="btn btn-primary" onclick="createPost();">
+          Create
+      </button>
+      <button class="btn btn-default">
+          Cancel
+      </button>
+    </div>
+
+
+{{ template "footer.html" .}}
