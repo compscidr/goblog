@@ -7,6 +7,7 @@ import (
 	"goblog/auth"
 	"goblog/blog"
 
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite" // this is the db driver
@@ -47,12 +48,32 @@ func main() {
 	//just for testing, remove soon
 	router.GET("/api/v1/admin", admin.AdminHandler)
 
+	//all of this is the json api
 	router.POST("/api/login", auth.LoginPostHandler)
 	router.POST("/api/v1/posts", admin.CreatePost)
 	router.PATCH("/api/v1/posts", admin.UpdatePost)
-
 	router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", blog.GetPost)
 	router.GET("/api/v1/posts", blog.ListPosts)
+
+	//all of this serves html full pages, but re-uses much of the logic of
+	//the json API. The json API is tested more easily. Also javascript can
+	//served in the html can be used to create and update posts by directly
+	//working with the json API.
+
+	//todo - make the template folder configurable by command line arg
+	//so that people can pass in their own template folder instead of the default
+	router.LoadHTMLGlob("templates/*")
+
+	//if we use true here - it will override the home route and just show files
+	router.Use(static.Serve("/", static.LocalFile(".", false)))
+
+	router.GET("/", blog.Home)
+
+	//todo all people to register a template mapping to a "page type"
+	router.GET("/posts", blog.Posts)
+	router.GET("/presentations", blog.Speaking)
+	router.GET("/projects", blog.Projects)
+	router.GET("/about", blog.About)
 
 	router.Run(":7000")
 

@@ -22,6 +22,8 @@ func New(db *gorm.DB) Blog {
 	return api
 }
 
+//////JSON API///////
+
 //ListPosts lists all blog posts
 func (b Blog) ListPosts(c *gin.Context) {
 	var posts []Post
@@ -58,4 +60,33 @@ func (b Blog) GetPost(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, post)
+}
+
+//////HTML API///////
+
+//Home returns html of the home page using the template
+//if people want to have different stuff show on the home page they probably
+//need to modify this function
+func (b Blog) Home(c *gin.Context) {
+	c.HTML(http.StatusOK, "home.html", gin.H{})
+}
+
+//Posts is the index page for blog posts
+func (b Blog) Posts(c *gin.Context) {
+	c.HTML(http.StatusOK, "posts.html", gin.H{})
+}
+
+//Speaking is the index page for presentations
+func (b Blog) Speaking(c *gin.Context) {
+	c.HTML(http.StatusOK, "presentations.html", gin.H{})
+}
+
+//Projects is the index page for projects / code
+func (b Blog) Projects(c *gin.Context) {
+	c.HTML(http.StatusOK, "projects.html", gin.H{})
+}
+
+//About is the about page
+func (b Blog) About(c *gin.Context) {
+	c.HTML(http.StatusOK, "about.html", gin.H{})
 }
