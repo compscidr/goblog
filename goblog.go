@@ -83,7 +83,7 @@ func main() {
 
 	router.GET("/admin", admin.Admin)
 
-	router.Run(":7000")
+	router.Run("0.0.0.0:7000")
 
 	defer db.Close()
 }
