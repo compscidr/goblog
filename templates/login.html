@@ -6,7 +6,7 @@
 
   if (code) {
     //todo: get the post to be tied to the uri of the page (so it works on localhost, dev and prod)
-    var post = $.post("https://jasonernst.com/api/login", {"code": code});
+    var post = $.post("https://www.jasonernst.com/api/login", {"code": code});
     post.done(function(data) {
       window.location.href = '/';
     });
@@ -27,7 +27,7 @@
     </div>
 
     <div class="container">
-      <a id="github-button" class="btn btn-social btn-github" href="https://github.com/login/oauth/authorize?client_id=9a4892a7a4a8c4646225&redirect_uri=https://jasonernst.com/login">
+      <a id="github-button" class="btn btn-social btn-github" href="https://github.com/login/oauth/authorize?client_id=9a4892a7a4a8c4646225&redirect_uri=https://www.jasonernst.com/login">
         <i class="fa fa-github"></i> Sign in with Github
       </a>
 
