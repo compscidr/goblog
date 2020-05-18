@@ -1,0 +1,15 @@
+version: "3.0"
+services:
+  goblog:
+    build: '.'
+    image: compscidr/goblog:latest
+    networks:
+      - frontend
+    ports:
+      - "7000:7000"
+    expose:
+      - "7000"
+    volumes:
+      - ../:/var/www/html/
+networks:
+  frontend:
