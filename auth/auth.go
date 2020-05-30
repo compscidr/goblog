@@ -8,11 +8,13 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	"github.com/joho/godotenv"
 )
 
 //IAuth interface for auth so that it can be mocked easier
@@ -42,12 +44,24 @@ type AccessTokenResponse struct {
 //use the Github app credentials + the code we received from javascript
 //client side to make the access token (bearer) request
 func (a Auth) requestAccessToken(parsedCode string) (*AccessTokenResponse, error) {
+	err := godotenv.Load()
+	if err != nil {
+		//fall back to local config
+		err = godotenv.Load("local.env")
+		if err != nil {
+			//todo: handle better - perhaps return error to browser
+			log.Fatalf("Error loading .env file: " + err.Error())
+		}
+	}
+	clientID := os.Getenv("client_id")
+	clientSecret := os.Getenv("client_secret")
+
 	data := &AccessTokenResponse{}
 
 	//todo: move these out of the code and into environment variables
 	formData := url.Values{
-		"client_id":     {"9a4892a7a4a8c4646225"},
-		"client_secret": {"cfe1fa8128e81caf81b21645c0784231751b3627"},
+		"client_id":     {clientID},
+		"client_secret": {clientSecret},
 		"code":          {parsedCode},
 	}
 	req, err := http.NewRequest("POST", "https://github.com/login/oauth/access_token", strings.NewReader(formData.Encode()))

@@ -1,12 +1,13 @@
 {{ template "header.html" .}}
 
 <script type="text/javascript">
+  var host = location.protocol + '//' + window.location.host
   var urlParams = new URLSearchParams(window.location.search);
   var code = urlParams.get('code');
 
   if (code) {
     //todo: get the post to be tied to the uri of the page (so it works on localhost, dev and prod)
-    var post = $.post("https://www.jasonernst.com/api/login", {"code": code});
+    var post = $.post(host + "/api/login", {"code": code});
     post.done(function(data) {
       window.location.href = '/';
     });
@@ -27,9 +28,11 @@
     </div>
 
     <div class="container">
-      <a id="github-button" class="btn btn-social btn-github" href="https://github.com/login/oauth/authorize?client_id=9a4892a7a4a8c4646225&redirect_uri=https://www.jasonernst.com/login">
+      <a id="github-button" class="btn btn-social btn-github" href="">
         <i class="fa fa-github"></i> Sign in with Github
       </a>
+
+      <script>$("#github-button").prop("href", "https://github.com/login/oauth/authorize?client_id={{ .client_id }}&redirect_uri=" + window.location);</script>
 
       <div class="clear">
         &nbsp;

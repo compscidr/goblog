@@ -5,12 +5,14 @@ import (
 	"goblog/auth"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	"github.com/joho/godotenv"
 )
 
 // Blog API handles non-admin functions of the blog like listing posts, tags
@@ -139,9 +141,21 @@ func (b Blog) About(c *gin.Context) {
 
 //Login to the blog
 func (b Blog) Login(c *gin.Context) {
+	err := godotenv.Load()
+	if err != nil {
+		//fall back to local config
+		err = godotenv.Load("local.env")
+		if err != nil {
+			//todo: handle better - perhaps return error to browser
+			log.Fatalf("Error loading .env file: " + err.Error())
+		}
+	}
+
+	clientID := os.Getenv("client_id")
 	c.HTML(http.StatusOK, "login.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
+		"client_id": clientID,
 	})
 }
 
