@@ -149,13 +149,13 @@ func (b Blog) About(c *gin.Context) {
 
 //Login to the blog
 func (b Blog) Login(c *gin.Context) {
-	err := godotenv.Load()
+	err := godotenv.Load(".env")
 	if err != nil {
 		//fall back to local config
 		err = godotenv.Load("local.env")
 		if err != nil {
 			//todo: handle better - perhaps return error to browser
-			log.Fatalf("Error loading .env file: " + err.Error())
+			c.HTML(http.StatusInternalServerError, "Error loading .env file: "+err.Error())
 		}
 	}
 

@@ -44,13 +44,13 @@ type AccessTokenResponse struct {
 //use the Github app credentials + the code we received from javascript
 //client side to make the access token (bearer) request
 func (a Auth) requestAccessToken(parsedCode string) (*AccessTokenResponse, error) {
-	err := godotenv.Load()
+	err := godotenv.Load(".env")
 	if err != nil {
 		//fall back to local config
 		err = godotenv.Load("local.env")
 		if err != nil {
 			//todo: handle better - perhaps return error to browser
-			log.Fatalf("Error loading .env file: " + err.Error())
+			return nil, errors.New("Error loading .env file: " + err.Error())
 		}
 	}
 	clientID := os.Getenv("client_id")
