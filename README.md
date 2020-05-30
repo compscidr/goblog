@@ -27,14 +27,15 @@ Every function in the API should be covered by units and integration tests.
 What works:
 - List
 - Create
+- Update
 - Local sqlite3 db in a file
 
 Todo:
 - Increase test coverage
 - Delete
-- Update
 - User Comments
 - Install onboarding
+- Markdown rendering for content
 - mysql, postgres, other dbs
 
 ## Other tools used:
