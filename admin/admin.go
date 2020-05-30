@@ -98,20 +98,44 @@ func (a Admin) CreatePost(c *gin.Context) {
 }
 
 //UpdatePost modifies an existing post
+//Requires the ID of the post, title and content to not be empty
 func (a Admin) UpdatePost(c *gin.Context) {
-	token := c.Request.Header.Get("Authorization")
-
-	//check to see if user is logged in (todo add expiry)
-	//can't do this until we publish a version with the auth module in it
-	var existingUser auth.BlogUser
-	err := a.db.Where("access_token = ?", token).First(&existingUser).Error
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, "Not Authorized: "+token)
+	contentType := c.Request.Header.Get("content-type")
+	if contentType != "application/json" {
+		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
 		return
 	}
 
-	log.Println("UPDATE POST AUTHORZIED: ", token)
-	c.JSON(http.StatusOK, token)
+	if !a.auth.IsAdmin(c) {
+		log.Println("IS ADMIN RETURNED FALSE")
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	var requestPost blog.Post
+	c.BindJSON(&requestPost)
+
+	if requestPost.Title == "" || requestPost.Content == "" || requestPost.ID < 0 {
+		c.JSON(http.StatusBadRequest, "Missing ID, Title or Content")
+		return
+	}
+	requestPost.Slug = url.QueryEscape(strings.Replace(requestPost.Title, " ", "-", -1))
+
+	var existingPost blog.Post
+	err := a.db.Where("id = ?", requestPost.ID).First(&existingPost).Error
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "Existing post with ID "+fmt.Sprint(requestPost.ID)+" not found")
+		return
+	}
+
+	existingPost.Title = requestPost.Title
+	existingPost.Content = requestPost.Content
+	existingPost.Slug = requestPost.Slug
+	a.db.Model(&existingPost).Where("id = ?", requestPost.ID).Updates(&existingPost)
+
+	log.Println("POST UPDATED: ", existingPost)
+	c.JSON(http.StatusAccepted, existingPost)
 }
 
 // AdminHandler handles admin requests

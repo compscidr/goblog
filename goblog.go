@@ -41,7 +41,7 @@ func main() {
 	// bitching about it
 	router.Use(cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost", "http://localhost:8000"},
-		AllowedMethods:   []string{"GET", "POST"},
+		AllowedMethods:   []string{"GET", "POST", "PATCH"},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 		// Enable Debugging for testing, consider disabling in production

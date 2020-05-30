@@ -107,11 +107,19 @@ func (b Blog) Post(c *gin.Context) {
 	if err != nil {
 		c.HTML(http.StatusNotFound, "", gin.H{})
 	} else {
-		c.HTML(http.StatusOK, "post.html", gin.H{
-			"logged_in": b.auth.IsLoggedIn(c),
-			"is_admin":  b.auth.IsAdmin(c),
-			"post":      post,
-		})
+		if b.auth.IsAdmin(c) {
+			c.HTML(http.StatusOK, "post-admin.html", gin.H{
+				"logged_in": b.auth.IsLoggedIn(c),
+				"is_admin":  b.auth.IsAdmin(c),
+				"post":      post,
+			})
+		} else {
+			c.HTML(http.StatusOK, "post.html", gin.H{
+				"logged_in": b.auth.IsLoggedIn(c),
+				"is_admin":  b.auth.IsAdmin(c),
+				"post":      post,
+			})
+		}
 	}
 }
 

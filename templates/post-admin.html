@@ -1,0 +1,43 @@
+{{ template "header.html" .}}
+
+<script type="text/javascript">
+
+  function updatePost() {
+    var post = {
+      "id": {{ .post.ID }},
+      "title": $("#title").text(),
+      "content": $("#content").text(),
+    }
+    console.log("PATCH: " + JSON.stringify(post));
+
+    $.ajax({
+      url: "/api/v1/posts",
+      type: "patch",
+      dataType: "json",
+      contentType: "application/json",
+      success: function(json) {
+        createdAt = json["CreatedAt"].split("-");
+        yyyy = createdAt[0];
+        mm = createdAt[1];
+        dd = createdAt[2];
+        dd = dd.substring(0,2)
+        slug = json["slug"];
+        window.location.href = "/posts/" + yyyy + "/" + mm + "/" + dd + "/" + slug;
+      },
+      data: JSON.stringify(post)
+    });
+  }
+</script>
+
+  <div class="container">
+
+    <div class="row">
+      <div class="container left">
+        <h1 class="text-left" contenteditable="true" id="title" onfocusout="updatePost()">{{ .post.Title }}</h1>
+        <p class="text-left" contenteditable="true" id="content"  onfocusout="updatePost()">
+        {{ .post.Content }}
+        </p>
+      </div>
+    </div>
+
+{{ template "footer.html" .}}
