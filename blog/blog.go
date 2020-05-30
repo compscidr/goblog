@@ -155,7 +155,11 @@ func (b Blog) Login(c *gin.Context) {
 		err = godotenv.Load("local.env")
 		if err != nil {
 			//todo: handle better - perhaps return error to browser
-			c.HTML(http.StatusInternalServerError, "Error loading .env file: "+err.Error())
+			c.HTML(http.StatusInternalServerError, "Error loading .env file: "+err.Error(), gin.H{
+				"logged_in": b.auth.IsLoggedIn(c),
+				"is_admin":  b.auth.IsAdmin(c),
+			})
+			return
 		}
 	}
 
