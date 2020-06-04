@@ -28,11 +28,12 @@ What works:
 - List
 - Create
 - Update
+- Delete
 - Local sqlite3 db in a file
 
 Todo:
 - Increase test coverage
-- Delete
+- Tags
 - User Comments
 - Install onboarding
 - Markdown rendering for content
