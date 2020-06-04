@@ -32,7 +32,8 @@ What works:
 - Local sqlite3 db in a file
 
 Todo:
-- Increase test coverage
+- Increase test coverage (and coverage reporting on the readme would be nice)
+- Error pages
 - Tags
 - User Comments
 - Install onboarding
