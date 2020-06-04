@@ -41,7 +41,7 @@ func main() {
 	// bitching about it
 	router.Use(cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost", "http://localhost:8000"},
-		AllowedMethods:   []string{"GET", "POST", "PATCH"},
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE"},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"Authorization", "Content-Type"},
 		// Enable Debugging for testing, consider disabling in production
@@ -55,6 +55,7 @@ func main() {
 	router.POST("/api/login", auth.LoginPostHandler)
 	router.POST("/api/v1/posts", admin.CreatePost)
 	router.PATCH("/api/v1/posts", admin.UpdatePost)
+	router.DELETE("/api/v1/posts", admin.DeletePost)
 	router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", blog.GetPost)
 	router.GET("/api/v1/posts", blog.ListPosts)
 

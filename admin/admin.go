@@ -138,6 +138,32 @@ func (a Admin) UpdatePost(c *gin.Context) {
 	c.JSON(http.StatusAccepted, existingPost)
 }
 
+func (a Admin) DeletePost(c *gin.Context) {
+	contentType := c.Request.Header.Get("content-type")
+	if contentType != "application/json" {
+		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
+		return
+	}
+
+	if !a.auth.IsAdmin(c) {
+		log.Println("IS ADMIN RETURNED FALSE")
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	var requestPost blog.Post
+	c.BindJSON(&requestPost)
+
+	if requestPost.ID < 0 {
+		c.JSON(http.StatusBadRequest, "Missing ID, Title or Content")
+		return
+	}
+
+	a.db.Where("id = ?", requestPost.ID).Delete(&blog.Post{})
+
+	c.JSON(http.StatusOK, "")
+}
+
 // AdminHandler handles admin requests
 //func (a Admin) AdminHandler(w http.ResponseWriter, r *http.Request) {
 func (a Admin) AdminHandler(c *gin.Context) {
