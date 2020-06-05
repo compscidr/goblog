@@ -54,7 +54,7 @@ func (b Blog) getPost(c *gin.Context) (*Post, error) {
 	log.Println("Looking for post: ", year, "/", month, "/", day, "/", slug)
 
 	if err := b.db.Where("created_at > ? AND slug = ?", time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).First(&post).Error; err != nil {
-		return nil, nil
+		return nil, errors.New("No post at " + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/" + strconv.Itoa(day) + "/" + slug)
 	}
 
 	log.Println("Found: ", post)
@@ -105,7 +105,10 @@ func (b Blog) Posts(c *gin.Context) {
 func (b Blog) Post(c *gin.Context) {
 	post, err := b.getPost(c)
 	if err != nil {
-		c.HTML(http.StatusNotFound, "", gin.H{})
+		c.HTML(http.StatusNotFound, "error.html", gin.H{
+			"error":       "Post Not Found",
+			"description": err.Error(),
+		})
 	} else {
 		if b.auth.IsAdmin(c) {
 			c.HTML(http.StatusOK, "post-admin.html", gin.H{
