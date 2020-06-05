@@ -33,6 +33,14 @@ What works:
 - Markdown rendering for content
 
 Todo:
+- tags
+- update styling so links are more visible
+- code highlighting
+- post date editing so old posts can be imported
+- medium import tool
+- meta, title, etc which changes with posts for SEO
+- default hero images or something so posts don't look so bare
+- cron job to backup posts
 - Increase test coverage (and coverage reporting on the readme would be nice)
 - Error pages
 - Tags
