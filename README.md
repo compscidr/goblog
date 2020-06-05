@@ -30,6 +30,7 @@ What works:
 - Update
 - Delete
 - Local sqlite3 db in a file
+- Markdown rendering for content
 
 Todo:
 - Increase test coverage (and coverage reporting on the readme would be nice)
@@ -37,7 +38,6 @@ Todo:
 - Tags
 - User Comments
 - Install onboarding
-- Markdown rendering for content
 - mysql, postgres, other dbs
 
 ## Other tools used:

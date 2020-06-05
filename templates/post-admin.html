@@ -3,10 +3,12 @@
 <script type="text/javascript">
 
   function updatePost() {
+    var content = $("#content").text().replace('\n        ', '');
+    content = content.replace('\n        ', '');
     var post = {
       "id": {{ .post.ID }},
       "title": $("#title").text(),
-      "content": $("#content").text(),
+      "content": content,
     }
     console.log("PATCH: " + JSON.stringify(post));
 
@@ -59,7 +61,16 @@
         <p class="text-left" contenteditable="true" id="content"  onfocusout="updatePost()">
         {{ .post.Content }}
         </p>
+        <div id="html" class="text-left"></div>
       </div>
     </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js" integrity="sha256-jl1+DOsSs9uABTKppOJ2GF8kXoc3XQzBtFFyS0i9Xoo=" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var converter = new showdown.Converter();
+      var md = "{{ .post.Content }}";
+      var html = converter.makeHtml(md);
+      $("#html").html(html)
+    </script>
 
 {{ template "footer.html" .}}

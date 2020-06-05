@@ -57,7 +57,7 @@ func (b Blog) getPost(c *gin.Context) (*Post, error) {
 		return nil, errors.New("No post at " + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/" + strconv.Itoa(day) + "/" + slug)
 	}
 
-	log.Println("Found: ", post)
+	log.Println("Found: ", post.Title)
 	return &post, nil
 }
 
