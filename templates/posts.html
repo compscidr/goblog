@@ -10,18 +10,19 @@
 
   <div class="container">
 
+    <h1 class="text-left">Blog Posts</h1>
+
+    {{ range .posts }}
     <div class="row">
       <div class="container left">
-        <h1 class="text-left">Blog Posts</h1>
-
-        {{ range .posts }}
           <h2 class="text-left"><a href="{{ .Permalink }}">{{ .Title }}</a></h2>
           <p class="blog-post-meta text-left">{{ .CreatedAt.Format "Jan 02, 2006 15:04:05 UTC" }}</p>
           <p class="text-left">
-            {{ .PreviewContent 100 }}
+            {{ .PreviewContent 100 }} ...
           </p>
-        {{ end }}
+
       </div>
     </div>
+    {{ end }}
 
 {{ template "footer.html" .}}
