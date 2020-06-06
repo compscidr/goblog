@@ -31,7 +31,7 @@ func New(db *gorm.DB, auth *auth.Auth) Blog {
 //Generic Functions (not JSON or HTML)
 func (b Blog) getPosts() []Post {
 	var posts []Post
-	b.db.Find(&posts)
+	b.db.Order("created_at desc").Find(&posts)
 	return posts
 }
 
