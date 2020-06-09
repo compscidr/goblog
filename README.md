@@ -31,9 +31,10 @@ What works:
 - Delete
 - Local sqlite3 db in a file
 - Markdown rendering for content
+- Tags (mostly)
 
 Todo:
-- tags
+- Editing post tags
 - update styling so links are more visible
 - code highlighting
 - post date editing so old posts can be imported
