@@ -26,6 +26,7 @@ func main() {
 	}
 	db.AutoMigrate(&auth.BlogUser{})
 	db.AutoMigrate(&blog.Post{})
+	db.AutoMigrate(&blog.Tag{})
 
 	//mux := http.NewServeMux()
 	router := gin.Default()
@@ -72,11 +73,13 @@ func main() {
 	router.Use(static.Serve("/", static.LocalFile(".", false)))
 	router.GET("/", blog.Home)
 	router.GET("/posts/:yyyy/:mm/:dd/:slug", blog.Post)
+	router.GET("/tag/:name", blog.Tag)
 	router.GET("/login", blog.Login)
 	router.GET("/logout", blog.Logout)
 
 	//todo all people to register a template mapping to a "page type"
 	router.GET("/posts", blog.Posts)
+	router.GET("/tags", blog.Tags)
 	router.GET("/presentations", blog.Speaking)
 	router.GET("/projects", blog.Projects)
 	router.GET("/about", blog.About)

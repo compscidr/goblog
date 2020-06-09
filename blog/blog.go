@@ -57,8 +57,22 @@ func (b Blog) getPost(c *gin.Context) (*Post, error) {
 		return nil, errors.New("No post at " + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/" + strconv.Itoa(day) + "/" + slug)
 	}
 
-	log.Println("Found: ", post.Title)
+	b.db.Model(&post).Related(&post.Tags, "Tags")
+	log.Println("Found: ", post.Title, " TAGS: ", post.Tags)
 	return &post, nil
+}
+
+func (b Blog) getPostsByTag(c *gin.Context) ([]Post, error) {
+	var posts []Post
+	var tag Tag
+	name := c.Param("name")
+	if err := b.db.Where("name = ?", name).First(&tag).Error; err != nil {
+		return nil, errors.New("No tag named " + name)
+	}
+
+	b.db.Model(&tag).Related(&posts, "Posts")
+	log.Print("POSTS: ", posts)
+	return posts, nil
 }
 
 //////JSON API///////
@@ -124,6 +138,29 @@ func (b Blog) Post(c *gin.Context) {
 			})
 		}
 	}
+}
+
+//Tag lists all posts with a given tag
+func (b Blog) Tag(c *gin.Context) {
+	tag := c.Param("name")
+	posts, err := b.getPostsByTag(c)
+	if err != nil {
+		c.HTML(http.StatusNotFound, "error.html", gin.H{
+			"error":       "Tag Not Found",
+			"description": err.Error(),
+		})
+	} else {
+		c.HTML(http.StatusOK, "tag.html", gin.H{
+			"logged_in": b.auth.IsLoggedIn(c),
+			"is_admin":  b.auth.IsAdmin(c),
+			"posts":     posts,
+			"tag":       tag,
+		})
+	}
+}
+
+func (b Blog) Tags(c *gin.Context) {
+	c.HTML(http.StatusOK, "tags.html", gin.H{})
 }
 
 //Speaking is the index page for presentations

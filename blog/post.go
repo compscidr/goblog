@@ -12,6 +12,14 @@ type Post struct {
 	Title   string `json:"title"`
 	Slug    string `json:"slug"`
 	Content string `sql:"type:text;" json:"content"`
+	Tags    []Tag  `gorm:"many2many:post_tags" json:"tags"`
+}
+
+// Tag is used to collect Posts with similar topics
+type Tag struct {
+	gorm.Model
+	Name  string `json:"name"`
+	Posts []Post `gorm:"many2many:post_tags"`
 }
 
 //PreviewContent gets a shortened version of the content for showing a preview

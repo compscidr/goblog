@@ -77,7 +77,11 @@ func (a Admin) CreatePost(c *gin.Context) {
 	}
 
 	var requestPost blog.Post
-	c.BindJSON(&requestPost)
+	err := c.BindJSON(&requestPost)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "Malformed request")
+		return
+	}
 
 	if requestPost.Title == "" || requestPost.Content == "" {
 		c.JSON(http.StatusBadRequest, "Missing Title or Content")
