@@ -118,6 +118,7 @@ func (a Admin) UpdatePost(c *gin.Context) {
 
 	var requestPost blog.Post
 	c.BindJSON(&requestPost)
+	log.Println("REQUEST POST: ", requestPost)
 
 	if requestPost.Title == "" || requestPost.Content == "" || requestPost.ID < 0 {
 		c.JSON(http.StatusBadRequest, "Missing ID, Title or Content")
@@ -133,9 +134,13 @@ func (a Admin) UpdatePost(c *gin.Context) {
 		return
 	}
 
+	//clear old associations
+	a.db.Model(&existingPost).Association("Tags").Clear()
+
 	existingPost.Title = requestPost.Title
 	existingPost.Content = requestPost.Content
 	existingPost.Slug = requestPost.Slug
+	existingPost.Tags = requestPost.Tags
 	a.db.Model(&existingPost).Where("id = ?", requestPost.ID).Updates(&existingPost)
 
 	log.Println("POST UPDATED: ", existingPost)

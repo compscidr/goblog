@@ -3,12 +3,17 @@
 <script type="text/javascript">
 
   function updatePost() {
+    var tags = $("#tags").text().split(',')
+    for (var i = 0; i < tags.length; i++) {
+      tags[i] = {"name": tags[i].trim()}
+    }
     var content = $("#content").text().replace('\n        ', '');
     content = content.replace('\n        ', '');
     var post = {
       "id": {{ .post.ID }},
       "title": $("#title").text(),
       "content": content,
+      "tags": tags,
     }
     console.log("PATCH: " + JSON.stringify(post));
 
@@ -58,9 +63,19 @@
       <div class="container left">
         <h2 class="text-left" contenteditable="true" id="title" onfocusout="updatePost()">{{ .post.Title }}</h2>
         <p class="blog-post-meta text-left">Posted on {{ .post.CreatedAt.Format "Jan 02, 2006 15:04:05 UTC" }}. Last Edited on {{ .post.UpdatedAt.Format "Jan 02, 2006 15:04:05 UTC" }} [ <a href="#" onclick="return deletePost()">Delete</a>] </p>
-        <p class="text-left" contenteditable="true" id="content"  onfocusout="updatePost()">
+        <p class="tags text-left">
+          {{range .post.Tags}}
+            <a href="/tag/{{.Name}}">#{{.Name}}</a>
+          {{end}}
+        </p>
+        <div class="spacer">&nbsp;</div>
+        <h1>Editable</h1>
+        <p class="tags text-left" id="tags" contenteditable="true" onfocusout="updatePost()">{{range $i, $e := .post.Tags}}{{if $i}}, {{end}}{{$e.Name}}{{end}}</p>
+        <p class="text-left" contenteditable="true" id="content" onfocusout="updatePost()">
         {{ .post.Content }}
         </p>
+        <div class="spacer">&nbsp;</div>
+        <h1>Preview</h1>
         <div id="html" class="text-left"></div>
       </div>
     </div>

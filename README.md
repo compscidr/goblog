@@ -34,7 +34,8 @@ What works:
 - Tags (mostly)
 
 Todo:
-- Editing post tags
+- editing post tags
+- file uploads (images, pdfs, etc)
 - update styling so links are more visible
 - code highlighting
 - post date editing so old posts can be imported
@@ -42,11 +43,10 @@ Todo:
 - meta, title, etc which changes with posts for SEO
 - default hero images or something so posts don't look so bare
 - cron job to backup posts
-- Increase test coverage (and coverage reporting on the readme would be nice)
-- Error pages
-- Tags
-- User Comments
-- Install onboarding
+- increase test coverage (and coverage reporting on the readme would be nice)
+- error pages
+- user comments
+- install onboarding
 - mysql, postgres, other dbs
 
 ## Other tools used:

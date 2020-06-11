@@ -17,8 +17,7 @@ type Post struct {
 
 // Tag is used to collect Posts with similar topics
 type Tag struct {
-	gorm.Model
-	Name  string `json:"name"`
+	Name  string `gorm:"PRIMARY_KEY" json:"name"`
 	Posts []Post `gorm:"many2many:post_tags"`
 }
 

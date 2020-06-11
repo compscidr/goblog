@@ -53,11 +53,11 @@ func (b Blog) getPost(c *gin.Context) (*Post, error) {
 
 	log.Println("Looking for post: ", year, "/", month, "/", day, "/", slug)
 
-	if err := b.db.Where("created_at > ? AND slug = ?", time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).First(&post).Error; err != nil {
+	if err := b.db.Preload("Tags").Where("created_at > ? AND slug = ?", time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).First(&post).Error; err != nil {
 		return nil, errors.New("No post at " + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/" + strconv.Itoa(day) + "/" + slug)
 	}
 
-	b.db.Model(&post).Related(&post.Tags, "Tags")
+	//b.db.Model(&post).Related(&post.Tags, "Tags")
 	log.Println("Found: ", post.Title, " TAGS: ", post.Tags)
 	return &post, nil
 }
