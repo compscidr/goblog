@@ -31,10 +31,9 @@ What works:
 - Delete
 - Local sqlite3 db in a file
 - Markdown rendering for content
-- Tags (mostly)
+- Tags
 
 Todo:
-- editing post tags
 - file uploads (images, pdfs, etc)
 - update styling so links are more visible
 - code highlighting
@@ -48,6 +47,7 @@ Todo:
 - user comments
 - install onboarding
 - mysql, postgres, other dbs
+- all tags page
 
 ## Other tools used:
 - Gin: https://github.com/gin-gonic/gin. Used for multiplexing / routing the
