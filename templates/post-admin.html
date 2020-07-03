@@ -7,8 +7,7 @@
     for (var i = 0; i < tags.length; i++) {
       tags[i] = {"name": tags[i].trim()}
     }
-    var content = $("#content").text().replace('\n        ', '');
-    content = content.replace('\n        ', '');
+    var content = $("#content").val();
     var post = {
       "id": {{ .post.ID }},
       "title": $("#title").text(),
@@ -71,9 +70,7 @@
         <div class="spacer">&nbsp;</div>
         <h1>Editable</h1>
         <p class="tags text-left" id="tags" contenteditable="true" onfocusout="updatePost()">{{range $i, $e := .post.Tags}}{{if $i}}, {{end}}{{$e.Name}}{{end}}</p>
-        <p class="text-left" contenteditable="true" id="content" onfocusout="updatePost()">
-        {{ .post.Content }}
-        </p>
+        <textarea id="content" onfocusout="updatePost()" style="width: 100%; height: 50%;">{{ .post.Content }}</textarea>
         <div class="spacer">&nbsp;</div>
         <h1>Preview</h1>
         <div id="html" class="text-left"></div>
