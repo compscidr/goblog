@@ -103,6 +103,7 @@ func (a Admin) CreatePost(c *gin.Context) {
 }
 
 //UploadFile is the endpoint for storing files on the server
+//https://github.com/gin-gonic/examples/blob/master/upload-file/single/main.go
 func (a Admin) UploadFile(c *gin.Context) {
 	contentType := c.Request.Header.Get("content-type")
 	if contentType != "application/json" {
