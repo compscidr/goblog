@@ -96,6 +96,14 @@ func (b Blog) GetPost(c *gin.Context) {
 
 //////HTML API///////
 
+//NoRoute returns a custom 404 page
+func (b Blog) NoRoute(c *gin.Context) {
+	c.HTML(http.StatusNotFound, "error.html", gin.H{
+		"error":       "404: Page Not Found",
+		"description": "The page at '" + c.Request.URL.String() + "' was not found",
+	})
+}
+
 //Home returns html of the home page using the template
 //if people want to have different stuff show on the home page they probably
 //need to modify this function

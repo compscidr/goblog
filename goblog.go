@@ -86,6 +86,8 @@ func main() {
 
 	router.GET("/admin", admin.Admin)
 
+	router.NoRoute(blog.NoRoute)
+
 	router.Run("0.0.0.0:7000")
 
 	defer db.Close()
