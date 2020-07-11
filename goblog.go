@@ -55,6 +55,7 @@ func main() {
 	//all of this is the json api
 	router.POST("/api/login", auth.LoginPostHandler)
 	router.POST("/api/v1/posts", admin.CreatePost)
+	router.POST("/api/v1/upload", admin.UploadFile)
 	router.PATCH("/api/v1/posts", admin.UpdatePost)
 	router.DELETE("/api/v1/posts", admin.DeletePost)
 	router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", blog.GetPost)
