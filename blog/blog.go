@@ -5,6 +5,7 @@ import (
 	"goblog/auth"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -50,6 +51,7 @@ func (b Blog) getPost(c *gin.Context) (*Post, error) {
 		return nil, errors.New("Day must be an integer")
 	}
 	slug := c.Param("slug")
+	slug = url.QueryEscape(slug)
 
 	log.Println("Looking for post: ", year, "/", month, "/", day, "/", slug)
 
