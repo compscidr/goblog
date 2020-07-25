@@ -17,8 +17,8 @@ in a session cookie.
 
 Creating, modifying and deleting posts and administering comments may only be
 done with the admin user. Presently the user is hardcoded by github email, but
-I'll likely create an initial install onboarding which makes the first logged in
-user the admin.
+I'll likely create an initial install onboarding which makes the first logged 
+in user the admin.
 
 Other logged in users are able to post, update and delete comments.
 
@@ -34,9 +34,10 @@ What works:
 - Tags
 - code highlighting
 - error pages
+- file uploads (images, pdfs, etc)
 
 Todo:
-- file uploads (images, pdfs, etc)
+- draft posts
 - update styling so links are more visible
 - post date editing so old posts can be imported
 - medium import tool
