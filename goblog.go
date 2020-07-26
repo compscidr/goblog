@@ -73,6 +73,7 @@ func main() {
 	//if we use true here - it will override the home route and just show files
 	router.Use(static.Serve("/", static.LocalFile(".", false)))
 	router.GET("/", blog.Home)
+	router.GET("/index.php", blog.Home)
 	router.GET("/posts/:yyyy/:mm/:dd/:slug", blog.Post)
 	router.GET("/tag/:name", blog.Tag)
 	router.GET("/login", blog.Login)
