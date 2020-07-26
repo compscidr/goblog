@@ -7,7 +7,9 @@ on:
   push:
     branches:
       - '**'
-
+  create:
+    tags:
+      - 'v*'
 
 jobs:
 
