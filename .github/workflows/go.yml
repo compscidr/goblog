@@ -39,7 +39,10 @@ jobs:
       run: go build -ldflags="-X 'main.Version=$(git describe --tags --dirty)'" -v .
 
     - name: Test
-      run: go test goblog/...
+      run: go test -race -coverprofile=coverage.txt -covermode=atomic goblog/...
+
+    - name: Code Coveralls
+      run: bash <(curl -s https://codecov.io/bash)
 
     # https://github.com/marketplace/actions/build-and-push-docker-images#Example-usage
     - name: Build and push Docker images
