@@ -1,5 +1,6 @@
 # goblog
 ![Go](https://github.com/compscidr/goblog/workflows/Go/badge.svg)
+[![codecov](https://codecov.io/gh/compscidr/goblog/branch/master/graph/badge.svg)](https://codecov.io/gh/compscidr/goblog)
 
 Simple blogging platform built with golang.
 
