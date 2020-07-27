@@ -116,6 +116,7 @@ func (b Blog) Home(c *gin.Context) {
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
 		"version":   b.version,
+		"title":     "Software Engineer",
 	})
 }
 
@@ -126,6 +127,7 @@ func (b Blog) Posts(c *gin.Context) {
 		"is_admin":  b.auth.IsAdmin(c),
 		"posts":     b.getPosts(),
 		"version":   b.version,
+		"title":     "Posts",
 	})
 }
 
@@ -137,6 +139,7 @@ func (b Blog) Post(c *gin.Context) {
 			"error":       "Post Not Found",
 			"description": err.Error(),
 			"version":     b.version,
+			"title":       "Post Not Found",
 		})
 	} else {
 		if b.auth.IsAdmin(c) {
@@ -163,9 +166,10 @@ func (b Blog) Tag(c *gin.Context) {
 	posts, err := b.getPostsByTag(c)
 	if err != nil {
 		c.HTML(http.StatusNotFound, "error.html", gin.H{
-			"error":       "Tag Not Found",
+			"error":       "Tag '" + tag + "' Not Found",
 			"description": err.Error(),
 			"version":     b.version,
+			"title":       "Tag '" + tag + "' Not Found",
 		})
 	} else {
 		c.HTML(http.StatusOK, "tag.html", gin.H{
@@ -174,13 +178,16 @@ func (b Blog) Tag(c *gin.Context) {
 			"posts":     posts,
 			"tag":       tag,
 			"version":   b.version,
+			"title":     "Posts with Tag '" + tag + "'",
 		})
 	}
 }
 
+//Tags is the index page for all Tags
 func (b Blog) Tags(c *gin.Context) {
 	c.HTML(http.StatusOK, "tags.html", gin.H{
 		"version": b.version,
+		"title":   "Tags",
 	})
 }
 
@@ -190,6 +197,7 @@ func (b Blog) Speaking(c *gin.Context) {
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
 		"version":   b.version,
+		"title":     "Speaking",
 	})
 }
 
@@ -199,6 +207,7 @@ func (b Blog) Projects(c *gin.Context) {
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
 		"version":   b.version,
+		"title":     "Projects",
 	})
 }
 
@@ -208,6 +217,7 @@ func (b Blog) About(c *gin.Context) {
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
 		"version":   b.version,
+		"title":     "About Jason",
 	})
 }
 
@@ -223,6 +233,7 @@ func (b Blog) Login(c *gin.Context) {
 				"logged_in": b.auth.IsLoggedIn(c),
 				"is_admin":  b.auth.IsAdmin(c),
 				"version":   b.version,
+				"title":     "Login Configuration Error",
 			})
 			return
 		}
@@ -234,6 +245,7 @@ func (b Blog) Login(c *gin.Context) {
 		"is_admin":  b.auth.IsAdmin(c),
 		"client_id": clientID,
 		"version":   b.version,
+		"title":     "Login",
 	})
 }
 

@@ -6,7 +6,11 @@
   <meta name="keywords" content="Jason Ernst, software engineer, computer science">
   <meta name="author" content="Jason Ernst">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jason Ernst - Software Engineer</title>
+  {{ if .post }}
+  <title>Jason Ernst: {{ .post.Title }}</title>
+  {{ else }}
+  <title>Jason Ernst: {{ .title }}</title>
+  {{ end }}
 
   <!-- favicon generated with https://favicon.io/favicon-generator/ -->
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
