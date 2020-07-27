@@ -35,11 +35,11 @@ What works:
 - code highlighting
 - error pages
 - file uploads (images, pdfs, etc)
+- github action which builds and deploys a tagged dockerhub release when a versioned release is cut
 
 Todo:
 - draft posts
 - version string somewhere in the template
-- github action which builds and deploys a tagged dockerhub release when a versioned release is cut
 - update styling so links are more visible
 - post date editing so old posts can be imported
 - medium import tool
