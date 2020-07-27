@@ -38,7 +38,7 @@ func TestCreatePost(t *testing.T) {
 	db.AutoMigrate(&blog.Post{})
 	//a := auth.New(db)
 	a := &Auth{}
-	admin := admin.New(db, a)
+	admin := admin.New(db, a, "test")
 
 	router := gin.Default()
 	store := cookie.NewStore([]byte("changelater"))
