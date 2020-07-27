@@ -36,7 +36,7 @@ jobs:
         fi
 
     - name: Build
-      run: go build -v .
+      run: go build -ldflags="-X 'main.Version=$(git describe --tags --dirty)'" -v .
 
     - name: Test
       run: go test goblog/...

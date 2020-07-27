@@ -26,8 +26,8 @@ func TestCreatePost(t *testing.T) {
 	db.AutoMigrate(&auth.BlogUser{})
 	db.AutoMigrate(&blog.Post{})
 
-	auth := auth.New(db)
-	admin := admin.New(db, &auth)
+	auth := auth.New(db, "test")
+	admin := admin.New(db, &auth, "test")
 	//b := blog.New(db, &auth)
 
 	router := gin.Default()

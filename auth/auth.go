@@ -25,12 +25,13 @@ type IAuth interface {
 
 //Auth API
 type Auth struct {
-	db *gorm.DB
+	db      *gorm.DB
+	version string
 }
 
 //New constructs an Auth API
-func New(db *gorm.DB) Auth {
-	api := Auth{db}
+func New(db *gorm.DB, version string) Auth {
+	api := Auth{db, version}
 	return api
 }
 

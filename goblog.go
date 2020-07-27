@@ -6,6 +6,7 @@ import (
 	"goblog/admin"
 	"goblog/auth"
 	"goblog/blog"
+	"log"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -17,7 +18,11 @@ import (
 	cors "github.com/rs/cors/wrapper/gin"
 )
 
+//Version of the code generated from git describe
+var Version = "development"
+
 func main() {
+	log.Println("Starting blog version: ", Version)
 	//https://gorm.io/docs/
 	//todo - convert this to a non-local db when not running locally
 	db, err := gorm.Open("sqlite3", "test.db")
@@ -28,14 +33,13 @@ func main() {
 	db.AutoMigrate(&blog.Post{})
 	db.AutoMigrate(&blog.Tag{})
 
-	//mux := http.NewServeMux()
 	router := gin.Default()
 	store := cookie.NewStore([]byte("changelater"))
 	router.Use(sessions.Sessions("www.jasonernst.com", store))
 
-	auth := auth.New(db)
-	admin := admin.New(db, &auth)
-	blog := blog.New(db, &auth)
+	auth := auth.New(db, Version)
+	admin := admin.New(db, &auth, Version)
+	blog := blog.New(db, &auth, Version)
 
 	// todo: restrict cors properly to same domain: https://github.com/rs/cors
 	// this lets us get a request from localhost:8000 without the web browser

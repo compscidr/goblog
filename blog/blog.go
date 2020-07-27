@@ -19,13 +19,14 @@ import (
 // Blog API handles non-admin functions of the blog like listing posts, tags
 // comments, etc.
 type Blog struct {
-	db   *gorm.DB
-	auth *auth.Auth
+	db      *gorm.DB
+	auth    *auth.Auth
+	version string
 }
 
 //New constructs an Admin API
-func New(db *gorm.DB, auth *auth.Auth) Blog {
-	api := Blog{db, auth}
+func New(db *gorm.DB, auth *auth.Auth, version string) Blog {
+	api := Blog{db, auth, version}
 	return api
 }
 
@@ -103,6 +104,7 @@ func (b Blog) NoRoute(c *gin.Context) {
 	c.HTML(http.StatusNotFound, "error.html", gin.H{
 		"error":       "404: Page Not Found",
 		"description": "The page at '" + c.Request.URL.String() + "' was not found",
+		"version":     b.version,
 	})
 }
 
@@ -113,6 +115,7 @@ func (b Blog) Home(c *gin.Context) {
 	c.HTML(http.StatusOK, "home.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
+		"version":   b.version,
 	})
 }
 
@@ -122,6 +125,7 @@ func (b Blog) Posts(c *gin.Context) {
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
 		"posts":     b.getPosts(),
+		"version":   b.version,
 	})
 }
 
@@ -132,6 +136,7 @@ func (b Blog) Post(c *gin.Context) {
 		c.HTML(http.StatusNotFound, "error.html", gin.H{
 			"error":       "Post Not Found",
 			"description": err.Error(),
+			"version":     b.version,
 		})
 	} else {
 		if b.auth.IsAdmin(c) {
@@ -139,12 +144,14 @@ func (b Blog) Post(c *gin.Context) {
 				"logged_in": b.auth.IsLoggedIn(c),
 				"is_admin":  b.auth.IsAdmin(c),
 				"post":      post,
+				"version":   b.version,
 			})
 		} else {
 			c.HTML(http.StatusOK, "post.html", gin.H{
 				"logged_in": b.auth.IsLoggedIn(c),
 				"is_admin":  b.auth.IsAdmin(c),
 				"post":      post,
+				"version":   b.version,
 			})
 		}
 	}
@@ -158,6 +165,7 @@ func (b Blog) Tag(c *gin.Context) {
 		c.HTML(http.StatusNotFound, "error.html", gin.H{
 			"error":       "Tag Not Found",
 			"description": err.Error(),
+			"version":     b.version,
 		})
 	} else {
 		c.HTML(http.StatusOK, "tag.html", gin.H{
@@ -165,12 +173,15 @@ func (b Blog) Tag(c *gin.Context) {
 			"is_admin":  b.auth.IsAdmin(c),
 			"posts":     posts,
 			"tag":       tag,
+			"version":   b.version,
 		})
 	}
 }
 
 func (b Blog) Tags(c *gin.Context) {
-	c.HTML(http.StatusOK, "tags.html", gin.H{})
+	c.HTML(http.StatusOK, "tags.html", gin.H{
+		"version": b.version,
+	})
 }
 
 //Speaking is the index page for presentations
@@ -178,6 +189,7 @@ func (b Blog) Speaking(c *gin.Context) {
 	c.HTML(http.StatusOK, "presentations.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
+		"version":   b.version,
 	})
 }
 
@@ -186,6 +198,7 @@ func (b Blog) Projects(c *gin.Context) {
 	c.HTML(http.StatusOK, "projects.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
+		"version":   b.version,
 	})
 }
 
@@ -194,6 +207,7 @@ func (b Blog) About(c *gin.Context) {
 	c.HTML(http.StatusOK, "about.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
+		"version":   b.version,
 	})
 }
 
@@ -208,6 +222,7 @@ func (b Blog) Login(c *gin.Context) {
 			c.HTML(http.StatusInternalServerError, "Error loading .env file: "+err.Error(), gin.H{
 				"logged_in": b.auth.IsLoggedIn(c),
 				"is_admin":  b.auth.IsAdmin(c),
+				"version":   b.version,
 			})
 			return
 		}
@@ -218,6 +233,7 @@ func (b Blog) Login(c *gin.Context) {
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
 		"client_id": clientID,
+		"version":   b.version,
 	})
 }
 

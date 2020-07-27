@@ -16,13 +16,14 @@ import (
 
 // Admin handles admin requests
 type Admin struct {
-	db   *gorm.DB
-	auth auth.IAuth
+	db      *gorm.DB
+	auth    auth.IAuth
+	version string
 }
 
 //New constructs an Admin API
-func New(db *gorm.DB, auth auth.IAuth) Admin {
-	api := Admin{db, auth}
+func New(db *gorm.DB, auth auth.IAuth, version string) Admin {
+	api := Admin{db, auth, version}
 	return api
 }
 
