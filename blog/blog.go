@@ -20,12 +20,12 @@ import (
 // comments, etc.
 type Blog struct {
 	db      *gorm.DB
-	auth    *auth.Auth
+	auth    auth.IAuth
 	version string
 }
 
 //New constructs an Admin API
-func New(db *gorm.DB, auth *auth.Auth, version string) Blog {
+func New(db *gorm.DB, auth auth.IAuth, version string) Blog {
 	api := Blog{db, auth, version}
 	return api
 }

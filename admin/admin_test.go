@@ -8,6 +8,7 @@ import (
 	"goblog/blog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-contrib/sessions"
@@ -39,20 +40,33 @@ func TestCreatePost(t *testing.T) {
 	//a := auth.New(db)
 	a := &Auth{}
 	admin := admin.New(db, a, "test")
+	b := blog.New(db, a, "test")
 
 	router := gin.Default()
 	store := cookie.NewStore([]byte("changelater"))
 	router.Use(sessions.Sessions("www.jasonernst.com", store))
 	router.POST("/api/v1/posts", admin.CreatePost)
+	router.GET("/api/v1/posts", b.ListPosts)
+
+	//list all posts, should be empty
+	jsonValue, _ := json.Marshal("")
+	req, _ := http.NewRequest("GET", "/api/v1/posts", bytes.NewBuffer(jsonValue))
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	expected := `[]`
+	if w.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			w.Body.String(), expected)
+	}
 
 	//improper content-type
 	testPost := blog.Post{
 		Title:   "Test title",
 		Content: "This is some test content",
 	}
-	jsonValue, _ := json.Marshal(testPost)
-	req, _ := http.NewRequest("POST", "/api/v1/posts", bytes.NewBuffer(jsonValue))
-	w := httptest.NewRecorder()
+	jsonValue, _ = json.Marshal(testPost)
+	req, _ = http.NewRequest("POST", "/api/v1/posts", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusUnsupportedMediaType {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusUnsupportedMediaType, w.Code)
@@ -73,6 +87,15 @@ func TestCreatePost(t *testing.T) {
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusCreated {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusCreated, w.Code)
+	}
+
+	//list all posts, should not be empty
+	jsonValue, _ = json.Marshal("")
+	req, _ = http.NewRequest("GET", "/api/v1/posts", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if !strings.Contains(w.Body.String(), testPost.Title) {
+		t.Errorf("Expected to see a post with title: " + testPost.Title + " but didn't")
 	}
 
 	//missing title
