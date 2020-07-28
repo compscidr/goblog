@@ -3,6 +3,7 @@ package blog_test
 import (
 	. "goblog/blog"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -21,4 +22,14 @@ func TestPreviewContent(t *testing.T) {
 	preview = post.PreviewContent(len(post.Content) + 10)
 	assert.Equal(t, len(preview), len(post.Content))
 	assert.NotEqual(t, len(preview), 25)
+}
+
+func TestPermalink(t *testing.T) {
+	currentTime := time.Now()
+	post := Post{
+		Slug: "test",
+	}
+	post.CreatedAt = currentTime
+
+	assert.Equal(t, post.Permalink(), currentTime.Format("/posts/2006/01/02/")+post.Slug)
 }
