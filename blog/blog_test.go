@@ -105,29 +105,29 @@ func TestBlogWorkflow(t *testing.T) {
 
 	//bad year
 	jsonValue, _ = json.Marshal("")
-	req, _ = http.NewRequest("GET", "/api/v1/posts/zfaq/12/12", bytes.NewBuffer(jsonValue))
+	req, _ = http.NewRequest("GET", "/api/v1/posts/zfaq/12/12/slug", bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
-	if w.Code != http.StatusNotFound {
-		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusNotFound, w.Code)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusBadRequest, w.Code)
 	}
 
 	//bad Month
 	jsonValue, _ = json.Marshal("")
-	req, _ = http.NewRequest("GET", "/api/v1/posts/2020/zq/12", bytes.NewBuffer(jsonValue))
+	req, _ = http.NewRequest("GET", "/api/v1/posts/2020/zq/12/slug", bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
-	if w.Code != http.StatusNotFound {
-		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusNotFound, w.Code)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusBadRequest, w.Code)
 	}
 
 	//bad day
 	jsonValue, _ = json.Marshal("")
-	req, _ = http.NewRequest("GET", "/api/v1/posts/2020/12/qf", bytes.NewBuffer(jsonValue))
+	req, _ = http.NewRequest("GET", "/api/v1/posts/2020/12/qf/slug", bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
-	if w.Code != http.StatusNotFound {
-		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusNotFound, w.Code)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusBadRequest, w.Code)
 	}
 
 }
