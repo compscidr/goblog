@@ -96,12 +96,38 @@ func TestBlogWorkflow(t *testing.T) {
 	}
 	post := posts[0]
 	jsonValue, _ = json.Marshal(post)
-	reqString := "/api/v1/posts/"
-	req, _ = http.NewRequest("GET", reqString+strconv.Itoa(post.CreatedAt.Year())+"/"+strconv.Itoa(int(post.CreatedAt.Month()))+"/"+strconv.Itoa(post.CreatedAt.Day())+"/"+post.Slug, bytes.NewBuffer(jsonValue))
+	req, _ = http.NewRequest("GET", "/api/v1/posts/"+strconv.Itoa(post.CreatedAt.Year())+"/"+strconv.Itoa(int(post.CreatedAt.Month()))+"/"+strconv.Itoa(post.CreatedAt.Day())+"/"+post.Slug, bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	if !strings.Contains(w.Body.String(), testPost.Title) {
 		t.Errorf("Expected to see a post with title: " + testPost.Title + " but didn't")
+	}
+
+	//bad year
+	jsonValue, _ = json.Marshal("")
+	req, _ = http.NewRequest("GET", "/api/v1/posts/zfaq/12/12", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusNotFound, w.Code)
+	}
+
+	//bad Month
+	jsonValue, _ = json.Marshal("")
+	req, _ = http.NewRequest("GET", "/api/v1/posts/2020/zq/12", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusNotFound, w.Code)
+	}
+
+	//bad day
+	jsonValue, _ = json.Marshal("")
+	req, _ = http.NewRequest("GET", "/api/v1/posts/2020/12/qf", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusNotFound, w.Code)
 	}
 
 }
