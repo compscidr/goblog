@@ -8,6 +8,7 @@ import (
 	"goblog/blog"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -38,6 +39,7 @@ func TestBlogWorkflow(t *testing.T) {
 	db, _ := gorm.Open("sqlite3", ":memory:")
 	db.AutoMigrate(&auth.BlogUser{})
 	db.AutoMigrate(&blog.Post{})
+	db.AutoMigrate(&blog.Tag{})
 	a := &Auth{}
 	admin := admin.New(db, a, "test")
 	b := blog.New(db, a, "test")
@@ -47,6 +49,7 @@ func TestBlogWorkflow(t *testing.T) {
 	router.Use(sessions.Sessions("www.jasonernst.com", store))
 	router.POST("/api/v1/posts", admin.CreatePost)
 	router.GET("/api/v1/posts", b.ListPosts)
+	router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", b.GetPost)
 
 	//list all posts, should be empty
 	jsonValue, _ := json.Marshal("")
@@ -79,6 +82,22 @@ func TestBlogWorkflow(t *testing.T) {
 	//list all posts, should not be empty
 	jsonValue, _ = json.Marshal("")
 	req, _ = http.NewRequest("GET", "/api/v1/posts", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if !strings.Contains(w.Body.String(), testPost.Title) {
+		t.Errorf("Expected to see a post with title: " + testPost.Title + " but didn't")
+	}
+
+	//get specific post
+	var posts []blog.Post
+	err := json.Unmarshal(w.Body.Bytes(), &posts)
+	if err != nil {
+		t.Errorf("Couldn't parse the posts")
+	}
+	post := posts[0]
+	jsonValue, _ = json.Marshal(post)
+	reqString := "/api/v1/posts/"
+	req, _ = http.NewRequest("GET", reqString+strconv.Itoa(post.CreatedAt.Year())+"/"+strconv.Itoa(int(post.CreatedAt.Month()))+"/"+strconv.Itoa(post.CreatedAt.Day())+"/"+post.Slug, bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	if !strings.Contains(w.Body.String(), testPost.Title) {
