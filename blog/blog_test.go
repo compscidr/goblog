@@ -54,9 +54,12 @@ func TestBlogWorkflow(t *testing.T) {
 	router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", b.GetPost)
 
 	//html requests
+	router.GET("/posts/:yyyy/:mm/:dd/:slug", b.Post)
 	router.GET("/tag/:name", b.Tag)
 	router.GET("/posts", b.Posts)
 	router.GET("/tags", b.Tags)
+	router.GET("/", b.Home)
+	router.NoRoute(b.NoRoute)
 
 	//list all posts, should be empty
 	jsonValue, _ := json.Marshal("")
@@ -186,5 +189,37 @@ func TestBlogWorkflow(t *testing.T) {
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+	}
+
+	//get home
+	req, _ = http.NewRequest("GET", "/", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+	}
+
+	//no route
+	req, _ = http.NewRequest("GET", "/dfadfasdf", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusNotFound, w.Code)
+	}
+
+	//html post
+	req, _ = http.NewRequest("GET", "/posts/"+strconv.Itoa(post.CreatedAt.Year())+"/"+strconv.Itoa(int(post.CreatedAt.Month()))+"/"+strconv.Itoa(post.CreatedAt.Day())+"/"+post.Slug, bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if !strings.Contains(w.Body.String(), testPost.Title) {
+		t.Errorf("Expected to see a post with title: " + testPost.Title + " but didn't")
+	}
+
+	//html post not found
+	req, _ = http.NewRequest("GET", "/posts/2020/12/12/slug", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusNotFound, w.Code)
 	}
 }
