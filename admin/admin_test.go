@@ -8,6 +8,8 @@ import (
 	"goblog/blog"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/gin-contrib/sessions"
@@ -38,11 +40,14 @@ func TestCreatePost(t *testing.T) {
 	db.AutoMigrate(&blog.Post{})
 	a := &Auth{}
 	admin := admin.New(db, a, "test")
+	b := blog.New(db, a, "test")
 
 	router := gin.Default()
 	store := cookie.NewStore([]byte("changelater"))
 	router.Use(sessions.Sessions("www.jasonernst.com", store))
 	router.POST("/api/v1/posts", admin.CreatePost)
+	router.GET("/api/v1/posts", b.ListPosts)
+	router.PATCH("/api/v1/posts", admin.UpdatePost)
 
 	//improper content-type
 	testPost := blog.Post{
@@ -87,4 +92,45 @@ func TestCreatePost(t *testing.T) {
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusBadRequest, w.Code)
 	}
+
+	//list all posts, should not be empty
+	jsonValue, _ = json.Marshal("")
+	req, _ = http.NewRequest("GET", "/api/v1/posts", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if !strings.Contains(w.Body.String(), testPost.Title) {
+		t.Errorf("Expected to see a post with title: " + testPost.Title + " but didn't")
+	}
+
+	//get specific post
+	var posts []blog.Post
+	err := json.Unmarshal(w.Body.Bytes(), &posts)
+	if err != nil {
+		t.Errorf("Couldn't parse the posts")
+	}
+	post := posts[0]
+	jsonValue, _ = json.Marshal(post)
+	req, _ = http.NewRequest("GET", "/api/v1/posts/"+strconv.Itoa(post.CreatedAt.Year())+"/"+strconv.Itoa(int(post.CreatedAt.Month()))+"/"+strconv.Itoa(post.CreatedAt.Day())+"/"+post.Slug, bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if !strings.Contains(w.Body.String(), testPost.Title) {
+		t.Errorf("Expected to see a post with title: " + testPost.Title + " but didn't")
+	}
+
+	//update post
+	testPost = blog.Post{
+		Title:   "Test title updated",
+		Content: "This is some test content updated",
+	}
+	testPost.ID = post.ID
+	jsonValue, _ = json.Marshal(testPost)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("PATCH", "/api/v1/posts", bytes.NewBuffer(jsonValue))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusAccepted {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusAccepted, w.Code)
+	}
+
 }
