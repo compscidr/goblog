@@ -50,6 +50,7 @@ func TestBlogWorkflow(t *testing.T) {
 	router.POST("/api/v1/posts", admin.CreatePost)
 	router.GET("/api/v1/posts", b.ListPosts)
 	router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", b.GetPost)
+	router.GET("/tag/:name", b.Tag)
 
 	//list all posts, should be empty
 	jsonValue, _ := json.Marshal("")
@@ -65,9 +66,13 @@ func TestBlogWorkflow(t *testing.T) {
 	}
 
 	//create valid post
+	testTag := blog.Tag{
+		Name: "test",
+	}
 	testPost := blog.Post{
 		Title:   "Test title",
 		Content: "This is some test content",
+		Tags:    []blog.Tag{testTag},
 	}
 	jsonValue, _ = json.Marshal(testPost)
 	req, _ = http.NewRequest("POST", "/api/v1/posts", bytes.NewBuffer(jsonValue))
@@ -130,4 +135,24 @@ func TestBlogWorkflow(t *testing.T) {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusBadRequest, w.Code)
 	}
 
+	//everything good but non-existant
+	jsonValue, _ = json.Marshal("")
+	req, _ = http.NewRequest("GET", "/api/v1/posts/2020/12/12/slug", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusBadRequest, w.Code)
+	}
+
+	//get tag
+	router.LoadHTMLGlob("../templates/*")
+	a.On("IsAdmin", mock.Anything).Return(false)
+	a.On("IsLoggedIn", mock.Anything).Return(false)
+	jsonValue, _ = json.Marshal("")
+	req, _ = http.NewRequest("GET", "/tag/test", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+	}
 }
