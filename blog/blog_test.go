@@ -47,10 +47,16 @@ func TestBlogWorkflow(t *testing.T) {
 	router := gin.Default()
 	store := cookie.NewStore([]byte("changelater"))
 	router.Use(sessions.Sessions("www.jasonernst.com", store))
+
+	//json requests
 	router.POST("/api/v1/posts", admin.CreatePost)
 	router.GET("/api/v1/posts", b.ListPosts)
 	router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", b.GetPost)
+
+	//html requests
 	router.GET("/tag/:name", b.Tag)
+	router.GET("/posts", b.Posts)
+	router.GET("/tags", b.Tags)
 
 	//list all posts, should be empty
 	jsonValue, _ := json.Marshal("")
@@ -144,12 +150,38 @@ func TestBlogWorkflow(t *testing.T) {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusBadRequest, w.Code)
 	}
 
+	//html tests
+
 	//get tag
 	router.LoadHTMLGlob("../templates/*")
 	a.On("IsAdmin", mock.Anything).Return(false)
 	a.On("IsLoggedIn", mock.Anything).Return(false)
 	jsonValue, _ = json.Marshal("")
 	req, _ = http.NewRequest("GET", "/tag/test", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+	}
+
+	//get not found tag
+	req, _ = http.NewRequest("GET", "/tag/blah", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusNotFound, w.Code)
+	}
+
+	//get all tags
+	req, _ = http.NewRequest("GET", "/tags", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+	}
+
+	//get all posts
+	req, _ = http.NewRequest("GET", "/posts", bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
