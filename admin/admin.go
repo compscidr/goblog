@@ -14,6 +14,10 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+//UploadsFolder configures where the file uploads should be stored. This is
+//mostly used for testing
+var UploadsFolder = "uploads/"
+
 // Admin handles admin requests
 type Admin struct {
 	db      *gorm.DB
@@ -83,7 +87,7 @@ func (a Admin) UploadFile(c *gin.Context) {
 		return
 	}
 
-	filename := "uploads/" + filepath.Base(file.Filename)
+	filename := UploadsFolder + filepath.Base(file.Filename)
 	if err := c.SaveUploadedFile(file, filename); err != nil {
 		c.JSON(http.StatusBadRequest, fmt.Sprintf("upload file err: %s", err.Error()))
 		return
@@ -138,6 +142,7 @@ func (a Admin) UpdatePost(c *gin.Context) {
 	c.JSON(http.StatusAccepted, existingPost)
 }
 
+//DeletePost deletes a post from the database
 func (a Admin) DeletePost(c *gin.Context) {
 	contentType := c.Request.Header.Get("content-type")
 	if contentType != "application/json" {

@@ -6,8 +6,13 @@ import (
 	"goblog/admin"
 	"goblog/auth"
 	"goblog/blog"
+	"io"
+	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -39,16 +44,17 @@ func TestCreatePost(t *testing.T) {
 	db.AutoMigrate(&auth.BlogUser{})
 	db.AutoMigrate(&blog.Post{})
 	a := &Auth{}
-	admin := admin.New(db, a, "test")
+	ad := admin.New(db, a, "test")
 	b := blog.New(db, a, "test")
 
 	router := gin.Default()
 	store := cookie.NewStore([]byte("changelater"))
 	router.Use(sessions.Sessions("www.jasonernst.com", store))
-	router.POST("/api/v1/posts", admin.CreatePost)
+	router.POST("/api/v1/posts", ad.CreatePost)
 	router.GET("/api/v1/posts", b.ListPosts)
-	router.PATCH("/api/v1/posts", admin.UpdatePost)
-	router.DELETE("/api/v1/posts", admin.DeletePost)
+	router.PATCH("/api/v1/posts", ad.UpdatePost)
+	router.DELETE("/api/v1/posts", ad.DeletePost)
+	router.POST("/api/v1/upload", ad.UploadFile)
 
 	//improper content-type
 	testPost := blog.Post{
@@ -217,4 +223,34 @@ func TestCreatePost(t *testing.T) {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
 	}
 
+	//upload file test
+	//https://www.programmersought.com/article/6833575288/
+	path := "../README.md"
+	file, err := os.Open(path)
+	if err != nil {
+		t.Error(err)
+	}
+
+	defer file.Close()
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("file", filepath.Base(path))
+	if err != nil {
+		writer.Close()
+		t.Error(err)
+	}
+	io.Copy(part, file)
+	writer.Close()
+
+	req = httptest.NewRequest("POST", "/api/v1/upload", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w = httptest.NewRecorder()
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	admin.UploadsFolder = "../uploads/"
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		body, _ := ioutil.ReadAll(w.Body)
+		t.Fatalf("Expected to get status %d but instead got %d\n%s", http.StatusOK, w.Code, body)
+	}
+	err = os.Remove("../uploads/README.md")
 }
