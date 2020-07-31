@@ -48,6 +48,7 @@ func TestCreatePost(t *testing.T) {
 	router.POST("/api/v1/posts", admin.CreatePost)
 	router.GET("/api/v1/posts", b.ListPosts)
 	router.PATCH("/api/v1/posts", admin.UpdatePost)
+	router.DELETE("/api/v1/posts", admin.DeletePost)
 
 	//improper content-type
 	testPost := blog.Post{
@@ -183,6 +184,37 @@ func TestCreatePost(t *testing.T) {
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusBadRequest, w.Code)
+	}
+
+	//delete post: incorrect content type
+	jsonValue, _ = json.Marshal(testPost)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/api/v1/posts", bytes.NewBuffer(jsonValue))
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusUnsupportedMediaType {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusUnsupportedMediaType, w.Code)
+	}
+
+	//delete post: not admin
+	jsonValue, _ = json.Marshal(testPost)
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/api/v1/posts", bytes.NewBuffer(jsonValue))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusUnauthorized, w.Code)
+	}
+
+	//good Delete
+	jsonValue, _ = json.Marshal(testPost)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/api/v1/posts", bytes.NewBuffer(jsonValue))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
 	}
 
 }

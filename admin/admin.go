@@ -189,11 +189,6 @@ func (a Admin) DeletePost(c *gin.Context) {
 	var requestPost blog.Post
 	c.BindJSON(&requestPost)
 
-	if requestPost.ID < 0 {
-		c.JSON(http.StatusBadRequest, "Missing ID, Title or Content")
-		return
-	}
-
 	a.db.Where("id = ?", requestPost.ID).Delete(&blog.Post{})
 
 	c.JSON(http.StatusOK, "")
