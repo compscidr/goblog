@@ -53,9 +53,6 @@ func main() {
 		Debug: true,
 	}))
 
-	//just for testing, remove soon
-	router.GET("/api/v1/admin", admin.AdminHandler)
-
 	//all of this is the json api
 	router.POST("/api/login", auth.LoginPostHandler)
 	router.POST("/api/v1/posts", admin.CreatePost)
@@ -83,7 +80,7 @@ func main() {
 	router.GET("/login", blog.Login)
 	router.GET("/logout", blog.Logout)
 
-	//todo all people to register a template mapping to a "page type"
+	//todo: register a template mapping to a "page type"
 	router.GET("/posts", blog.Posts)
 	router.GET("/tags", blog.Tags)
 	router.GET("/presentations", blog.Speaking)
