@@ -1,0 +1,2 @@
+ignore:
+  - "goblog.go"   # ignore the main for coverage
