@@ -133,4 +133,40 @@ func TestCreatePost(t *testing.T) {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusAccepted, w.Code)
 	}
 
+	//update post, bad type
+	jsonValue, _ = json.Marshal(testPost)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("PATCH", "/api/v1/posts", bytes.NewBuffer(jsonValue))
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusUnsupportedMediaType {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusUnsupportedMediaType, w.Code)
+	}
+
+	//update post, not admin
+	jsonValue, _ = json.Marshal(testPost)
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("PATCH", "/api/v1/posts", bytes.NewBuffer(jsonValue))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusUnauthorized, w.Code)
+	}
+
+	//missing Title
+	testPost = blog.Post{
+		Title:   "",
+		Content: "This is some test content updated",
+	}
+	testPost.ID = post.ID
+	jsonValue, _ = json.Marshal(testPost)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("PATCH", "/api/v1/posts", bytes.NewBuffer(jsonValue))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusBadRequest, w.Code)
+	}
+
 }
