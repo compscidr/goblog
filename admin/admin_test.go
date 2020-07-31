@@ -55,6 +55,7 @@ func TestCreatePost(t *testing.T) {
 	router.PATCH("/api/v1/posts", ad.UpdatePost)
 	router.DELETE("/api/v1/posts", ad.DeletePost)
 	router.POST("/api/v1/upload", ad.UploadFile)
+	router.GET("/admin", ad.Admin)
 
 	//improper content-type
 	testPost := blog.Post{
@@ -281,5 +282,16 @@ func TestCreatePost(t *testing.T) {
 	if w.Code != http.StatusBadRequest {
 		body, _ := ioutil.ReadAll(w.Body)
 		t.Fatalf("Expected to get status %d but instead got %d\n%s", http.StatusBadRequest, w.Code, body)
+	}
+
+	//get admin
+	router.LoadHTMLGlob("../templates/*")
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	a.On("IsLoggedIn", mock.Anything).Return(true).Once()
+	req, _ = http.NewRequest("GET", "/admin", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
 	}
 }
