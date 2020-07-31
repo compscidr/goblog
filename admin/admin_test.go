@@ -169,4 +169,20 @@ func TestCreatePost(t *testing.T) {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusBadRequest, w.Code)
 	}
 
+	//missing id
+	testPost = blog.Post{
+		Title:   "Test",
+		Content: "This is some test content updated",
+	}
+	testPost.ID = 99999
+	jsonValue, _ = json.Marshal(testPost)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("PATCH", "/api/v1/posts", bytes.NewBuffer(jsonValue))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusBadRequest, w.Code)
+	}
+
 }
