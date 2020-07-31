@@ -164,24 +164,6 @@ func (a Admin) DeletePost(c *gin.Context) {
 	c.JSON(http.StatusOK, "")
 }
 
-// AdminHandler handles admin requests
-//func (a Admin) AdminHandler(w http.ResponseWriter, r *http.Request) {
-func (a Admin) AdminHandler(c *gin.Context) {
-	token := c.Request.Header.Get("Authorization")
-
-	//check to see if user is logged in (todo add expiry)
-	//can't do this until we publish a version with the auth module in it
-	var existingUser auth.BlogUser
-	err := a.db.Where("access_token = ?", token).First(&existingUser).Error
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, "Not Authorized: "+token)
-		return
-	}
-
-	log.Println("AUTHORZIED: ", token)
-	c.JSON(http.StatusOK, token)
-}
-
 //////HTML API///////
 
 //Admin is the admin dashboard of the website
