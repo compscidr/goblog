@@ -60,6 +60,12 @@ func TestBlogWorkflow(t *testing.T) {
 	router.GET("/tags", b.Tags)
 	router.GET("/", b.Home)
 	router.NoRoute(b.NoRoute)
+	router.GET("/presentations", b.Speaking)
+	router.GET("/projects", b.Projects)
+	router.GET("/about", b.About)
+
+	router.GET("/login", b.Login)
+	router.GET("/logout", b.Logout)
 
 	//list all posts, should be empty
 	jsonValue, _ := json.Marshal("")
@@ -157,7 +163,7 @@ func TestBlogWorkflow(t *testing.T) {
 
 	//get tag
 	router.LoadHTMLGlob("../templates/*")
-	a.On("IsAdmin", mock.Anything).Return(false)
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
 	a.On("IsLoggedIn", mock.Anything).Return(false)
 	jsonValue, _ = json.Marshal("")
 	req, _ = http.NewRequest("GET", "/tag/test", bytes.NewBuffer(jsonValue))
@@ -168,6 +174,7 @@ func TestBlogWorkflow(t *testing.T) {
 	}
 
 	//get not found tag
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
 	req, _ = http.NewRequest("GET", "/tag/blah", bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -176,6 +183,7 @@ func TestBlogWorkflow(t *testing.T) {
 	}
 
 	//get all tags
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
 	req, _ = http.NewRequest("GET", "/tags", bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -184,6 +192,7 @@ func TestBlogWorkflow(t *testing.T) {
 	}
 
 	//get all posts
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
 	req, _ = http.NewRequest("GET", "/posts", bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -192,6 +201,7 @@ func TestBlogWorkflow(t *testing.T) {
 	}
 
 	//get home
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
 	req, _ = http.NewRequest("GET", "/", bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -200,6 +210,7 @@ func TestBlogWorkflow(t *testing.T) {
 	}
 
 	//no route
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
 	req, _ = http.NewRequest("GET", "/dfadfasdf", bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -207,7 +218,17 @@ func TestBlogWorkflow(t *testing.T) {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusNotFound, w.Code)
 	}
 
-	//html post
+	//html post as normal user
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	req, _ = http.NewRequest("GET", "/posts/"+strconv.Itoa(post.CreatedAt.Year())+"/"+strconv.Itoa(int(post.CreatedAt.Month()))+"/"+strconv.Itoa(post.CreatedAt.Day())+"/"+post.Slug, bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if !strings.Contains(w.Body.String(), testPost.Title) {
+		t.Errorf("Expected to see a post with title: " + testPost.Title + " but didn't")
+	}
+
+	//html post as admin
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
 	req, _ = http.NewRequest("GET", "/posts/"+strconv.Itoa(post.CreatedAt.Year())+"/"+strconv.Itoa(int(post.CreatedAt.Month()))+"/"+strconv.Itoa(post.CreatedAt.Day())+"/"+post.Slug, bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -216,10 +237,57 @@ func TestBlogWorkflow(t *testing.T) {
 	}
 
 	//html post not found
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
 	req, _ = http.NewRequest("GET", "/posts/2020/12/12/slug", bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusNotFound, w.Code)
+	}
+
+	//get projects
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	req, _ = http.NewRequest("GET", "/projects", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+	}
+
+	//get presentations
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	req, _ = http.NewRequest("GET", "/presentations", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+	}
+
+	//get about
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	req, _ = http.NewRequest("GET", "/about", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+	}
+
+	//logout
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	req, _ = http.NewRequest("GET", "/logout", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusTemporaryRedirect {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusTemporaryRedirect, w.Code)
+	}
+
+	//login (note: doesn't test actual login, just showing the login form)
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	req, _ = http.NewRequest("GET", "/login", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
 	}
 }
