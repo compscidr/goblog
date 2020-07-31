@@ -8,6 +8,7 @@ import (
 	"goblog/blog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -223,15 +224,21 @@ func TestBlogWorkflow(t *testing.T) {
 	req, _ = http.NewRequest("GET", "/posts/"+strconv.Itoa(post.CreatedAt.Year())+"/"+strconv.Itoa(int(post.CreatedAt.Month()))+"/"+strconv.Itoa(post.CreatedAt.Day())+"/"+post.Slug, bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+	}
 	if !strings.Contains(w.Body.String(), testPost.Title) {
 		t.Errorf("Expected to see a post with title: " + testPost.Title + " but didn't")
 	}
 
-	//html post as admin
+	//html post as admin - TODO: fix this test, it doesn't seem to recognize the IsAdmin true mock
 	a.On("IsAdmin", mock.Anything).Return(true).Once()
 	req, _ = http.NewRequest("GET", "/posts/"+strconv.Itoa(post.CreatedAt.Year())+"/"+strconv.Itoa(int(post.CreatedAt.Month()))+"/"+strconv.Itoa(post.CreatedAt.Day())+"/"+post.Slug, bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+	}
 	if !strings.Contains(w.Body.String(), testPost.Title) {
 		t.Errorf("Expected to see a post with title: " + testPost.Title + " but didn't")
 	}
@@ -290,4 +297,15 @@ func TestBlogWorkflow(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
 	}
+
+	//login without the .env file
+	os.Rename("local.env", "local.env.old")
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	req, _ = http.NewRequest("GET", "/login", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusInternalServerError, w.Code)
+	}
+	os.Rename("local.env.old", "local.env")
 }
