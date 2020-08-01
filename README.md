@@ -39,16 +39,16 @@ What works:
 - file uploads (images, pdfs, etc)
 - github action which builds and deploys a tagged dockerhub release when a versioned release is cut
 - version string in template header from `git describe`
+- meta, title, etc which changes with posts for SEO
+- increase test coverage (and coverage reporting on the readme would be nice)
 
 Todo:
 - draft posts
 - update styling so links are more visible
 - post date editing so old posts can be imported
 - medium import tool
-- meta, title, etc which changes with posts for SEO
 - default hero images or something so posts don't look so bare
 - cron job to backup posts
-- increase test coverage (and coverage reporting on the readme would be nice)
 - user comments
 - install onboarding
 - mysql, postgres, other dbs
