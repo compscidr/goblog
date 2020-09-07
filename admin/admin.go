@@ -32,6 +32,11 @@ func New(db *gorm.DB, auth auth.IAuth, version string) Admin {
 }
 
 //////JSON API///////
+func safeSlug(slug string) string {
+	slug = strings.ReplaceAll(slug, " ", "-")
+	slug = strings.ReplaceAll(slug, "/", "")
+	return url.QueryEscape(slug)
+}
 
 //CreatePost adds a post if the user has permission
 func (a Admin) CreatePost(c *gin.Context) {
@@ -60,7 +65,7 @@ func (a Admin) CreatePost(c *gin.Context) {
 	}
 
 	//todo: make tags work - need to get the relations working
-	requestPost.Slug = url.QueryEscape(strings.Replace(requestPost.Title, " ", "-", -1))
+	requestPost.Slug = safeSlug(requestPost.Title)
 	log.Print("CREATING POST: ", requestPost)
 	a.db.Create(&requestPost)
 
@@ -119,7 +124,7 @@ func (a Admin) UpdatePost(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "Missing ID, Title or Content")
 		return
 	}
-	requestPost.Slug = url.QueryEscape(strings.Replace(requestPost.Title, " ", "-", -1))
+	requestPost.Slug = safeSlug(requestPost.Title)
 
 	var existingPost blog.Post
 	err := a.db.Where("id = ?", requestPost.ID).First(&existingPost).Error

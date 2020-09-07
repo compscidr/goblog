@@ -94,6 +94,12 @@ func getTagName(id int, db * sql.DB) *Term {
 	return nil
 }
 
+func safeSlug(slug string) string {
+	slug = strings.ReplaceAll(slug, " ", "-")
+	slug = strings.ReplaceAll(slug, "/", "")
+	return url.QueryEscape(slug)
+}
+
 func main() {
 	sdb, serr := gorm.Open("sqlite3", "test.db")
 	if serr != nil {
@@ -126,7 +132,7 @@ func main() {
 		}
 
 		var newPost blog.Post
-		newPost.Slug = url.QueryEscape(post.Slug)
+		newPost.Slug = safeSlug(post.Slug)
 		newPost.CreatedAt = post.Date
 		newPost.UpdatedAt = post.Modified
 		newPost.Title = post.Title
