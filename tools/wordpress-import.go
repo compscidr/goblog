@@ -8,6 +8,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/sqlite" // this is the db driver
 	"goblog/auth"
 	"goblog/blog"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -125,7 +126,7 @@ func main() {
 		}
 
 		var newPost blog.Post
-		newPost.Slug = post.Slug
+		newPost.Slug = url.QueryEscape(post.Slug)
 		newPost.CreatedAt = post.Date
 		newPost.UpdatedAt = post.Modified
 		newPost.Title = post.Title
