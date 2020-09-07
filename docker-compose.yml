@@ -41,6 +41,7 @@ services:
       - "7000"
     volumes:
       - ../:/var/www/html/
+      - ${PWD}/test.db:/go/src/github.com/compscidr/goblog/test.db
     
 networks:
   frontend:
