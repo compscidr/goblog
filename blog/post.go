@@ -2,13 +2,15 @@ package blog
 
 import (
 	"bytes"
-
-	"github.com/jinzhu/gorm"
+	"time"
 )
 
 // Post defines blog posts
 type Post struct {
-	gorm.Model
+	ID 		uint   `gorm:"primary_key"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time
+	DeletedAt *time.Time `sql:"index"`
 	Title   string `json:"title"`
 	Slug    string `json:"slug"`
 	Content string `sql:"type:text;" json:"content"`

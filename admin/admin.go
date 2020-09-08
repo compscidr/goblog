@@ -55,6 +55,7 @@ func (a Admin) CreatePost(c *gin.Context) {
 	var requestPost blog.Post
 	err := c.BindJSON(&requestPost)
 	if err != nil {
+		log.Println("MALFORMED REQ: " + err.Error())
 		c.JSON(http.StatusBadRequest, "Malformed request")
 		return
 	}
@@ -117,7 +118,12 @@ func (a Admin) UpdatePost(c *gin.Context) {
 	}
 
 	var requestPost blog.Post
-	c.BindJSON(&requestPost)
+	e := c.BindJSON(&requestPost)
+	if e != nil {
+		log.Println("MALFORMED REQUEST: " + e.Error())
+		c.JSON(http.StatusBadRequest, "Malformed request, missing some information")
+		return
+	}
 	log.Println("REQUEST POST: ", requestPost)
 
 	if requestPost.Title == "" || requestPost.Content == "" || requestPost.ID < 0 {
@@ -141,6 +147,7 @@ func (a Admin) UpdatePost(c *gin.Context) {
 	existingPost.Content = requestPost.Content
 	existingPost.Slug = requestPost.Slug
 	existingPost.Tags = requestPost.Tags
+	existingPost.CreatedAt = requestPost.CreatedAt
 	a.db.Model(&existingPost).Where("id = ?", requestPost.ID).Updates(&existingPost)
 
 	log.Println("POST UPDATED: ", existingPost)
@@ -162,7 +169,10 @@ func (a Admin) DeletePost(c *gin.Context) {
 	}
 
 	var requestPost blog.Post
-	c.BindJSON(&requestPost)
+	if c.BindJSON(&requestPost) != nil {
+		c.JSON(http.StatusBadRequest, "Malformed request, missing some information")
+		return
+	}
 
 	a.db.Where("id = ?", requestPost.ID).Delete(&blog.Post{})
 
