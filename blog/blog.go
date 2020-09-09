@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/sessions"
@@ -41,15 +42,15 @@ func (b Blog) getPost(c *gin.Context) (*Post, error) {
 	var post Post
 	year, err := strconv.Atoi(c.Param("yyyy"))
 	if err != nil {
-		return nil, errors.New("Year must be an integer")
+		return nil, errors.New("year must be an integer")
 	}
 	month, err := strconv.Atoi(c.Param("mm"))
 	if err != nil {
-		return nil, errors.New("Month must be an integer")
+		return nil, errors.New("month must be an integer")
 	}
 	day, err := strconv.Atoi(c.Param("dd"))
 	if err != nil {
-		return nil, errors.New("Day must be an integer")
+		return nil, errors.New("day must be an integer")
 	}
 	slug := c.Param("slug")
 	slug = url.QueryEscape(slug)
@@ -61,6 +62,18 @@ func (b Blog) getPost(c *gin.Context) (*Post, error) {
 	}
 
 	//b.db.Model(&post).Related(&post.Tags, "Tags")
+	log.Println("Found: ", post.Title, " TAGS: ", post.Tags)
+	return &post, nil
+}
+
+func (b Blog) getPostByParams(year int, month int, day int, slug string) (*Post, error) {
+	log.Println("trying: " + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/" + strconv.Itoa(day) + "/" + slug)
+	var post Post
+	slug = url.QueryEscape(slug)
+	if err := b.db.Preload("Tags").Where("created_at > ? AND slug = ?", time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).First(&post).Error; err != nil {
+		log.Println("NOT FOUND")
+		return nil, errors.New("No post at " + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/" + strconv.Itoa(day) + "/" + slug)
+	}
 	log.Println("Found: ", post.Title, " TAGS: ", post.Tags)
 	return &post, nil
 }
@@ -89,6 +102,7 @@ func (b Blog) ListPosts(c *gin.Context) {
 func (b Blog) GetPost(c *gin.Context) {
 	post, err := b.getPost(c)
 	if err != nil {
+		log.Println("Bad request in GetPost: " + err.Error())
 		c.JSON(http.StatusBadRequest, err)
 	}
 	if post == nil {
@@ -101,6 +115,39 @@ func (b Blog) GetPost(c *gin.Context) {
 
 //NoRoute returns a custom 404 page
 func (b Blog) NoRoute(c *gin.Context) {
+
+	tokens := strings.Split(c.Request.URL.String(), "/")
+	// for some reason, first token is empty
+	if len(tokens) >= 5 {
+		year, _ := strconv.Atoi(tokens[1])
+		month, _ := strconv.Atoi(tokens[2])
+		day, _ := strconv.Atoi(tokens[3])
+		post, err := b.getPostByParams(year, month, day, tokens[4])
+		if err == nil && post != nil {
+			if b.auth.IsAdmin(c) {
+				c.HTML(http.StatusOK, "post-admin.html", gin.H{
+					"logged_in": b.auth.IsLoggedIn(c),
+					"is_admin":  b.auth.IsAdmin(c),
+					"post":      post,
+					"version":   b.version,
+				})
+			} else {
+				c.HTML(http.StatusOK, "post.html", gin.H{
+					"logged_in": b.auth.IsLoggedIn(c),
+					"is_admin":  b.auth.IsAdmin(c),
+					"post":      post,
+					"version":   b.version,
+				})
+			}
+			return
+		}
+	} else {
+		log.Println("TOKEN LEN: " + strconv.Itoa(len(tokens)))
+		for _, s := range tokens {
+			log.Println(s)
+		}
+	}
+
 	c.HTML(http.StatusNotFound, "error.html", gin.H{
 		"error":       "404: Page Not Found",
 		"description": "The page at '" + c.Request.URL.String() + "' was not found",
