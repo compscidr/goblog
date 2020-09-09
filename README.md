@@ -41,12 +41,13 @@ What works:
 - version string in template header from `git describe`
 - meta, title, etc which changes with posts for SEO
 - increase test coverage (and coverage reporting on the readme would be nice)
+- post date editing so old posts can be imported
+- medium import tool (kind of manually)
 
 Todo:
+- keywords related to tags, more specifc seo to posts
 - draft posts
 - update styling so links are more visible
-- post date editing so old posts can be imported
-- medium import tool
 - default hero images or something so posts don't look so bare
 - cron job to backup posts
 - user comments
