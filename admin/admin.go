@@ -35,6 +35,7 @@ func New(db *gorm.DB, auth auth.IAuth, version string) Admin {
 func safeSlug(slug string) string {
 	slug = strings.ReplaceAll(slug, " ", "-")
 	slug = strings.ReplaceAll(slug, "/", "")
+	slug = strings.ReplaceAll(slug, ".", "-")
 	return url.QueryEscape(slug)
 }
 
