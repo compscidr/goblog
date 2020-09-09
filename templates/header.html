@@ -2,22 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="description" content="Jason Ernst's blog, code, projects and publications">
-  <meta name="keywords" content="Jason Ernst, software engineer, computer science {{range .post.Tags}} {{.Name}},{{end}}">
+  <meta name="keywords" content="Jason Ernst, software engineer, computer science, {{range .post.Tags}} {{.Name}},{{end}} post">
   <meta name="author" content="Jason Ernst">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   {{ if .post }}
+  <meta name="description" content="{{ .post.PreviewContent 155 }}">
+  <meta name="robots" content="index, follow" />
   <title>Jason Ernst: {{ .post.Title }}</title>
   {{ else }}
+  <meta name="description" content="Jason Ernst's blog, code, projects and publications">
   <title>Jason Ernst: {{ .title }}</title>
   {{ end }}
-
   <!-- favicon generated with https://favicon.io/favicon-generator/ -->
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="manifest" href="/site.webmanifest">
-
   <!-- imports for code highlighting, datetime picker, editor, etc  -->
   <!-- todo: can probably optimize this by only loading certain things on certain pages -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
@@ -34,11 +34,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.2.0/styles/default.min.css" integrity="sha512-kZqGbhf9JTB4bVJ0G8HCkqmaPcRgo88F0dneK30yku5Y/dep7CZfCnNml2Je/sY4lBoqoksXz4PtVXS4GHSUzQ==" crossorigin="anonymous" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/simplemde/1.11.2/simplemde.min.css" integrity="sha512-lB03MbtC3LxImQ+BKnZIyvVHTQ8SSmQ15AhVh5U/+CCp4wKtZMvgLGXbZIjIBBbnKsmk3/6n2vcF8a9CtVVSfA==" crossorigin="anonymous" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tachyons/4.11.1/tachyons.min.css" integrity="sha512-d0v474klOFSF7qD9WDvyRxAvXaWSxCHDZdnBSZQjo8BpVr6vpjwAgqetpqkKP38DzlOzdVPaLVnzzW1Ba8wB9w==" crossorigin="anonymous" />
-
   <script src="/js/inline-attachment.js"></script>
   <script src="/js/codemirror-4.inline-attachment.js"></script>
   <link rel="stylesheet" href="/css/goblog.css"/>
-
   <!-- Global site tag (gtag.js) - Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-3483823-2"></script>
   <script>

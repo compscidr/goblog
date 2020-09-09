@@ -25,4 +25,11 @@
     var html = converter.makeHtml(md);
     $("#html").html(html)
   </script>
+  <noscript>
+    <div class="container">
+      <p style="text-align: left;">
+        {{ .post.Content }}
+      </p>
+    </div>
+  </noscript>
 {{ template "footer.html" .}}
