@@ -86,7 +86,7 @@ func (b Blog) getPostsByTag(c *gin.Context) ([]Post, error) {
 		return nil, errors.New("No tag named " + name)
 	}
 
-	b.db.Model(&tag).Related(&posts, "Posts")
+	b.db.Model(&tag).Order("created_at desc").Related(&posts, "Posts")
 	log.Print("POSTS: ", posts)
 	return posts, nil
 }
