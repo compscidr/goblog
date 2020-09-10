@@ -7,6 +7,7 @@
 html { height: 100%; }
 body { font-family: 'Source Code Pro', monospace; height: 100%; }
 .menu a, .footer a { color: rgba(0,0,0,.70); }
+.footer a:hover { color: #007bff; }
 .logo { background: #777; color: #EEE; font-size: 28px; padding: 10px 15px 10px 15px; float:left; }
 .logo:hover { background: #333; color: #EEE; text-decoration: none; }
 .cover { padding-top: 35%; }
