@@ -15,6 +15,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/joho/godotenv"
+
+	"github.com/ikeikeikeike/go-sitemap-generator/stm"
 )
 
 // Blog API handles non-admin functions of the blog like listing posts, tags
@@ -34,8 +36,14 @@ func New(db *gorm.DB, auth auth.IAuth, version string) Blog {
 //Generic Functions (not JSON or HTML)
 func (b Blog) getPosts() []Post {
 	var posts []Post
-	b.db.Order("created_at desc").Find(&posts)
+	b.db.Preload("Tags").Order("created_at desc").Find(&posts)
 	return posts
+}
+
+func (b Blog) getTags() []Tag {
+	var tags []Tag
+	b.db.Preload("Posts").Order("name asc").Find(&tags)
+	return tags
 }
 
 func (b Blog) getPost(c *gin.Context) (*Post, error) {
@@ -235,6 +243,7 @@ func (b Blog) Tags(c *gin.Context) {
 	c.HTML(http.StatusOK, "tags.html", gin.H{
 		"version": b.version,
 		"title":   "Tags",
+		"tags": b.getTags(),
 	})
 }
 
@@ -266,6 +275,28 @@ func (b Blog) About(c *gin.Context) {
 		"version":   b.version,
 		"title":     "About Jason",
 	})
+}
+
+func (b Blog) Sitemap(c *gin.Context) {
+	sm := stm.NewSitemap(1)
+	sm.SetDefaultHost("https://www.jasonernst.com")
+	sm.Create()
+	sm.Add(stm.URL{{"loc", "/"}, {"changefreq", "weekly"}, {"priority", 1.0}})
+	sm.Add(stm.URL{{"loc", "/posts"}, {"changefreq", "weekly"}, {"priority", 0.8}})
+	sm.Add(stm.URL{{"loc", "/about"}, {"changefreq", "yearly"}, {"priority", 0.2}})
+
+	posts := b.getPosts()
+	for _, post := range posts {
+		sm.Add(stm.URL{{"loc", post.Permalink()}, {"changefreq", "yearly"}, {"priority", 0.55}})
+	}
+	tags := b.getTags()
+	for _, tag := range tags {
+		if len(tag.Posts) > 0 {
+			sm.Add(stm.URL{{"loc", tag.Permalink()}, {"changefreq", "weekly"}, {"priority", 0.55}})
+		}
+	}
+
+	c.Data(http.StatusOK, "text/xml", sm.XMLContent())
 }
 
 //Login to the blog

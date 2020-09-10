@@ -86,6 +86,7 @@ func main() {
 	router.GET("/presentations", blog.Speaking)
 	router.GET("/projects", blog.Projects)
 	router.GET("/about", blog.About)
+	router.GET("/sitemap.xml", blog.Sitemap)
 
 	router.GET("/admin", admin.Admin)
 

@@ -25,9 +25,9 @@ type Tag struct {
 
 //PreviewContent gets a shortened version of the content for showing a preview
 //https://stackoverflow.com/questions/23466497/how-to-truncate-a-string-in-a-golang-template
-func (c Post) PreviewContent(length int) string {
+func (p Post) PreviewContent(length int) string {
 	// This cast is O(N)
-	runes := bytes.Runes([]byte(c.Content))
+	runes := bytes.Runes([]byte(p.Content))
 	if len(runes) > length {
 		return string(runes[:length])
 	}
@@ -35,6 +35,10 @@ func (c Post) PreviewContent(length int) string {
 }
 
 //Permalink returns the link to the post relative to root
-func (c Post) Permalink() string {
-	return c.CreatedAt.Format("/posts/2006/01/02/") + c.Slug
+func (p Post) Permalink() string {
+	return p.CreatedAt.Format("/posts/2006/01/02/") + p.Slug
+}
+
+func (t Tag) Permalink() string {
+	return "/tag/" + t.Name
 }
