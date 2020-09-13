@@ -3,7 +3,7 @@
 [![codecov](https://codecov.io/gh/compscidr/goblog/branch/master/graph/badge.svg)](https://codecov.io/gh/compscidr/goblog)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Simple blogging platform built with golang.
+Simple blogging platform built with golang. Currently running on my website: https://www.jasonernst.com
 
 It is split into two parts:
 - A JSON REST API located at /api/v1/
@@ -22,30 +22,20 @@ done with the admin user. Presently the user is hardcoded by github email, but
 I'll likely create an initial install onboarding which makes the first logged
 in user the admin.
 
-Other logged in users are able to post, update and delete comments.
+Other logged in users are able to post, update and delete comments (todo)
 
 Every function in the API should be covered by units and integration tests.
 
 What works:
-- List
-- Create
-- Update
-- Delete
+- List, Create, Update, Delete
 - Local sqlite3 db in a file
-- Markdown rendering for content
-- Tags
-- code highlighting
-- error pages
-- file uploads (images, pdfs, etc)
-- github action which builds and deploys a tagged dockerhub release when a versioned release is cut
-- version string in template header from `git describe`
-- meta, title, etc which changes with posts for SEO
-- increase test coverage (and coverage reporting on the readme would be nice)
-- post date editing so old posts can be imported
-- medium import tool (kind of manually)
-- update styling so links are more visible
-- keywords related to tags, more specific seo to posts
-- all tags page
+- Markdown rendering, code highlighting for content
+- Posts, Tags, Error Pages, File Uploads (images, pdfs, etc)
+- Github action which builds and deploys a tagged dockerhub release when a versioned release is cut
+- Version string in template header from `git describe`
+- Meta, Title, etc which changes with posts for SEO
+- Post date editing so old posts can be imported
+- Wordpress import, Medium import tool (kind of manually)
 
 Todo:
 - draft posts
@@ -59,20 +49,6 @@ Todo:
 - Gin: https://github.com/gin-gonic/gin. Used for multiplexing / routing the
 http requests.
 - Gorm: https://github.com/jinzhu/gorm. Used for object relational mapping.
-
-## Other things to consider, take inspiration from
-- Go project structure: https://github.com/golang-standards/project-layout
-
-- Buffalo: https://github.com/gobuffalo/buffalo
-
-- Go-Web-Api: https://rshipp.com/go-web-api/
-- Go-Web-Api Integration Testing: https://rshipp.com/go-api-integration-testing/
-
-- Gin-Web-Api: https://semaphoreci.com/community/tutorials/building-go-web-applications-and-microservices-using-gin
-- GIn-Web-Api Test-Driven Dev: https://semaphoreci.com/community/tutorials/test-driven-development-of-go-web-applications-with-gin
-
-- Golang session auth: https://www.sohamkamani.com/blog/2018/03/25/golang-session-authentication/
-- Auth example: https://gist.github.com/dtan4/a3b5027dd3c7d5c5ed3119ea97fb7235
 
 ## Building and running:
 ```
