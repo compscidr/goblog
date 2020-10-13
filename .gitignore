@@ -26,3 +26,5 @@ goblog
 # uploads
 uploads/*
 !uploads/.keep
+
+.idea
