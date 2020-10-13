@@ -37,6 +37,24 @@
   </script>
 
   <div class="container">
+    <h1>All Posts</h1>
+    <!-- <ul class="admin-posts"> -->
+    <table>
+      {{ range .posts }}
+        <tr class="striped--light-gray">
+        <!-- <li> -->
+          <td><a href="{{ .Permalink }}" title="{{ .Title }}">{{ .Title }}</a></td>
+          <td>{{ .CreatedAt.Format "01/02/06" }}</td>
+          <td>{{ range .Tags }}
+            <a href="{{ .Permalink }}" title="{{ .Name}}">#{{ .Name }}</a>
+          {{ end }}
+          </td>
+        <!-- </li> -->
+        </tr>
+      {{ end }}
+    </table>
+    <!--</ul>-->
+
     <h1>Create post</h1>
 
     <div class="form-group">

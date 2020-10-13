@@ -38,8 +38,8 @@ func main() {
 	router.Use(sessions.Sessions("www.jasonernst.com", store))
 
 	auth := auth.New(db, Version)
-	admin := admin.New(db, &auth, Version)
 	blog := blog.New(db, &auth, Version)
+	admin := admin.New(db, &auth, blog, Version)
 
 	// todo: restrict cors properly to same domain: https://github.com/rs/cors
 	// this lets us get a request from localhost:8000 without the web browser

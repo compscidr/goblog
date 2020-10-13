@@ -1,9 +1,10 @@
+@import url('https://fonts.googleapis.com/css?family=Source+Code+Pro');
+
 .blog-post-meta { margin: -10px 0px 0px 2px; color: #999; }
 .tags { margin: 0px 0px 0px 2px; color: #999; }
 .version { color: #bbb; font-size: 10px; margin-bottom: 20px; }
 .profile { max-width:300px; margin-top: 30px; }
-.footer { margin-top; 20px; }
-@import url('https://fonts.googleapis.com/css?family=Source+Code+Pro');
+.footer { margin-top: 20px; }
 html { height: 100%; }
 body { font-family: 'Source Code Pro', monospace; height: 100%; }
 .menu a, .footer a { color: rgba(0,0,0,.70); }
@@ -24,6 +25,8 @@ body { font-family: 'Source Code Pro', monospace; height: 100%; }
   animation: animated-text 4s steps(29,end) 1s 1 normal both,
              animated-cursor 600ms steps(29,end) infinite;
 }
+.admin-posts { list-style: none; text-align: left; }
+.admin-posts li { padding-bottom: 10px; }
 /* text animation */
 @keyframes animated-text{  from{width: 0;} to{width: 350px;} }
 /* cursor animations */
