@@ -69,7 +69,8 @@ func main() {
 
 	//todo - make the template folder configurable by command line arg
 	//so that people can pass in their own template folder instead of the default
-	router.LoadHTMLGlob("templates/*")
+	//https://github.com/gin-gonic/gin/issues/464
+	router.LoadHTMLGlob("templates/*.html")
 
 	//if we use true here - it will override the home route and just show files
 	router.Use(static.Serve("/", static.LocalFile(".", false)))
