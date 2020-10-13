@@ -187,5 +187,6 @@ func (a Admin) Admin(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin.html", gin.H{
 		"logged_in": a.auth.IsLoggedIn(c),
 		"is_admin":  a.auth.IsAdmin(c),
+		"version": a.version,
 	})
 }
