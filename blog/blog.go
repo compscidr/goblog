@@ -243,7 +243,7 @@ func (b Blog) Tags(c *gin.Context) {
 	c.HTML(http.StatusOK, "tags.html", gin.H{
 		"version": b.version,
 		"title":   "Tags",
-		"tags": b.getTags(),
+		"tags":    b.getTags(),
 	})
 }
 
@@ -254,6 +254,16 @@ func (b Blog) Speaking(c *gin.Context) {
 		"is_admin":  b.auth.IsAdmin(c),
 		"version":   b.version,
 		"title":     "Speaking",
+	})
+}
+
+//Speaking is the index page for research publications
+func (b Blog) Research(c *gin.Context) {
+	c.HTML(http.StatusOK, "research.html", gin.H{
+		"logged_in": b.auth.IsLoggedIn(c),
+		"is_admin":  b.auth.IsAdmin(c),
+		"version":   b.version,
+		"title":     "Research Publications by Jason Ernst",
 	})
 }
 
@@ -283,6 +293,8 @@ func (b Blog) Sitemap(c *gin.Context) {
 	sm.Create()
 	sm.Add(stm.URL{{"loc", "/"}, {"changefreq", "weekly"}, {"priority", 1.0}})
 	sm.Add(stm.URL{{"loc", "/posts"}, {"changefreq", "weekly"}, {"priority", 0.8}})
+	sm.Add(stm.URL{{"loc", "/tags"}, {"changefreq", "weekly"}, {"priority", 0.6}})
+	sm.Add(stm.URL{{"loc", "/research"}, {"changefreq", "yearly"}, {"priority", 0.2}})
 	sm.Add(stm.URL{{"loc", "/about"}, {"changefreq", "yearly"}, {"priority", 0.2}})
 
 	posts := b.getPosts()
