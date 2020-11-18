@@ -42,8 +42,8 @@ func TestBlogWorkflow(t *testing.T) {
 	db.AutoMigrate(&blog.Post{})
 	db.AutoMigrate(&blog.Tag{})
 	a := &Auth{}
-	admin := admin.New(db, a, "test")
 	b := blog.New(db, a, "test")
+	admin := admin.New(db, a, b, "test")
 
 	router := gin.Default()
 	store := cookie.NewStore([]byte("changelater"))

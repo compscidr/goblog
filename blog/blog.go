@@ -34,7 +34,7 @@ func New(db *gorm.DB, auth auth.IAuth, version string) Blog {
 }
 
 //Generic Functions (not JSON or HTML)
-func (b Blog) getPosts() []Post {
+func (b Blog) GetPosts() []Post {
 	var posts []Post
 	b.db.Preload("Tags").Order("created_at desc").Find(&posts)
 	return posts
@@ -103,7 +103,7 @@ func (b Blog) getPostsByTag(c *gin.Context) ([]Post, error) {
 
 //ListPosts lists all blog posts
 func (b Blog) ListPosts(c *gin.Context) {
-	c.JSON(http.StatusOK, b.getPosts())
+	c.JSON(http.StatusOK, b.GetPosts())
 }
 
 //GetPost returns a post with yyyy/mm/dd/slug
@@ -180,7 +180,7 @@ func (b Blog) Posts(c *gin.Context) {
 	c.HTML(http.StatusOK, "posts.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
-		"posts":     b.getPosts(),
+		"posts":     b.GetPosts(),
 		"version":   b.version,
 		"title":     "Posts",
 	})
@@ -285,7 +285,7 @@ func (b Blog) Sitemap(c *gin.Context) {
 	sm.Add(stm.URL{{"loc", "/posts"}, {"changefreq", "weekly"}, {"priority", 0.8}})
 	sm.Add(stm.URL{{"loc", "/about"}, {"changefreq", "yearly"}, {"priority", 0.2}})
 
-	posts := b.getPosts()
+	posts := b.GetPosts()
 	for _, post := range posts {
 		sm.Add(stm.URL{{"loc", post.Permalink()}, {"changefreq", "yearly"}, {"priority", 0.55}})
 	}

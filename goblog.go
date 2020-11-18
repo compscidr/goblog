@@ -38,8 +38,8 @@ func main() {
 	router.Use(sessions.Sessions("www.jasonernst.com", store))
 
 	auth := auth.New(db, Version)
-	admin := admin.New(db, &auth, Version)
 	blog := blog.New(db, &auth, Version)
+	admin := admin.New(db, &auth, blog, Version)
 
 	// todo: restrict cors properly to same domain: https://github.com/rs/cors
 	// this lets us get a request from localhost:8000 without the web browser
@@ -69,7 +69,8 @@ func main() {
 
 	//todo - make the template folder configurable by command line arg
 	//so that people can pass in their own template folder instead of the default
-	router.LoadHTMLGlob("templates/*")
+	//https://github.com/gin-gonic/gin/issues/464
+	router.LoadHTMLGlob("templates/*.html")
 
 	//if we use true here - it will override the home route and just show files
 	router.Use(static.Serve("/", static.LocalFile(".", false)))

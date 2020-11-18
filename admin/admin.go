@@ -22,12 +22,13 @@ var UploadsFolder = "uploads/"
 type Admin struct {
 	db      *gorm.DB
 	auth    auth.IAuth
+	b 		blog.Blog
 	version string
 }
 
 //New constructs an Admin API
-func New(db *gorm.DB, auth auth.IAuth, version string) Admin {
-	api := Admin{db, auth, version}
+func New(db *gorm.DB, auth auth.IAuth, b blog.Blog, version string) Admin {
+	api := Admin{db, auth, b, version}
 	return api
 }
 
@@ -185,7 +186,9 @@ func (a Admin) DeletePost(c *gin.Context) {
 //Admin is the admin dashboard of the website
 func (a Admin) Admin(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin.html", gin.H{
+		"posts": a.b.GetPosts(),
 		"logged_in": a.auth.IsLoggedIn(c),
 		"is_admin":  a.auth.IsAdmin(c),
+		"version": a.version,
 	})
 }
