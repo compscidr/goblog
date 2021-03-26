@@ -24,7 +24,7 @@ import (
 type Blog struct {
 	db      *gorm.DB
 	auth    auth.IAuth
-	version string
+	Version string
 }
 
 //New constructs an Admin API
@@ -34,7 +34,7 @@ func New(db *gorm.DB, auth auth.IAuth, version string) Blog {
 }
 
 //Generic Functions (not JSON or HTML)
-func (b Blog) getPosts() []Post {
+func (b Blog) GetPosts() []Post {
 	var posts []Post
 	b.db.Preload("Tags").Order("created_at desc").Find(&posts)
 	return posts
@@ -46,7 +46,7 @@ func (b Blog) getTags() []Tag {
 	return tags
 }
 
-func (b Blog) getPost(c *gin.Context) (*Post, error) {
+func (b Blog) GetPostObject(c *gin.Context) (*Post, error) {
 	var post Post
 	year, err := strconv.Atoi(c.Param("yyyy"))
 	if err != nil {
@@ -103,12 +103,12 @@ func (b Blog) getPostsByTag(c *gin.Context) ([]Post, error) {
 
 //ListPosts lists all blog posts
 func (b Blog) ListPosts(c *gin.Context) {
-	c.JSON(http.StatusOK, b.getPosts())
+	c.JSON(http.StatusOK, b.GetPosts())
 }
 
 //GetPost returns a post with yyyy/mm/dd/slug
 func (b Blog) GetPost(c *gin.Context) {
-	post, err := b.getPost(c)
+	post, err := b.GetPostObject(c)
 	if err != nil {
 		log.Println("Bad request in GetPost: " + err.Error())
 		c.JSON(http.StatusBadRequest, err)
@@ -137,14 +137,14 @@ func (b Blog) NoRoute(c *gin.Context) {
 					"logged_in": b.auth.IsLoggedIn(c),
 					"is_admin":  b.auth.IsAdmin(c),
 					"post":      post,
-					"version":   b.version,
+					"version":   b.Version,
 				})
 			} else {
 				c.HTML(http.StatusOK, "post.html", gin.H{
 					"logged_in": b.auth.IsLoggedIn(c),
 					"is_admin":  b.auth.IsAdmin(c),
 					"post":      post,
-					"version":   b.version,
+					"version":   b.Version,
 				})
 			}
 			return
@@ -159,7 +159,7 @@ func (b Blog) NoRoute(c *gin.Context) {
 	c.HTML(http.StatusNotFound, "error.html", gin.H{
 		"error":       "404: Page Not Found",
 		"description": "The page at '" + c.Request.URL.String() + "' was not found",
-		"version":     b.version,
+		"version":     b.Version,
 	})
 }
 
@@ -170,7 +170,7 @@ func (b Blog) Home(c *gin.Context) {
 	c.HTML(http.StatusOK, "home.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
-		"version":   b.version,
+		"version":   b.Version,
 		"title":     "Software Engineer",
 	})
 }
@@ -180,38 +180,44 @@ func (b Blog) Posts(c *gin.Context) {
 	c.HTML(http.StatusOK, "posts.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
-		"posts":     b.getPosts(),
-		"version":   b.version,
+		"posts":     b.GetPosts(),
+		"version":   b.Version,
 		"title":     "Posts",
 	})
 }
 
 //Post is the page for all individual posts
 func (b Blog) Post(c *gin.Context) {
-	post, err := b.getPost(c)
+	post, err := b.GetPostObject(c)
 	if err != nil {
 		c.HTML(http.StatusNotFound, "error.html", gin.H{
 			"error":       "Post Not Found",
 			"description": err.Error(),
-			"version":     b.version,
+			"version":     b.Version,
 			"title":       "Post Not Found",
 		})
 	} else {
-		if b.auth.IsAdmin(c) {
-			c.HTML(http.StatusOK, "post-admin.html", gin.H{
-				"logged_in": b.auth.IsLoggedIn(c),
-				"is_admin":  b.auth.IsAdmin(c),
-				"post":      post,
-				"version":   b.version,
-			})
-		} else {
-			c.HTML(http.StatusOK, "post.html", gin.H{
-				"logged_in": b.auth.IsLoggedIn(c),
-				"is_admin":  b.auth.IsAdmin(c),
-				"post":      post,
-				"version":   b.version,
-			})
-		}
+		c.HTML(http.StatusOK, "post.html", gin.H{
+			"logged_in": b.auth.IsLoggedIn(c),
+			"is_admin":  b.auth.IsAdmin(c),
+			"post":      post,
+			"version":   b.Version,
+		})
+		//if b.auth.IsAdmin(c) {
+		//	c.HTML(http.StatusOK, "post-admin.html", gin.H{
+		//		"logged_in": b.auth.IsLoggedIn(c),
+		//		"is_admin":  b.auth.IsAdmin(c),
+		//		"post":      post,
+		//		"version":   b.version,
+		//	})
+		//} else {
+		//	c.HTML(http.StatusOK, "post.html", gin.H{
+		//		"logged_in": b.auth.IsLoggedIn(c),
+		//		"is_admin":  b.auth.IsAdmin(c),
+		//		"post":      post,
+		//		"version":   b.version,
+		//	})
+		//}
 	}
 }
 
@@ -223,7 +229,7 @@ func (b Blog) Tag(c *gin.Context) {
 		c.HTML(http.StatusNotFound, "error.html", gin.H{
 			"error":       "Tag '" + tag + "' Not Found",
 			"description": err.Error(),
-			"version":     b.version,
+			"version":     b.Version,
 			"title":       "Tag '" + tag + "' Not Found",
 		})
 	} else {
@@ -232,7 +238,7 @@ func (b Blog) Tag(c *gin.Context) {
 			"is_admin":  b.auth.IsAdmin(c),
 			"posts":     posts,
 			"tag":       tag,
-			"version":   b.version,
+			"version":   b.Version,
 			"title":     "Posts with Tag '" + tag + "'",
 		})
 	}
@@ -241,7 +247,7 @@ func (b Blog) Tag(c *gin.Context) {
 //Tags is the index page for all Tags
 func (b Blog) Tags(c *gin.Context) {
 	c.HTML(http.StatusOK, "tags.html", gin.H{
-		"version": b.version,
+		"version": b.Version,
 		"title":   "Tags",
 		"tags":    b.getTags(),
 	})
@@ -252,7 +258,7 @@ func (b Blog) Speaking(c *gin.Context) {
 	c.HTML(http.StatusOK, "presentations.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
-		"version":   b.version,
+		"version":   b.Version,
 		"title":     "Speaking",
 	})
 }
@@ -272,7 +278,7 @@ func (b Blog) Projects(c *gin.Context) {
 	c.HTML(http.StatusOK, "projects.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
-		"version":   b.version,
+		"version":   b.Version,
 		"title":     "Projects",
 	})
 }
@@ -282,7 +288,7 @@ func (b Blog) About(c *gin.Context) {
 	c.HTML(http.StatusOK, "about.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
-		"version":   b.version,
+		"version":   b.Version,
 		"title":     "About Jason",
 	})
 }
@@ -297,7 +303,7 @@ func (b Blog) Sitemap(c *gin.Context) {
 	sm.Add(stm.URL{{"loc", "/research"}, {"changefreq", "yearly"}, {"priority", 0.2}})
 	sm.Add(stm.URL{{"loc", "/about"}, {"changefreq", "yearly"}, {"priority", 0.2}})
 
-	posts := b.getPosts()
+	posts := b.GetPosts()
 	for _, post := range posts {
 		sm.Add(stm.URL{{"loc", post.Permalink()}, {"changefreq", "yearly"}, {"priority", 0.55}})
 	}
@@ -322,7 +328,7 @@ func (b Blog) Login(c *gin.Context) {
 			c.HTML(http.StatusInternalServerError, "Error loading .env file: "+err.Error(), gin.H{
 				"logged_in": b.auth.IsLoggedIn(c),
 				"is_admin":  b.auth.IsAdmin(c),
-				"version":   b.version,
+				"version":   b.Version,
 				"title":     "Login Configuration Error",
 			})
 			return
@@ -334,7 +340,7 @@ func (b Blog) Login(c *gin.Context) {
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
 		"client_id": clientID,
-		"version":   b.version,
+		"version":   b.Version,
 		"title":     "Login",
 	})
 }

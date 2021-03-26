@@ -22,12 +22,13 @@ var UploadsFolder = "uploads/"
 type Admin struct {
 	db      *gorm.DB
 	auth    auth.IAuth
+	b 		blog.Blog
 	version string
 }
 
 //New constructs an Admin API
-func New(db *gorm.DB, auth auth.IAuth, version string) Admin {
-	api := Admin{db, auth, version}
+func New(db *gorm.DB, auth auth.IAuth, b blog.Blog, version string) Admin {
+	api := Admin{db, auth, b, version}
 	return api
 }
 
@@ -185,7 +186,34 @@ func (a Admin) DeletePost(c *gin.Context) {
 //Admin is the admin dashboard of the website
 func (a Admin) Admin(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin.html", gin.H{
+		"posts": a.b.GetPosts(),
 		"logged_in": a.auth.IsLoggedIn(c),
 		"is_admin":  a.auth.IsAdmin(c),
+		"version": a.version,
 	})
+}
+
+func (a Admin) Post(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		log.Println("IS ADMIN RETURNED FALSE")
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	post, err := a.b.GetPostObject(c)
+	if err != nil {
+		c.HTML(http.StatusNotFound, "error.html", gin.H{
+			"error":       "Post Not Found",
+			"description": err.Error(),
+			"version":     a.b.Version,
+			"title":       "Post Not Found",
+		})
+	} else {
+		c.HTML(http.StatusOK, "post-admin.html", gin.H{
+			"logged_in": a.auth.IsAdmin(c),
+			"is_admin":  a.auth.IsLoggedIn(c),
+			"post":      post,
+			"version":   a.b.Version,
+		})
+	}
 }

@@ -5,13 +5,16 @@
   <div class="container">
     <div class="row">
       <div class="container left">
-        <h2 class="text-left"><a href="{{ .Permalink }}">{{ .post.Title }}</a></h2>
+        <h2 class="text-left"><a href="{{ .post.Permalink }}">{{ .post.Title }}</a></h2>
         <p class="blog-post-meta text-left">Posted on {{ .post.CreatedAt.Format "Jan 02, 2006 15:04:05 UTC" }}. Last Edited on {{ .post.UpdatedAt.Format "Jan 02, 2006 15:04:05 UTC" }} </p>
         <p class="tags text-left">
           {{range .post.Tags}}
             <a href="/tag/{{.Name}}">#{{.Name}}</a>
           {{end}}
         </p>
+        {{ if .is_admin }}
+        <p class="text-left"><a href="{{ .post.Adminlink }}">Edit this post</a></p>
+        {{ end }}
         <div class="spacer">&nbsp;</div>
         <div id="html" class="text-left"></div>
       </div>

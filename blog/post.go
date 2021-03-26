@@ -39,6 +39,10 @@ func (p Post) Permalink() string {
 	return p.CreatedAt.Format("/posts/2006/01/02/") + p.Slug
 }
 
+func (p Post) Adminlink() string {
+	return p.CreatedAt.Format("/admin/posts/2006/01/02/") + p.Slug
+}
+
 func (t Tag) Permalink() string {
 	return "/tag/" + t.Name
 }
