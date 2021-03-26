@@ -268,7 +268,7 @@ func (b Blog) Research(c *gin.Context) {
 	c.HTML(http.StatusOK, "research.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
-		"version":   b.version,
+		"version":   b.Version,
 		"title":     "Research Publications by Jason Ernst",
 	})
 }
