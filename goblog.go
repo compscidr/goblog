@@ -77,6 +77,7 @@ func main() {
 	router.GET("/", blog.Home)
 	router.GET("/index.php", blog.Home)
 	router.GET("/posts/:yyyy/:mm/:dd/:slug", blog.Post)
+	router.GET("/admin/posts/:yyyy/:mm/:dd/:slug", admin.Post)
 	router.GET("/tag/:name", blog.Tag)
 	router.GET("/login", blog.Login)
 	router.GET("/logout", blog.Logout)

@@ -192,3 +192,28 @@ func (a Admin) Admin(c *gin.Context) {
 		"version": a.version,
 	})
 }
+
+func (a Admin) Post(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		log.Println("IS ADMIN RETURNED FALSE")
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	post, err := a.b.GetPostObject(c)
+	if err != nil {
+		c.HTML(http.StatusNotFound, "error.html", gin.H{
+			"error":       "Post Not Found",
+			"description": err.Error(),
+			"version":     a.b.Version,
+			"title":       "Post Not Found",
+		})
+	} else {
+		c.HTML(http.StatusOK, "post-admin.html", gin.H{
+			"logged_in": a.auth.IsAdmin(c),
+			"is_admin":  a.auth.IsLoggedIn(c),
+			"post":      post,
+			"version":   a.b.Version,
+		})
+	}
+}
