@@ -13,6 +13,6 @@ require (
 	github.com/ikeikeikeike/go-sitemap-generator v2.0.1+incompatible
 	github.com/jinzhu/gorm v1.9.16
 	github.com/joho/godotenv v1.3.0
-	github.com/rs/cors v1.7.0
+	github.com/rs/cors v1.8.0
 	github.com/stretchr/testify v1.7.0
 )
