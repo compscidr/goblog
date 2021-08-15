@@ -54,6 +54,7 @@ func main() {
 	}))
 
 	//all of this is the json api
+	router.MaxMultipartMemory = 50 << 20
 	router.POST("/api/login", auth.LoginPostHandler)
 	router.POST("/api/v1/posts", admin.CreatePost)
 	router.POST("/api/v1/upload", admin.UploadFile)
