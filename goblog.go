@@ -45,7 +45,7 @@ func main() {
 	// bitching about it
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost", "http://localhost:8000"},
-		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE"},
+		AllowMethods:     []string{"GET", "POST", "PATCH", "OPTIONS", "DELETE"},
 		ExposeHeaders: 	  []string{"Content-Length"},
 		AllowCredentials: true,
 		AllowAllOrigins:  false,
