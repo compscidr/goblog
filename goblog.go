@@ -33,6 +33,7 @@ func main() {
 	db.AutoMigrate(&blog.Tag{})
 
 	router := gin.Default()
+	router.Use(cors.Default())
 	store := cookie.NewStore([]byte("changelater"))
 	router.Use(sessions.Sessions("www.jasonernst.com", store))
 
@@ -43,14 +44,14 @@ func main() {
 	// todo: restrict cors properly to same domain: https://github.com/rs/cors
 	// this lets us get a request from localhost:8000 without the web browser
 	// bitching about it
-	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost", "http://localhost:8000"},
-		AllowMethods:     []string{"GET", "POST", "PATCH", "OPTIONS", "DELETE"},
-		ExposeHeaders: 	  []string{"Content-Length"},
-		AllowCredentials: true,
-		AllowAllOrigins:  false,
-		AllowOriginFunc:  func(origin string) bool { return true },
-	}))
+	//router.Use(cors.New(cors.Config{
+	//	AllowOrigins:     []string{"http://localhost", "http://localhost:8000"},
+	//	AllowMethods:     []string{"GET", "POST", "PATCH", "OPTIONS", "DELETE"},
+	//	ExposeHeaders: 	  []string{"Content-Length"},
+	//	AllowCredentials: true,
+	//	AllowAllOrigins:  false,
+	//	AllowOriginFunc:  func(origin string) bool { return true },
+	//}))
 
 	//all of this is the json api
 	router.MaxMultipartMemory = 50 << 20
