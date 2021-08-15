@@ -255,6 +255,7 @@
       }
     }
 
+    console.log("ABOUT TO POST: " + settings);
     xhr.open('POST', settings.uploadUrl);
 
     // Add any available extra headers
@@ -267,6 +268,7 @@
     }
 
     xhr.onload = function() {
+      console.log("GOT RESPONSE: " + xhr);
       // If HTTP status is OK or Created
       if (xhr.status === 200 || xhr.status === 201) {
         me.onFileUploadResponse(xhr);
