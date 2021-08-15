@@ -83,6 +83,8 @@ func (a Admin) CreatePost(c *gin.Context) {
 //UploadFile is the endpoint for storing files on the server
 //https://github.com/gin-gonic/examples/blob/master/upload-file/single/main.go
 func (a Admin) UploadFile(c *gin.Context) {
+	log.Println("Upload file API hit")
+
 	if !a.auth.IsAdmin(c) {
 		log.Println("IS ADMIN RETURNED FALSE")
 		c.JSON(http.StatusUnauthorized, "Not Authorized")

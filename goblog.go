@@ -12,10 +12,9 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-contrib/cors"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite" // this is the db driver
-
-	cors "github.com/rs/cors/wrapper/gin"
 )
 
 //Version of the code generated from git describe
@@ -44,13 +43,13 @@ func main() {
 	// todo: restrict cors properly to same domain: https://github.com/rs/cors
 	// this lets us get a request from localhost:8000 without the web browser
 	// bitching about it
-	router.Use(cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost", "http://localhost:8000"},
-		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE"},
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost", "http://localhost:8000"},
+		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE"},
+		ExposeHeaders: 	  []string{"Content-Length"},
 		AllowCredentials: true,
-		AllowedHeaders:   []string{"Authorization", "Content-Type"},
-		// Enable Debugging for testing, consider disabling in production
-		Debug: true,
+		AllowAllOrigins:  false,
+		AllowOriginFunc:  func(origin string) bool { return true },
 	}))
 
 	//all of this is the json api
