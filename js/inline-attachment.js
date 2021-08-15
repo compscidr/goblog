@@ -255,7 +255,7 @@
       }
     }
 
-    console.log("ABOUT TO POST: " + settings);
+    console.log("ABOUT TO POST: " + settings.uploadUrl);
     xhr.open('POST', settings.uploadUrl);
 
     // Add any available extra headers
@@ -263,12 +263,13 @@
         for (var header in settings.extraHeaders) {
             if (settings.extraHeaders.hasOwnProperty(header)) {
                 xhr.setRequestHeader(header, settings.extraHeaders[header]);
+                console.log("EXTRA HEADER: " + settings.extraHeaders[header]);
             }
         }
     }
 
     xhr.onload = function() {
-      console.log("GOT RESPONSE: " + xhr);
+      console.log("GOT RESPONSE " + xhr.status + ": " + xhr.statusText + " " + xhr.responseText);
       // If HTTP status is OK or Created
       if (xhr.status === 200 || xhr.status === 201) {
         me.onFileUploadResponse(xhr);
