@@ -91,15 +91,19 @@ func (a Admin) UploadFile(c *gin.Context) {
 
 	file, err := c.FormFile("file")
 	if err != nil {
+		log.Println(fmt.Sprintf("FormFile erorr: %s", err.Error()))
 		c.JSON(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
 		return
 	}
 
 	filename := UploadsFolder + filepath.Base(file.Filename)
 	if err := c.SaveUploadedFile(file, filename); err != nil {
+		log.Println(fmt.Sprintf("Save Upload File Error erorr: %s", err.Error()))
 		c.JSON(http.StatusBadRequest, fmt.Sprintf("upload file err: %s", err.Error()))
 		return
 	}
+
+	log.Println("Saved file okay: " + filename)
 
 	c.JSON(http.StatusOK, map[string]interface{}{"filename": "/" + filename})
 }
