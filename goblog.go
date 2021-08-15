@@ -12,7 +12,7 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-contrib/cors"
+//	"github.com/gin-contrib/cors"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite" // this is the db driver
 )
