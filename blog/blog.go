@@ -16,7 +16,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/joho/godotenv"
 
-	"github.com/ikeikeikeike/go-sitemap-generator/stm"
+	"github.com/ikeikeikeike/go-sitemap-generator/v2/stm"
 )
 
 // Blog API handles non-admin functions of the blog like listing posts, tags
@@ -287,6 +287,7 @@ func (b Blog) Sitemap(c *gin.Context) {
 	sm := stm.NewSitemap(1)
 	sm.SetDefaultHost("https://www.jasonernst.com")
 	sm.Create()
+
 	sm.Add(stm.URL{{"loc", "/"}, {"changefreq", "weekly"}, {"priority", 1.0}})
 	sm.Add(stm.URL{{"loc", "/posts"}, {"changefreq", "weekly"}, {"priority", 0.8}})
 	sm.Add(stm.URL{{"loc", "/about"}, {"changefreq", "yearly"}, {"priority", 0.2}})
