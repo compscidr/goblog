@@ -27,6 +27,8 @@ body { font-family: 'Source Code Pro', monospace; height: 100%; }
 }
 .admin-posts { list-style: none; text-align: left; }
 .admin-posts li { padding-bottom: 10px; }
+.research { background:#EEEEEE; margin-bottom: 5px; padding:5px }
+.research:nth-child(even) { background: #FFFFFF; }
 /* text animation */
 @keyframes animated-text{  from{width: 0;} to{width: 350px;} }
 /* cursor animations */
