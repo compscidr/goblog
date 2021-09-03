@@ -33,7 +33,7 @@ jobs:
         fi
 
     - name: Build
-      run: go build -ldflags="-X 'main.Version=$(git describe --tags)'" -v .
+      run: go build -ldflags="-X 'main.Version=${{ steps.checkout.outputs.tag }}'" -v .
 
     - name: Test
       run: go test -race -coverprofile=coverage.txt -covermode=atomic goblog/...
