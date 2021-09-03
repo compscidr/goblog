@@ -1,47 +1,31 @@
 version: "3.0"
 services:
-#  db:
-#    image: mysql:5.7
-#    restart: always
-#    environment:
-#      MYSQL_ROOT_PASSWORD: password
-#      MYSQL_DATABASE: wordpress
-#      MYSQL_USER: wordpress
-#      MYSQL_PASSWORD: wordpress
-#    ports:
-#      - "3306:3306"
-#    expose:
-#      - "3306"
-#    networks:
-#      - frontend
-#
-#  # phpmyadmin
-#  phpmyadmin:
-#    depends_on:
-#      - db
-#    image: phpmyadmin/phpmyadmin
-#    restart: always
-#    ports:
-#      - '8080:80'
-#    environment:
-#      PMA_HOST: db
-#      MYSQL_ROOT_PASSWORD: password
-#      UPLOAD_LIMIT: 3000000000
-#    networks:
-#      - frontend
+  db:
+    image: mysql:5.7
+    restart: always
+    env_file:
+      template.env
+    ports:
+      - "3306:3306"
+
+  phpmyadmin:
+    depends_on:
+      - db
+    image: phpmyadmin/phpmyadmin
+    env_file:
+      template.env
+    ports:
+      - '8080:80'
 
   goblog:
     build: '.'
     image: compscidr/goblog:latest
-    networks:
-      - frontend
+    depends_on:
+      - db
+    restart: always
     ports:
       - "7000:7000"
-    expose:
-      - "7000"
     volumes:
+      - ./template.env:/go/src/github.com/compscidr/goblog/local.env
       - ../:/var/www/html/
       - ${PWD}/test.db:/go/src/github.com/compscidr/goblog/test.db
-    
-networks:
-  frontend:

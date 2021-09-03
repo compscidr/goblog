@@ -3,18 +3,20 @@ package main
 //this implements https://jsonapi.org/format/ as best as possible
 
 import (
+	"github.com/joho/godotenv"
 	"goblog/admin"
 	"goblog/auth"
 	"goblog/blog"
 	"log"
+	"os"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
-//	"github.com/gin-contrib/cors"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite" // this is the db driver
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 //Version of the code generated from git describe
@@ -22,24 +24,53 @@ var Version = "development"
 
 func main() {
 	log.Println("Starting blog version: ", Version)
-	//https://gorm.io/docs/
-	//todo - convert this to a non-local db when not running locally
-	db, err := gorm.Open("sqlite3", "test.db")
+
+	err := godotenv.Load(".env")
+	if err != nil {
+		//fall back to local config
+		err = godotenv.Load("local.env")
+		if err != nil {
+			log.Println("Error loading .env file: " + err.Error())
+			return
+		}
+	}
+
+	database := os.Getenv("database")
+	if database != "mysql" && database != "sqlite" {
+		log.Println("Database type: " + database + " is not valid. Expecting `mysql` or `sqlite`")
+		return
+	}
+
+	var db *gorm.DB
+	if database == "sqlite" {
+		db, err = gorm.Open(sqlite.Open("test.db"))
+	} else {
+		user := os.Getenv("MYSQL_USER")
+		pass := os.Getenv("MYSQL_PASSWORD")
+		dbname := os.Getenv("MYSQL_DATABASE")
+		dsn := user + ":" + pass + "@tcp(db:3306)/" + dbname + "?charset=utf8mb4&parseTime=True&loc=Local"
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	}
 	if err != nil {
 		panic("failed to connect database")
 	}
-	db.AutoMigrate(&auth.BlogUser{})
-	db.AutoMigrate(&blog.Post{})
-	db.AutoMigrate(&blog.Tag{})
+	err = db.AutoMigrate(&auth.BlogUser{})
+	err = db.AutoMigrate(&blog.Post{})
+	err = db.AutoMigrate(&blog.Tag{})
+
+	if err != nil {
+		log.Println("Error migrating db")
+		return
+	}
 
 	router := gin.Default()
 	router.Use(CORS())
 	store := cookie.NewStore([]byte("changelater"))
 	router.Use(sessions.Sessions("www.jasonernst.com", store))
 
-	auth := auth.New(db, Version)
-	blog := blog.New(db, &auth, Version)
-	admin := admin.New(db, &auth, blog, Version)
+	_auth := auth.New(db, Version)
+	_blog := blog.New(db, &_auth, Version)
+	_admin := admin.New(db, &_auth, _blog, Version)
 
 	// todo: restrict cors properly to same domain: https://github.com/rs/cors
 	// this lets us get a request from localhost:8000 without the web browser
@@ -55,13 +86,13 @@ func main() {
 
 	//all of this is the json api
 	router.MaxMultipartMemory = 50 << 20
-	router.POST("/api/login", auth.LoginPostHandler)
-	router.POST("/api/v1/posts", admin.CreatePost)
-	router.POST("/api/v1/upload", admin.UploadFile)
-	router.PATCH("/api/v1/posts", admin.UpdatePost)
-	router.DELETE("/api/v1/posts", admin.DeletePost)
-	router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", blog.GetPost)
-	router.GET("/api/v1/posts", blog.ListPosts)
+	router.POST("/api/login", _auth.LoginPostHandler)
+	router.POST("/api/v1/posts", _admin.CreatePost)
+	router.POST("/api/v1/upload", _admin.UploadFile)
+	router.PATCH("/api/v1/posts", _admin.UpdatePost)
+	router.DELETE("/api/v1/posts", _admin.DeletePost)
+	router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", _blog.GetPost)
+	router.GET("/api/v1/posts", _blog.ListPosts)
 
 	//all of this serves html full pages, but re-uses much of the logic of
 	//the json API. The json API is tested more easily. Also javascript can
@@ -75,30 +106,28 @@ func main() {
 
 	//if we use true here - it will override the home route and just show files
 	router.Use(static.Serve("/", static.LocalFile(".", false)))
-	router.GET("/", blog.Home)
-	router.GET("/index.php", blog.Home)
-	router.GET("/posts/:yyyy/:mm/:dd/:slug", blog.Post)
-	router.GET("/admin/posts/:yyyy/:mm/:dd/:slug", admin.Post)
-	router.GET("/tag/:name", blog.Tag)
-	router.GET("/login", blog.Login)
-	router.GET("/logout", blog.Logout)
+	router.GET("/", _blog.Home)
+	router.GET("/index.php", _blog.Home)
+	router.GET("/posts/:yyyy/:mm/:dd/:slug", _blog.Post)
+	router.GET("/admin/posts/:yyyy/:mm/:dd/:slug", _admin.Post)
+	router.GET("/tag/:name", _blog.Tag)
+	router.GET("/login", _blog.Login)
+	router.GET("/logout", _blog.Logout)
 
 	//todo: register a template mapping to a "page type"
-	router.GET("/posts", blog.Posts)
-	router.GET("/tags", blog.Tags)
-	router.GET("/presentations", blog.Speaking)
-	router.GET("/research", blog.Research)
-	router.GET("/projects", blog.Projects)
-	router.GET("/about", blog.About)
-	router.GET("/sitemap.xml", blog.Sitemap)
+	router.GET("/posts", _blog.Posts)
+	router.GET("/tags", _blog.Tags)
+	router.GET("/presentations", _blog.Speaking)
+	router.GET("/research", _blog.Research)
+	router.GET("/projects", _blog.Projects)
+	router.GET("/about", _blog.About)
+	router.GET("/sitemap.xml", _blog.Sitemap)
 
-	router.GET("/admin", admin.Admin)
+	router.GET("/admin", _admin.Admin)
 
-	router.NoRoute(blog.NoRoute)
+	router.NoRoute(_blog.NoRoute)
 
 	router.Run("0.0.0.0:7000")
-
-	defer db.Close()
 }
 
 func CORS() gin.HandlerFunc {

@@ -13,8 +13,8 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
 	"github.com/joho/godotenv"
+	"gorm.io/gorm"
 
 	"github.com/ikeikeikeike/go-sitemap-generator/v2/stm"
 )
@@ -94,7 +94,7 @@ func (b Blog) getPostsByTag(c *gin.Context) ([]Post, error) {
 		return nil, errors.New("No tag named " + name)
 	}
 
-	b.db.Model(&tag).Order("created_at desc").Related(&posts, "Posts")
+	b.db.Model(&tag).Order("created_at desc").Association("Posts").Find(&posts)
 	log.Print("POSTS: ", posts)
 	return posts, nil
 }
