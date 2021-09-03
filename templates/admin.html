@@ -2,9 +2,9 @@
   <script type="text/javascript">
 
     function createPost() {
-      var tags = $("#tags").val().split(',')
+      var tags = $("#tags").text().split(',')
       for (var i = 0; i < tags.length; i++) {
-        tags[i] = {"name": tags[i]}
+        tags[i] = {"name": tags[i].trim()}
       }
 
       var time = $("#created_at").val();
