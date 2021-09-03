@@ -44,6 +44,9 @@ jobs:
     - name: Code Coveralls
       run: bash <(curl -s https://codecov.io/bash)
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
     - name: Login to Dockerhub
       uses: docker/login-action@v1
       with:
@@ -51,10 +54,9 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     # https://github.com/marketplace/actions/build-and-push-docker-images#Example-usage
-    - name: Build and push Docker images
+    - name: Build and push
+      id: docker_build
       uses: docker/build-push-action@v2
       with:
-        repository: compscidr/goblog
-        tag_with_ref: true
         push: true
-        tags: ${{ startsWith(github.ref, 'refs/tags/') }}
+        tags: compscidr/goblog:${{ startsWith(github.ref, 'refs/tags/') }}
