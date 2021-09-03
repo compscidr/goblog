@@ -2,7 +2,7 @@
   <script type="text/javascript">
 
     function createPost() {
-      var tags = $("#tags").text().split(',')
+      var tags = $("#tags").val().split(',')
       for (var i = 0; i < tags.length; i++) {
         tags[i] = {"name": tags[i].trim()}
       }
