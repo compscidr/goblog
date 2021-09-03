@@ -51,4 +51,6 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: compscidr/goblog
+        tag_with_ref: true
         push: true
+        tags: ${{ startsWith(github.ref, 'refs/tags/') }}
