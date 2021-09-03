@@ -44,12 +44,16 @@ jobs:
     - name: Code Coveralls
       run: bash <(curl -s https://codecov.io/bash)
 
+    - name: Login to Dockerhub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
     # https://github.com/marketplace/actions/build-and-push-docker-images#Example-usage
     - name: Build and push Docker images
       uses: docker/build-push-action@v2
       with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
         repository: compscidr/goblog
         tag_with_ref: true
         push: true
