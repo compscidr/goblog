@@ -83,6 +83,8 @@ func (a Admin) CreatePost(c *gin.Context) {
 //UploadFile is the endpoint for storing files on the server
 //https://github.com/gin-gonic/examples/blob/master/upload-file/single/main.go
 func (a Admin) UploadFile(c *gin.Context) {
+	log.Println("Upload file API hit")
+
 	if !a.auth.IsAdmin(c) {
 		log.Println("IS ADMIN RETURNED FALSE")
 		c.JSON(http.StatusUnauthorized, "Not Authorized")
@@ -91,15 +93,19 @@ func (a Admin) UploadFile(c *gin.Context) {
 
 	file, err := c.FormFile("file")
 	if err != nil {
+		log.Println(fmt.Sprintf("FormFile erorr: %s", err.Error()))
 		c.JSON(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
 		return
 	}
 
 	filename := UploadsFolder + filepath.Base(file.Filename)
 	if err := c.SaveUploadedFile(file, filename); err != nil {
+		log.Println(fmt.Sprintf("Save Upload File Error erorr: %s", err.Error()))
 		c.JSON(http.StatusBadRequest, fmt.Sprintf("upload file err: %s", err.Error()))
 		return
 	}
+
+	log.Println("Saved file okay: " + filename)
 
 	c.JSON(http.StatusOK, map[string]interface{}{"filename": "/" + filename})
 }

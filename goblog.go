@@ -12,10 +12,9 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+//	"github.com/gin-contrib/cors"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite" // this is the db driver
-
-	cors "github.com/rs/cors/wrapper/gin"
 )
 
 //Version of the code generated from git describe
@@ -34,6 +33,7 @@ func main() {
 	db.AutoMigrate(&blog.Tag{})
 
 	router := gin.Default()
+	router.Use(CORS())
 	store := cookie.NewStore([]byte("changelater"))
 	router.Use(sessions.Sessions("www.jasonernst.com", store))
 
@@ -44,16 +44,17 @@ func main() {
 	// todo: restrict cors properly to same domain: https://github.com/rs/cors
 	// this lets us get a request from localhost:8000 without the web browser
 	// bitching about it
-	router.Use(cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost", "http://localhost:8000"},
-		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE"},
-		AllowCredentials: true,
-		AllowedHeaders:   []string{"Authorization", "Content-Type"},
-		// Enable Debugging for testing, consider disabling in production
-		Debug: true,
-	}))
+	//router.Use(cors.New(cors.Config{
+	//	AllowOrigins:     []string{"http://localhost", "http://localhost:8000"},
+	//	AllowMethods:     []string{"GET", "POST", "PATCH", "OPTIONS", "DELETE"},
+	//	ExposeHeaders: 	  []string{"Content-Length"},
+	//	AllowCredentials: true,
+	//	AllowAllOrigins:  false,
+	//	AllowOriginFunc:  func(origin string) bool { return true },
+	//}))
 
 	//all of this is the json api
+	router.MaxMultipartMemory = 50 << 20
 	router.POST("/api/login", auth.LoginPostHandler)
 	router.POST("/api/v1/posts", admin.CreatePost)
 	router.POST("/api/v1/upload", admin.UploadFile)
@@ -98,4 +99,14 @@ func main() {
 	router.Run("0.0.0.0:7000")
 
 	defer db.Close()
+}
+
+func CORS() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, DELETE, OPTIONS, PATCH")
+		c.Next()
+	}
 }
