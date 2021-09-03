@@ -72,12 +72,8 @@ func (a Admin) CreatePost(c *gin.Context) {
 	log.Print("CREATING POST: ", requestPost)
 	a.db.Create(&requestPost)
 
-	//todo - improve this in case of collision on title
-	var post blog.Post
-	a.db.First(&post, "title = ?", requestPost.Title)
-
-	log.Println("POST CREATED: ", post)
-	c.JSON(http.StatusCreated, post)
+	log.Println("POST CREATED: ", requestPost)
+	c.JSON(http.StatusCreated, requestPost)
 }
 
 //UploadFile is the endpoint for storing files on the server
