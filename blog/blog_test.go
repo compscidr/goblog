@@ -17,9 +17,9 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite" // this is the db driver
 	"github.com/stretchr/testify/mock"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 type Auth struct {
@@ -37,7 +37,7 @@ func (m *Auth) IsLoggedIn(c *gin.Context) bool {
 }
 
 func TestBlogWorkflow(t *testing.T) {
-	db, _ := gorm.Open("sqlite3", ":memory:")
+	db, _ := gorm.Open(sqlite.Open(":memory:"))
 	db.AutoMigrate(&auth.BlogUser{})
 	db.AutoMigrate(&blog.Post{})
 	db.AutoMigrate(&blog.Tag{})
