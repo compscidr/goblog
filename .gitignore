@@ -24,7 +24,7 @@ goblog
 *.env
 
 # uploads
-uploads/*
-!uploads/.keep
+www/uploads/*
+!www/uploads/.keep
 
 .idea

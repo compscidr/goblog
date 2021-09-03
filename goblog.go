@@ -105,7 +105,7 @@ func main() {
 	router.LoadHTMLGlob("templates/*.html")
 
 	//if we use true here - it will override the home route and just show files
-	router.Use(static.Serve("/", static.LocalFile(".", false)))
+	router.Use(static.Serve("/", static.LocalFile("www", false)))
 	router.GET("/", _blog.Home)
 	router.GET("/index.php", _blog.Home)
 	router.GET("/posts/:yyyy/:mm/:dd/:slug", _blog.Post)

@@ -1,6 +1,7 @@
 version: "3.0"
 services:
   db:
+    container_name: db
     image: mysql:5.7
     restart: always
     env_file:
@@ -11,7 +12,9 @@ services:
   phpmyadmin:
     depends_on:
       - db
+    container_name: phpmyadmin
     image: phpmyadmin/phpmyadmin
+    restart: always
     env_file:
       template.env
     ports:
@@ -20,6 +23,7 @@ services:
   goblog:
     build: '.'
     image: compscidr/goblog:latest
+    container_name: goblog
     depends_on:
       - db
     restart: always
