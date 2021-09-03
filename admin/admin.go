@@ -14,9 +14,9 @@ import (
 	"gorm.io/gorm"
 )
 
-//UploadsFolder configures where the file uploads should be stored. This is
-//mostly used for testing
-var wwwFolder = "www/"
+// WWWFolder and UploadsFolder configures where the file uploads should be stored. This is
+// mostly used for testing
+var WWWFolder = "www/"
 var UploadsFolder = "uploads/"
 
 // Admin handles admin requests
@@ -96,7 +96,7 @@ func (a Admin) UploadFile(c *gin.Context) {
 	}
 
 	filename := UploadsFolder + filepath.Base(file.Filename)
-	if err := c.SaveUploadedFile(file, wwwFolder + filename); err != nil {
+	if err := c.SaveUploadedFile(file, WWWFolder + filename); err != nil {
 		log.Println(fmt.Sprintf("Save Upload File Error erorr: %s", err.Error()))
 		c.JSON(http.StatusBadRequest, fmt.Sprintf("upload file err: %s", err.Error()))
 		return

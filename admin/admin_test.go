@@ -247,7 +247,8 @@ func TestCreatePost(t *testing.T) {
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	w = httptest.NewRecorder()
 	a.On("IsAdmin", mock.Anything).Return(true).Once()
-	admin.UploadsFolder = "../uploads/"
+	admin.WWWFolder = "../www/"
+	admin.UploadsFolder = "uploads/"
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		body, _ := ioutil.ReadAll(w.Body)
