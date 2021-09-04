@@ -47,12 +47,7 @@ type AccessTokenResponse struct {
 func (a Auth) requestAccessToken(parsedCode string) (*AccessTokenResponse, error) {
 	err := godotenv.Load(".env")
 	if err != nil {
-		//fall back to local config
-		err = godotenv.Load("local.env")
-		if err != nil {
-			//todo: handle better - perhaps return error to browser
-			return nil, errors.New("Error loading .env file: " + err.Error())
-		}
+		return nil, errors.New("Error loading .env file: " + err.Error())
 	}
 	clientID := os.Getenv("client_id")
 	clientSecret := os.Getenv("client_secret")

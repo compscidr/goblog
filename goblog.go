@@ -8,6 +8,7 @@ import (
 	"goblog/auth"
 	"goblog/blog"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/gin-contrib/sessions"
@@ -22,17 +23,27 @@ import (
 //Version of the code generated from git describe
 var Version = "development"
 
+func wizard(c *gin.Context) {
+	c.HTML(http.StatusOK, "wizard.html", gin.H{
+		"version":   Version,
+		"title":     "GoBlog Install Wizard",
+	})
+}
+
+
 func main() {
 	log.Println("Starting blog version: ", Version)
 
 	err := godotenv.Load(".env")
 	if err != nil {
-		//fall back to local config
-		err = godotenv.Load("local.env")
-		if err != nil {
-			log.Println("Error loading .env file: " + err.Error())
-			return
-		}
+		router := gin.Default()
+		router.Use(CORS())
+		store := cookie.NewStore([]byte("changelater"))
+		router.Use(sessions.Sessions("www.jasonernst.com", store))
+		router.LoadHTMLGlob("templates/*.html")
+		router.GET("/", wizard)
+		router.Use(static.Serve("/", static.LocalFile("www", false)))
+		router.Run("0.0.0.0:7000")
 	}
 
 	database := os.Getenv("database")
