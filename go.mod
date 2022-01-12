@@ -13,5 +13,5 @@ require (
 	github.com/stretchr/testify v1.7.0
 	gorm.io/driver/mysql v1.2.3
 	gorm.io/driver/sqlite v1.2.6
-	gorm.io/gorm v1.22.4
+	gorm.io/gorm v1.22.5
 )
