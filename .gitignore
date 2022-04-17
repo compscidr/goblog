@@ -21,7 +21,7 @@
 goblog
 
 # env files
-*.env
+.env
 
 # uploads
 www/uploads/*

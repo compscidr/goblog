@@ -43,11 +43,12 @@ func main() {
 
 	var db *gorm.DB
 	if database == "sqlite" {
-		db, err = gorm.Open(sqlite.Open("test.db"), &gorm.Config{
+		db_file := os.Getenv("sqlite_db")
+		db, err = gorm.Open(sqlite.Open(db_file), &gorm.Config{
 			DisableForeignKeyConstraintWhenMigrating: true,
 		})
 		if err != nil {
-			panic("failed to open sqlite db")
+			panic("failed to open sqlite db: " + db_file)
 		}
 		log.Println("opened sqlite db")
 	} else {
