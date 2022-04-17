@@ -54,18 +54,24 @@ func main() {
 
 	var db *gorm.DB
 	if database == "sqlite" {
-		db, err = gorm.Open(sqlite.Open("test.db"), &gorm.Config{
+		db_file := os.Getenv("sqlite_db")
+		db, err = gorm.Open(sqlite.Open(db_file), &gorm.Config{
 			DisableForeignKeyConstraintWhenMigrating: true,
 		})
+		if err != nil {
+			panic("failed to open sqlite db: " + db_file)
+		}
+		log.Println("opened sqlite db")
 	} else {
 		user := os.Getenv("MYSQL_USER")
 		pass := os.Getenv("MYSQL_PASSWORD")
 		dbname := os.Getenv("MYSQL_DATABASE")
 		dsn := user + ":" + pass + "@tcp(db:3306)/" + dbname + "?charset=utf8mb4&parseTime=True&loc=Local"
 		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	}
-	if err != nil {
-		panic("failed to connect database")
+		if err != nil {
+			panic("failed to connect to mysql db")
+		}
+		log.Println("connected to mysql db")
 	}
 	err = db.AutoMigrate(&auth.BlogUser{})
 	err = db.AutoMigrate(&blog.Post{})
