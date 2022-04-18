@@ -47,12 +47,7 @@ type AccessTokenResponse struct {
 func (a Auth) requestAccessToken(parsedCode string) (*AccessTokenResponse, error) {
 	err := godotenv.Load(".env")
 	if err != nil {
-		//fall back to local config
-		err = godotenv.Load("local.env")
-		if err != nil {
-			//todo: handle better - perhaps return error to browser
-			return nil, errors.New("Error loading .env file: " + err.Error())
-		}
+		return nil, errors.New("Error loading .env file: " + err.Error())
 	}
 	clientID := os.Getenv("client_id")
 	clientSecret := os.Getenv("client_secret")
@@ -119,7 +114,7 @@ func (a Auth) formatRequest(r *http.Request) string {
 }
 
 //todo: make these request functions generalized
-func (a Auth) requestUser(accessToken string) (*BlogUser, error) {
+func (a Auth) RequestUser(accessToken string) (*BlogUser, error) {
 	data := &BlogUser{}
 	//get the user info from Github
 	req, err := http.NewRequest("GET", "https://api.github.com/user", strings.NewReader(""))
@@ -162,7 +157,7 @@ func (a Auth) requestUser(accessToken string) (*BlogUser, error) {
 //LoginPostHandler should be called with the code provided by github. After
 //receiving the code, this will reach out to github to retrieve and auth token
 //which is stored in the db along with the user information from github.
-//this can then be used for authoization when the api user supplies the same
+//this can then be used for authorization when the api user supplies the same
 //auth token later on for API access. Only one auth token per user can be used
 //at once. Logout should remove the auth token from the table.
 func (a Auth) LoginPostHandler(c *gin.Context) {
@@ -173,7 +168,7 @@ func (a Auth) LoginPostHandler(c *gin.Context) {
 		return
 	}
 
-	user, err := a.requestUser(data.AccessToken)
+	user, err := a.RequestUser(data.AccessToken)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
@@ -181,11 +176,11 @@ func (a Auth) LoginPostHandler(c *gin.Context) {
 
 	//check if user exists, if not add them, if they do update access token
 	var existingUser BlogUser
-	err = a.db.Where("github_id = ?", user.GithubID).First(&existingUser).Error
+	err = a.db.Where("ID = ?", user.ID).First(&existingUser).Error
 	if err != nil {
 		a.db.Create(&user)
 	} else {
-		a.db.Model(&user).Where("github_id = ?", user.GithubID).Updates(&user)
+		a.db.Model(&user).Where("ID = ?", user.ID).Updates(&user)
 		existingUser = *user
 	}
 
@@ -216,14 +211,18 @@ func (a Auth) IsAdmin(c *gin.Context) bool {
 	//debug
 	a.DisplayUserTable()
 
-	//todo un-hardcode the admin lol.
+	// first make sure the access token matches a logged in user
 	var existingUser BlogUser
-	err := a.db.Where("access_token = ? AND email = ?", token, "ernstjason1@gmail.com").First(&existingUser).Error
+	err := a.db.Where("access_token = ?", token).First(&existingUser).Error
 	if err != nil {
 		return false
 	}
-	log.Println("TOKEN:", token)
-	log.Println("ADMIN USER:", existingUser)
+	// next make sure the logged in user is an admin
+	var adminUser AdminUser
+	err = a.db.Where("blog_user_id = ?", existingUser.ID).First(&adminUser).Error
+	if err != nil {
+		return false
+	}
 	return true
 }
 

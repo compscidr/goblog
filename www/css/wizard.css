@@ -1,0 +1,12 @@
+body {
+    /* CC image: https://www.pxfuel.com/en/free-photo-xiutw */
+    background: url('/img/trees.jpg') no-repeat center center fixed;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    background-size: cover;
+    -o-background-size: cover;
+}
+
+.footer a { color: rgba(0,0,0,.70); }
+.footer a:hover { color: #007bff; }
+.version { color: #bbb; font-size: 10px; }

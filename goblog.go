@@ -7,9 +7,13 @@ import (
 	"goblog/admin"
 	"goblog/auth"
 	"goblog/blog"
+	"goblog/wizard"
 	"log"
 	"os"
+	"strconv"
+	"syscall"
 
+	"github.com/fvbock/endless"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-contrib/static"
@@ -22,15 +26,50 @@ import (
 //Version of the code generated from git describe
 var Version = "development"
 
+func setup_wizard() {
+	_wizard := wizard.New(Version)
+	router := gin.Default()
+	router.Use(CORS())
+	store := cookie.NewStore([]byte("changelater"))
+	router.Use(sessions.Sessions("www.jasonernst.com", store))
+	router.LoadHTMLGlob("templates/*.html")
+	router.GET("/", _wizard.Landing)
+	router.GET("/wizard", _wizard.SaveToken)
+	router.Use(static.Serve("/", static.LocalFile("www", false)))
+	router.GET("/login", _wizard.LoginCode)
+	// router.Run("0.0.0.0:7000")
+	server := endless.NewServer(":7000", router)
+	server.BeforeBegin = func(add string) {
+		log.Printf("Actual pid is %d", syscall.Getpid())
+		pid := syscall.Getpid()
+		f, err := os.Create("/tmp/goblog.pid")
+		if err != nil {
+			log.Println("Unable to create /tmp/goblog.pid")
+			return
+		}
+		_, err = f.WriteString(strconv.Itoa(pid))
+		if err != nil {
+			log.Println("Unable to write to /tmp/goblog.pid")
+			return
+		}
+		err = f.Close()
+		if err != nil {
+			log.Println("Unable to close /tmp/goblog.pid")
+			return
+		}
+	}
+	server.ListenAndServe()
+}
+
 func main() {
 	log.Println("Starting blog version: ", Version)
 
 	err := godotenv.Load(".env")
 	if err != nil {
-		//fall back to local config
-		err = godotenv.Load("local.env")
+		setup_wizard()
+		err := godotenv.Load(".env")
 		if err != nil {
-			log.Println("Error loading .env file: " + err.Error())
+			log.Println("Failed to read the .env file after the wizard, can't procced")
 			return
 		}
 	}
@@ -63,11 +102,23 @@ func main() {
 		log.Println("connected to mysql db")
 	}
 	err = db.AutoMigrate(&auth.BlogUser{})
-	err = db.AutoMigrate(&blog.Post{})
-	err = db.AutoMigrate(&blog.Tag{})
-
 	if err != nil {
-		log.Println("Error migrating db: {}", err)
+		log.Println("Error migrating the BlogUser struct: " + err.Error())
+		return
+	}
+	err = db.AutoMigrate(&blog.Post{})
+	if err != nil {
+		log.Println("Error migrating the Post struct: " + err.Error())
+		return
+	}
+	err = db.AutoMigrate(&blog.Tag{})
+	if err != nil {
+		log.Println("Error migrating the Tag struct: " + err.Error())
+		return
+	}
+	err = db.AutoMigrate(&auth.AdminUser{})
+	if err != nil {
+		log.Println("Error migrating the AdminUser struct: " + err.Error())
 		return
 	}
 
@@ -135,7 +186,10 @@ func main() {
 
 	router.NoRoute(_blog.NoRoute)
 
-	router.Run("0.0.0.0:7000")
+	err = endless.ListenAndServe("localhost:7000", router)
+	if err != nil {
+		log.Println("Error running goblog server: " + err.Error())
+	}
 }
 
 func CORS() gin.HandlerFunc {

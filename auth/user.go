@@ -7,11 +7,15 @@ package auth
 //explicit about the ID from the other system so we can map our internal ID to
 //all of the other system IDs. I've used too many systems where this is broken
 type BlogUser struct {
-	ID          string `gorm:"primary_key"`
-	GithubID    int    `json:"id"`
+	ID          int    `gorm:"primary_key" json:"id"`
 	Login       string `json:"login"`
 	AvatarURL   string `json:"avatar_url"`
 	Name        string `json:"name"`
 	Email       string `json:"email"`
 	AccessToken string `json:"access_token"`
+}
+
+type AdminUser struct {
+	BlogUserID int
+	BlogUser   BlogUser
 }
