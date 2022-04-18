@@ -8,7 +8,8 @@ ADD . /go/src/github.com/compscidr/goblog/
 # Build the outyet command inside the container.
 # (You may fetch or manage dependencies here,
 # either manually or with a tool like "godep".)
-RUN cd /go/src/github.com/compscidr/goblog/ && go build -ldflags="-X 'main.Version=$(git describe --tags --dirty)'" -v .
+ARG VERSION
+RUN cd /go/src/github.com/compscidr/goblog/ && go build -ldflags="-X 'main.Version=$VERSION'" -v .
 
 # Run the outyet command by default when the container starts.
 ENTRYPOINT cd /go/src/github.com/compscidr/goblog && ./goblog
