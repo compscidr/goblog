@@ -186,7 +186,7 @@ func main() {
 
 	router.NoRoute(_blog.NoRoute)
 
-	err = endless.ListenAndServe("localhost:7000", router)
+	err = endless.ListenAndServe(":7000", router)
 	if err != nil {
 		log.Println("Error running goblog server: " + err.Error())
 	}

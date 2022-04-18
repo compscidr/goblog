@@ -150,15 +150,15 @@ func (b Blog) NoRoute(c *gin.Context) {
 			return
 		}
 	} else {
-		log.Println("TOKEN LEN: " + strconv.Itoa(len(tokens)))
-		for _, s := range tokens {
-			log.Println(s)
-		}
+		//log.Println("TOKEN LEN: " + strconv.Itoa(len(tokens)))
+		//for _, s := range tokens {
+		//	log.Println(s)
+		//}
 	}
 
 	c.HTML(http.StatusNotFound, "error.html", gin.H{
-		"logged_in": b.auth.IsLoggedIn(c),
-		"is_admin":  b.auth.IsAdmin(c),
+		"logged_in":   b.auth.IsLoggedIn(c),
+		"is_admin":    b.auth.IsAdmin(c),
 		"error":       "404: Page Not Found",
 		"description": "The page at '" + c.Request.URL.String() + "' was not found",
 		"version":     b.Version,
