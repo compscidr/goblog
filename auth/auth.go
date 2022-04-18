@@ -209,7 +209,7 @@ func (a Auth) IsAdmin(c *gin.Context) bool {
 	}
 
 	//debug
-	a.DisplayUserTable()
+	//a.DisplayUserTable()
 
 	// first make sure the access token matches a logged in user
 	var existingUser BlogUser
