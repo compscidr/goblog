@@ -6,3 +6,7 @@ body {
     background-size: cover;
     -o-background-size: cover;
 }
+
+.footer a { color: rgba(0,0,0,.70); }
+.footer a:hover { color: #007bff; }
+.version { color: #bbb; font-size: 10px; }
