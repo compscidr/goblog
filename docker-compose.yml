@@ -21,12 +21,17 @@ services:
       - '8080:80'
 
   goblog:
-    build: '.'
+    build:
+      context: .
+      args:
+        VERSION: develop
     image: compscidr/goblog:latest
     container_name: goblog
     depends_on:
       - db
     restart: always
+    env_file:
+      template.env
     ports:
       - "7000:7000"
     volumes:
