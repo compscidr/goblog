@@ -1,7 +1,7 @@
 {{ template "header.html" .}}
   <script type="text/javascript">
 
-    function createPost() {
+    function createPost(publish) {
       var tags = $("#tags").val().split(',')
       for (var i = 0; i < tags.length; i++) {
         tags[i] = {"name": tags[i].trim()}
@@ -15,6 +15,7 @@
         "created_at": vtime,
         "content": simplemde.value(),
         "tags": tags,
+        "publish": !publish,
       }
       console.log("POST: " + JSON.stringify(post));
 
@@ -89,8 +90,11 @@
     </div>
 
     <div class="form-group">
-      <button class="btn btn-primary" onclick="createPost();">
-        Create
+      <button class="btn btn-primary" onclick="createPost(false);">
+        Draft
+      </button>
+      <button class="btn btn-primary" onclick="createPost(true);">
+        Publish
       </button>
       <button class="btn btn-default" onClick="window.location.reload();">
         Cancel

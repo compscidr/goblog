@@ -23,7 +23,7 @@ var UploadsFolder = "uploads/"
 type Admin struct {
 	db      *gorm.DB
 	auth    auth.IAuth
-	b 		blog.Blog
+	b       blog.Blog
 	version string
 }
 
@@ -96,7 +96,7 @@ func (a Admin) UploadFile(c *gin.Context) {
 	}
 
 	filename := UploadsFolder + filepath.Base(file.Filename)
-	if err := c.SaveUploadedFile(file, WWWFolder + filename); err != nil {
+	if err := c.SaveUploadedFile(file, WWWFolder+filename); err != nil {
 		log.Println(fmt.Sprintf("Save Upload File Error erorr: %s", err.Error()))
 		c.JSON(http.StatusBadRequest, fmt.Sprintf("upload file err: %s", err.Error()))
 		return
@@ -189,10 +189,10 @@ func (a Admin) DeletePost(c *gin.Context) {
 //Admin is the admin dashboard of the website
 func (a Admin) Admin(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin.html", gin.H{
-		"posts": a.b.GetPosts(),
+		"posts":     a.b.GetPosts(true),
 		"logged_in": a.auth.IsLoggedIn(c),
 		"is_admin":  a.auth.IsAdmin(c),
-		"version": a.version,
+		"version":   a.version,
 	})
 }
 
