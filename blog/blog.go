@@ -27,13 +27,13 @@ type Blog struct {
 	Version string
 }
 
-//New constructs an Admin API
+// New constructs an Admin API
 func New(db *gorm.DB, auth auth.IAuth, version string) Blog {
 	api := Blog{db, auth, version}
 	return api
 }
 
-//Generic Functions (not JSON or HTML)
+// Generic Functions (not JSON or HTML)
 func (b Blog) GetPosts(drafts bool) []Post {
 	var posts []Post
 	if !drafts {
@@ -105,12 +105,12 @@ func (b Blog) getPostsByTag(c *gin.Context) ([]Post, error) {
 
 //////JSON API///////
 
-//ListPosts lists all blog posts
+// ListPosts lists all blog posts
 func (b Blog) ListPosts(c *gin.Context) {
 	c.JSON(http.StatusOK, b.GetPosts(false))
 }
 
-//GetPost returns a post with yyyy/mm/dd/slug
+// GetPost returns a post with yyyy/mm/dd/slug
 func (b Blog) GetPost(c *gin.Context) {
 	post, err := b.GetPostObject(c)
 	if err != nil {
@@ -125,7 +125,7 @@ func (b Blog) GetPost(c *gin.Context) {
 
 //////HTML API///////
 
-//NoRoute returns a custom 404 page
+// NoRoute returns a custom 404 page
 func (b Blog) NoRoute(c *gin.Context) {
 
 	tokens := strings.Split(c.Request.URL.String(), "/")
@@ -169,9 +169,9 @@ func (b Blog) NoRoute(c *gin.Context) {
 	})
 }
 
-//Home returns html of the home page using the template
-//if people want to have different stuff show on the home page they probably
-//need to modify this function
+// Home returns html of the home page using the template
+// if people want to have different stuff show on the home page they probably
+// need to modify this function
 func (b Blog) Home(c *gin.Context) {
 	c.HTML(http.StatusOK, "home.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
@@ -181,7 +181,7 @@ func (b Blog) Home(c *gin.Context) {
 	})
 }
 
-//Posts is the index page for blog posts
+// Posts is the index page for blog posts
 func (b Blog) Posts(c *gin.Context) {
 	c.HTML(http.StatusOK, "posts.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
@@ -192,7 +192,7 @@ func (b Blog) Posts(c *gin.Context) {
 	})
 }
 
-//Post is the page for all individual posts
+// Post is the page for all individual posts
 func (b Blog) Post(c *gin.Context) {
 	post, err := b.GetPostObject(c)
 	if err != nil {
@@ -227,7 +227,7 @@ func (b Blog) Post(c *gin.Context) {
 	}
 }
 
-//Tag lists all posts with a given tag
+// Tag lists all posts with a given tag
 func (b Blog) Tag(c *gin.Context) {
 	tag := c.Param("name")
 	posts, err := b.getPostsByTag(c)
@@ -250,7 +250,7 @@ func (b Blog) Tag(c *gin.Context) {
 	}
 }
 
-//Tags is the index page for all Tags
+// Tags is the index page for all Tags
 func (b Blog) Tags(c *gin.Context) {
 	c.HTML(http.StatusOK, "tags.html", gin.H{
 		"version": b.Version,
@@ -259,7 +259,7 @@ func (b Blog) Tags(c *gin.Context) {
 	})
 }
 
-//Speaking is the index page for presentations
+// Speaking is the index page for presentations
 func (b Blog) Speaking(c *gin.Context) {
 	c.HTML(http.StatusOK, "presentations.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
@@ -269,7 +269,7 @@ func (b Blog) Speaking(c *gin.Context) {
 	})
 }
 
-//Speaking is the index page for research publications
+// Speaking is the index page for research publications
 func (b Blog) Research(c *gin.Context) {
 	c.HTML(http.StatusOK, "research.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
@@ -279,7 +279,7 @@ func (b Blog) Research(c *gin.Context) {
 	})
 }
 
-//Projects is the index page for projects / code
+// Projects is the index page for projects / code
 func (b Blog) Projects(c *gin.Context) {
 	c.HTML(http.StatusOK, "projects.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
@@ -289,13 +289,23 @@ func (b Blog) Projects(c *gin.Context) {
 	})
 }
 
-//About is the about page
+// About is the about page
 func (b Blog) About(c *gin.Context) {
 	c.HTML(http.StatusOK, "about.html", gin.H{
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
 		"version":   b.Version,
 		"title":     "About Jason",
+	})
+}
+
+// Archives shows the posts by year, month, etc.
+func (b Blog) Archives(c *gin.Context) {
+	c.HTML(http.StatusOK, "archives.html", gin.H{
+		"logged_in": b.auth.IsLoggedIn(c),
+		"is_admin":  b.auth.IsAdmin(c),
+		"version":   b.Version,
+		"title":     "Blog Archives",
 	})
 }
 
@@ -324,7 +334,7 @@ func (b Blog) Sitemap(c *gin.Context) {
 	c.Data(http.StatusOK, "text/xml", sm.XMLContent())
 }
 
-//Login to the blog
+// Login to the blog
 func (b Blog) Login(c *gin.Context) {
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -352,7 +362,7 @@ func (b Blog) Login(c *gin.Context) {
 	})
 }
 
-//Logout of the blog
+// Logout of the blog
 func (b Blog) Logout(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Delete("token")

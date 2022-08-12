@@ -164,6 +164,7 @@ func main() {
 	router.GET("/projects", _blog.Projects)
 	router.GET("/about", _blog.About)
 	router.GET("/sitemap.xml", _blog.Sitemap)
+	router.GET("/archives", _blog.Archives)
 
 	router.GET("/admin", _admin.Admin)
 
