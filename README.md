@@ -27,6 +27,7 @@ Other logged in users are able to post, update and delete comments (todo)
 Every function in the API should be covered by units and integration tests.
 
 What works:
+- Install Wizard for onboarding
 - List, Create, Update, Delete
 - Local sqlite3 db in a file
 - Markdown rendering, code highlighting for content
@@ -35,15 +36,13 @@ What works:
 - Version string in template header from `git describe`
 - Meta, Title, etc which changes with posts for SEO
 - Post date editing so old posts can be imported
-- Wordpress import, Medium import tool (kind of manually)
 
 Todo:
 - draft posts
 - default hero images or something so posts don't look so bare
 - cron job to backup posts
 - user comments
-- install onboarding
-- mysql, postgres, other dbs
+- mysql [WiP], postgres, other dbs
 
 ## Other tools used:
 - Gin: https://github.com/gin-gonic/gin. Used for multiplexing / routing the
