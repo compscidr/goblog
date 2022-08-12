@@ -148,12 +148,20 @@ func (a Admin) UpdatePost(c *gin.Context) {
 	//clear old associations
 	a.db.Model(&existingPost).Association("Tags").Clear()
 
+	log.Println("UPDATING DRAFT AS: ", requestPost.Draft)
+
 	existingPost.Title = requestPost.Title
 	existingPost.Content = requestPost.Content
 	existingPost.Slug = requestPost.Slug
 	existingPost.Tags = requestPost.Tags
 	existingPost.CreatedAt = requestPost.CreatedAt
+	existingPost.Draft = requestPost.Draft
 	a.db.Model(&existingPost).Where("id = ?", requestPost.ID).Updates(&existingPost)
+
+	// https://stackoverflow.com/questions/56653423/gorm-doesnt-update-boolean-field-to-false
+	if !requestPost.Draft {
+		a.db.Model(&existingPost).Select("draft").Update("draft", false)
+	}
 
 	log.Println("POST UPDATED: ", existingPost)
 	c.JSON(http.StatusAccepted, existingPost)
