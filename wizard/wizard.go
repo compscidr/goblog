@@ -8,7 +8,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"goblog/auth"
-	"goblog/blog"
+	"goblog/tools"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"io/ioutil"
@@ -25,7 +25,7 @@ type Wizard struct {
 	Version string
 }
 
-//New constructs an Admin API
+// New constructs an Admin API
 func New(version string) Wizard {
 	wizard := Wizard{version}
 	return wizard
@@ -288,23 +288,7 @@ func (w Wizard) createDbFile(accessToken string) error {
 		return err
 	}
 	log.Println("opened sqlite db")
-	err = db.AutoMigrate(&auth.BlogUser{})
-	if err != nil {
-		return errors.New("Error migrating the BlogUser struct: " + err.Error())
-	}
-	err = db.AutoMigrate(&blog.Post{})
-	if err != nil {
-		return errors.New("Error migrating the Post struct: " + err.Error())
-	}
-	err = db.AutoMigrate(&blog.Tag{})
-	if err != nil {
-		return errors.New("Error migrating the Tag struct: " + err.Error())
-	}
-	err = db.AutoMigrate(&auth.AdminUser{})
-	if err != nil {
-		return errors.New("Error migrating the AdminUser struct: " + err.Error())
-	}
-
+	tools.Migrate(db)
 	_auth := auth.New(db, w.Version)
 
 	user, err := _auth.RequestUser(accessToken)

@@ -7,6 +7,7 @@ import (
 	"goblog/admin"
 	"goblog/auth"
 	"goblog/blog"
+	"goblog/tools"
 	"goblog/wizard"
 	"log"
 	"os"
@@ -23,7 +24,7 @@ import (
 	"gorm.io/gorm"
 )
 
-//Version of the code generated from git describe
+// Version of the code generated from git describe
 var Version = "development"
 
 func setup_wizard() {
@@ -101,26 +102,8 @@ func main() {
 		}
 		log.Println("connected to mysql db")
 	}
-	err = db.AutoMigrate(&auth.BlogUser{})
-	if err != nil {
-		log.Println("Error migrating the BlogUser struct: " + err.Error())
-		return
-	}
-	err = db.AutoMigrate(&blog.Post{})
-	if err != nil {
-		log.Println("Error migrating the Post struct: " + err.Error())
-		return
-	}
-	err = db.AutoMigrate(&blog.Tag{})
-	if err != nil {
-		log.Println("Error migrating the Tag struct: " + err.Error())
-		return
-	}
-	err = db.AutoMigrate(&auth.AdminUser{})
-	if err != nil {
-		log.Println("Error migrating the AdminUser struct: " + err.Error())
-		return
-	}
+
+	tools.Migrate(db)
 
 	router := gin.Default()
 	router.Use(CORS())

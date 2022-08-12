@@ -27,13 +27,13 @@ type Admin struct {
 	version string
 }
 
-//New constructs an Admin API
+// New constructs an Admin API
 func New(db *gorm.DB, auth auth.IAuth, b blog.Blog, version string) Admin {
 	api := Admin{db, auth, b, version}
 	return api
 }
 
-//////JSON API///////
+// ////JSON API///////
 func safeSlug(slug string) string {
 	slug = strings.ReplaceAll(slug, " ", "-")
 	slug = strings.ReplaceAll(slug, "/", "")
@@ -41,7 +41,7 @@ func safeSlug(slug string) string {
 	return url.QueryEscape(slug)
 }
 
-//CreatePost adds a post if the user has permission
+// CreatePost adds a post if the user has permission
 func (a Admin) CreatePost(c *gin.Context) {
 	contentType := c.Request.Header.Get("content-type")
 	if contentType != "application/json" {
@@ -77,8 +77,8 @@ func (a Admin) CreatePost(c *gin.Context) {
 	c.JSON(http.StatusCreated, requestPost)
 }
 
-//UploadFile is the endpoint for storing files on the server
-//https://github.com/gin-gonic/examples/blob/master/upload-file/single/main.go
+// UploadFile is the endpoint for storing files on the server
+// https://github.com/gin-gonic/examples/blob/master/upload-file/single/main.go
 func (a Admin) UploadFile(c *gin.Context) {
 	log.Println("Upload file API hit")
 
@@ -107,8 +107,8 @@ func (a Admin) UploadFile(c *gin.Context) {
 	c.JSON(http.StatusOK, map[string]interface{}{"filename": "/" + filename})
 }
 
-//UpdatePost modifies an existing post
-//Requires the ID of the post, title and content to not be empty
+// UpdatePost modifies an existing post
+// Requires the ID of the post, title and content to not be empty
 func (a Admin) UpdatePost(c *gin.Context) {
 	contentType := c.Request.Header.Get("content-type")
 	if contentType != "application/json" {
@@ -158,7 +158,7 @@ func (a Admin) UpdatePost(c *gin.Context) {
 	existingPost.Draft = requestPost.Draft
 	a.db.Model(&existingPost).Where("id = ?", requestPost.ID).Updates(&existingPost)
 
-	// https://stackoverflow.com/questions/56653423/gorm-doesnt-update-boolean-field-to-false
+	//https://stackoverflow.com/questions/56653423/gorm-doesnt-update-boolean-field-to-false
 	if !requestPost.Draft {
 		a.db.Model(&existingPost).Select("draft").Update("draft", false)
 	}
@@ -167,7 +167,7 @@ func (a Admin) UpdatePost(c *gin.Context) {
 	c.JSON(http.StatusAccepted, existingPost)
 }
 
-//DeletePost deletes a post from the database
+// DeletePost deletes a post from the database
 func (a Admin) DeletePost(c *gin.Context) {
 	contentType := c.Request.Header.Get("content-type")
 	if contentType != "application/json" {
@@ -194,7 +194,7 @@ func (a Admin) DeletePost(c *gin.Context) {
 
 //////HTML API///////
 
-//Admin is the admin dashboard of the website
+// Admin is the admin dashboard of the website
 func (a Admin) Admin(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin.html", gin.H{
 		"posts":     a.b.GetPosts(true),
