@@ -206,10 +206,13 @@ func (a Auth) IsAdmin(c *gin.Context) bool {
 	token := session.Get("token")
 	if token == nil {
 		token = c.Request.Header.Get("Authorization")
+		if token == "" {
+			return false
+		}
 	}
 
 	//debug
-	//a.DisplayUserTable()
+	a.DisplayUserTable()
 
 	// first make sure the access token matches a logged in user
 	var existingUser BlogUser
