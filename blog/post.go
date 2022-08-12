@@ -15,6 +15,7 @@ type Post struct {
 	Slug    string `json:"slug"`
 	Content string `sql:"type:text;" json:"content"`
 	Tags    []Tag  `gorm:"many2many:post_tags" json:"tags"`
+	Draft		bool	 `json:"draft"`
 }
 
 // Tag is used to collect Posts with similar topics

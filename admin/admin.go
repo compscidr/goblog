@@ -23,7 +23,7 @@ var UploadsFolder = "uploads/"
 type Admin struct {
 	db      *gorm.DB
 	auth    auth.IAuth
-	b 		blog.Blog
+	b       blog.Blog
 	version string
 }
 
@@ -96,7 +96,7 @@ func (a Admin) UploadFile(c *gin.Context) {
 	}
 
 	filename := UploadsFolder + filepath.Base(file.Filename)
-	if err := c.SaveUploadedFile(file, WWWFolder + filename); err != nil {
+	if err := c.SaveUploadedFile(file, WWWFolder+filename); err != nil {
 		log.Println(fmt.Sprintf("Save Upload File Error erorr: %s", err.Error()))
 		c.JSON(http.StatusBadRequest, fmt.Sprintf("upload file err: %s", err.Error()))
 		return
@@ -148,12 +148,20 @@ func (a Admin) UpdatePost(c *gin.Context) {
 	//clear old associations
 	a.db.Model(&existingPost).Association("Tags").Clear()
 
+	log.Println("UPDATING DRAFT AS: ", requestPost.Draft)
+
 	existingPost.Title = requestPost.Title
 	existingPost.Content = requestPost.Content
 	existingPost.Slug = requestPost.Slug
 	existingPost.Tags = requestPost.Tags
 	existingPost.CreatedAt = requestPost.CreatedAt
+	existingPost.Draft = requestPost.Draft
 	a.db.Model(&existingPost).Where("id = ?", requestPost.ID).Updates(&existingPost)
+
+	// https://stackoverflow.com/questions/56653423/gorm-doesnt-update-boolean-field-to-false
+	if !requestPost.Draft {
+		a.db.Model(&existingPost).Select("draft").Update("draft", false)
+	}
 
 	log.Println("POST UPDATED: ", existingPost)
 	c.JSON(http.StatusAccepted, existingPost)
@@ -189,10 +197,10 @@ func (a Admin) DeletePost(c *gin.Context) {
 //Admin is the admin dashboard of the website
 func (a Admin) Admin(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin.html", gin.H{
-		"posts": a.b.GetPosts(),
+		"posts":     a.b.GetPosts(true),
 		"logged_in": a.auth.IsLoggedIn(c),
 		"is_admin":  a.auth.IsAdmin(c),
-		"version": a.version,
+		"version":   a.version,
 	})
 }
 
