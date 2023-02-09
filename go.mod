@@ -10,7 +10,7 @@ require (
 	github.com/ikeikeikeike/go-sitemap-generator/v2 v2.0.2
 	github.com/joho/godotenv v1.5.0
 	github.com/stretchr/testify v1.8.1
-	gorm.io/driver/mysql v1.4.5
+	gorm.io/driver/mysql v1.4.6
 	gorm.io/driver/sqlite v1.4.4
 	gorm.io/gorm v1.24.5
 )
