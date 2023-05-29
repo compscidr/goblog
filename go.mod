@@ -9,7 +9,7 @@ require (
 	github.com/gin-gonic/gin v1.9.0
 	github.com/ikeikeikeike/go-sitemap-generator/v2 v2.0.2
 	github.com/joho/godotenv v1.5.1
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.3
 	gorm.io/driver/mysql v1.5.1
 	gorm.io/driver/sqlite v1.5.1
 	gorm.io/gorm v1.25.1
