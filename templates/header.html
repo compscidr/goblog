@@ -9,6 +9,26 @@
   <meta name="description" content="{{ .post.PreviewContent 155 }}">
   <meta name="robots" content="index, follow" />
   <title>Jason Ernst: {{ .post.Title }}</title>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": "{{ .post.Title }}",
+      "image": [
+        {{range .post.ExtractImages}}
+        "https://www.jasonernst.com{{.}}",
+        {{end}}
+        "https://www.jasonernst.com/img/jason.jpg"
+      ],
+      "datePublished": "{{ .post.CreatedAt }}",
+      "dateModified": "{{ .post.UpdatedAt }}",
+      "author": [{
+        "@type": "Person",
+        "name": "Jason Ernst",
+        "url": "https://www.jasonernst.com"
+      }]
+    }
+  </script>
   {{ else }}
   <meta name="description" content="Jason Ernst's blog, code, projects and publications">
   <title>Jason Ernst: {{ .title }}</title>

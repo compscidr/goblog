@@ -2,6 +2,7 @@ package blog
 
 import (
 	"bytes"
+	"regexp"
 	"time"
 )
 
@@ -46,4 +47,14 @@ func (p Post) Adminlink() string {
 
 func (t Tag) Permalink() string {
 	return "/tag/" + t.Name
+}
+
+func (p Post) ExtractImages() []string {
+	var result []string
+	pattern := regexp.MustCompile(`\[file\]\((.+)\)`)
+	substrings := pattern.FindAllStringSubmatch("![file](/uploads/image-1637721856608.png)", -1)
+	for _, r := range substrings {
+		result = append(result, r[1])
+	}
+	return result
 }
