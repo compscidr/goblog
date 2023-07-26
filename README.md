@@ -1,5 +1,5 @@
 # goblog
-![Go](https://github.com/compscidr/goblog/workflows/Go/badge.svg)
+[![Build and Test](https://github.com/compscidr/goblog/actions/workflows/push.yml/badge.svg)](https://github.com/compscidr/goblog/actions/workflows/push.yml)
 [![codecov](https://codecov.io/gh/compscidr/goblog/branch/master/graph/badge.svg)](https://codecov.io/gh/compscidr/goblog)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
