@@ -5,6 +5,8 @@
     <h1 class="text-left">Posts with Tag: {{.tag}}</h1>
 
     {{ range .posts }}
+      {{ if .Draft }}
+      {{ else }}
     <div class="row">
       <div class="container left">
           <h2 class="text-left"><a href="{{ .Permalink }}">{{ .Title }}</a></h2>
@@ -15,6 +17,7 @@
 
       </div>
     </div>
+      {{ end }}
     {{ end }}
 
 {{ template "footer.html" .}}

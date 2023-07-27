@@ -13,7 +13,10 @@
                 <h3><a href="{{ .Permalink }}" title="{{ .Name }}">{{ .Name }}</a></h3>
                 <ul>
                 {{ range .Posts }}
+                    {{ if .Draft }}
+                    {{ else }}
                     <li><a href="{{ .Permalink }}" title="{{ .Title }}">{{ .Title }}</a></li>
+                    {{ end }}
                 {{ end }}
                 </ul>
                 {{ end }}
