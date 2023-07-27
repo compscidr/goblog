@@ -322,7 +322,9 @@ func (b Blog) Sitemap(c *gin.Context) {
 
 	posts := b.GetPosts(false)
 	for _, post := range posts {
-		sm.Add(stm.URL{{"loc", post.Permalink()}, {"changefreq", "yearly"}, {"priority", 0.55}})
+		if !post.Draft {
+			sm.Add(stm.URL{{"loc", post.Permalink()}, {"changefreq", "yearly"}, {"priority", 0.55}})
+		}
 	}
 	tags := b.getTags()
 	for _, tag := range tags {
