@@ -52,7 +52,7 @@ func (t Tag) Permalink() string {
 func (p Post) ExtractImages() []string {
 	var result []string
 	pattern := regexp.MustCompile(`\[file\]\((.+)\)`)
-	substrings := pattern.FindAllStringSubmatch("![file](/uploads/image-1637721856608.png)", -1)
+	substrings := pattern.FindAllStringSubmatch(p.Content, -1)
 	for _, r := range substrings {
 		result = append(result, r[1])
 	}
