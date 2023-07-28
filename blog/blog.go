@@ -50,6 +50,34 @@ func (b Blog) getTags() []Tag {
 	return tags
 }
 
+func (b Blog) getArchivesByYear() map[string][]Post {
+	archive := make(map[string][]Post)
+	posts := b.GetPosts(false)
+	for _, post := range posts {
+		year := strconv.Itoa(post.CreatedAt.Year())
+		if _, ok := archive[year]; !ok {
+			archive[year] = make([]Post, 0)
+		}
+		archive[year] = append(archive[year], post)
+	}
+	return archive
+}
+
+func (b Blog) getArchivesByYearMonth() map[string][]Post {
+	archive := make(map[string][]Post)
+	posts := b.GetPosts(false)
+	for _, post := range posts {
+		year := strconv.Itoa(post.CreatedAt.Year())
+		month := strconv.Itoa(int(post.CreatedAt.Month()))
+		yearMonth := year + "/" + month
+		if _, ok := archive[yearMonth]; !ok {
+			archive[yearMonth] = make([]Post, 0)
+		}
+		archive[yearMonth] = append(archive[yearMonth], post)
+	}
+	return archive
+}
+
 func (b Blog) GetPostObject(c *gin.Context) (*Post, error) {
 	var post Post
 	year, err := strconv.Atoi(c.Param("yyyy"))
@@ -295,17 +323,19 @@ func (b Blog) About(c *gin.Context) {
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
 		"version":   b.Version,
-		"title":     "About Jason",
+		"title":     "About",
 	})
 }
 
 // Archives shows the posts by year, month, etc.
 func (b Blog) Archives(c *gin.Context) {
 	c.HTML(http.StatusOK, "archives.html", gin.H{
-		"logged_in": b.auth.IsLoggedIn(c),
-		"is_admin":  b.auth.IsAdmin(c),
-		"version":   b.Version,
-		"title":     "Blog Archives",
+		"logged_in":   b.auth.IsLoggedIn(c),
+		"is_admin":    b.auth.IsAdmin(c),
+		"version":     b.Version,
+		"title":       "Blog Archives",
+		"byYear":      b.getArchivesByYear(),
+		"byYearMonth": b.getArchivesByYearMonth(),
 	})
 }
 
