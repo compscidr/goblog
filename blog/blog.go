@@ -293,7 +293,7 @@ func (b Blog) Speaking(c *gin.Context) {
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
 		"version":   b.Version,
-		"title":     "Speaking",
+		"title":     "Presentations and Speaking",
 	})
 }
 
@@ -303,7 +303,7 @@ func (b Blog) Research(c *gin.Context) {
 		"logged_in": b.auth.IsLoggedIn(c),
 		"is_admin":  b.auth.IsAdmin(c),
 		"version":   b.Version,
-		"title":     "Research Publications by Jason Ernst",
+		"title":     "Research Publications",
 	})
 }
 
