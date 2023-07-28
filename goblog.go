@@ -151,6 +151,8 @@ func main() {
 	router.GET("/", _blog.Home)
 	router.GET("/index.php", _blog.Home)
 	router.GET("/posts/:yyyy/:mm/:dd/:slug", _blog.Post)
+	// lets posts work with our without the word posts in front
+	router.GET("/:yyyy/:mm/:dd/:slug", _blog.Post)
 	router.GET("/admin/posts/:yyyy/:mm/:dd/:slug", _admin.Post)
 	router.GET("/tag/:name", _blog.Tag)
 	router.GET("/login", _blog.Login)
@@ -158,6 +160,7 @@ func main() {
 
 	//todo: register a template mapping to a "page type"
 	router.GET("/posts", _blog.Posts)
+	router.GET("/blog", _blog.Posts)
 	router.GET("/tags", _blog.Tags)
 	router.GET("/presentations", _blog.Speaking)
 	router.GET("/research", _blog.Research)
@@ -165,6 +168,8 @@ func main() {
 	router.GET("/about", _blog.About)
 	router.GET("/sitemap.xml", _blog.Sitemap)
 	router.GET("/archives", _blog.Archives)
+	// lets old WordPress stuff stored at wp-content/uploads work
+	router.Use(static.Serve("/wp-content", static.LocalFile("www", false)))
 
 	router.GET("/admin", _admin.Admin)
 
