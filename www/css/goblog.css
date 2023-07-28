@@ -6,7 +6,8 @@
 .profile { max-width:300px; margin-top: 30px; }
 .footer { margin-top: 20px; }
 html { height: 100%; }
-body { font-family: 'Source Code Pro', monospace; height: 100%; }
+body { font-family: 'Source Code Pro', monospace; min-height:100vh; display:flex; flex-direction:column; }
+.wrapper { flex: 1; }
 .menu a, .footer a { color: rgba(0,0,0,.70); }
 .footer a:hover { color: #007bff; }
 .logo { background: #777; color: #EEE; font-size: 28px; padding: 10px 15px 10px 15px; float:left; }
@@ -29,6 +30,8 @@ body { font-family: 'Source Code Pro', monospace; height: 100%; }
 .admin-posts li { padding-bottom: 10px; }
 .research { background:#EEEEEE; margin-bottom: 5px; padding:5px }
 .research:nth-child(even) { background: #FFFFFF; }
+.bottom { min-height: 200px; width: 100%; background-color: #333333; color: #EEE; }
+.bottom a { color: #EEE; }
 /* text animation */
 @keyframes animated-text{  from{width: 0;} to{width: 350px;} }
 /* cursor animations */

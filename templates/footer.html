@@ -13,15 +13,20 @@
       </div> <!-- /footer -->
       <div class="spacer version">Powered by <a href="https://github.com/compscidr/goblog" target="goblog {{ .version }}">goblog {{ .version }}</a></div>
   </div>
+  </div> <!-- / wrapper -->
+  <div class="bottom bottom-0">
+    <div class="container">
+      <h2 class="pt-2">Most Recent Post</h2>
+      <h3 class="text-left"><a href="{{ .recent.Permalink }}" title="{{ .recent.Title }}">{{ .recent.Title }}</a></h3>
+      <p class="blog-post-meta text-left">{{ .recent.CreatedAt.Format "Jan 02, 2006 15:04:05 UTC" }}
+        {{ range .Tags }}
+        <a href="{{ .recent.Permalink }}" title="{{ .recent.Name}}">#{{ .recent.Name }}</a>
+        {{ end }}
+      </p>
+      <p class="text-justify">
+        {{ .recent.PreviewContent 600 }} ...
+      </p>
+    </div>
+  </div>
   <script>hljs.initHighlightingOnLoad();</script>
-  <!-- Twitter universal website tag code -->
-  <script>
-      !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);
-      },s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.src='//static.ads-twitter.com/uwt.js',
-          a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
-      // Insert Twitter Pixel ID and Standard Event data below
-      twq('init','o6m12');
-      twq('track','PageView');
-  </script>
-  <!-- End Twitter universal website tag code -->
 </body>
