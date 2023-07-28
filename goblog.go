@@ -132,6 +132,8 @@ func main() {
 	router.POST("/api/v1/posts", _admin.CreatePost)
 	router.POST("/api/v1/upload", _admin.UploadFile)
 	router.PATCH("/api/v1/posts", _admin.UpdatePost)
+	router.PATCH("/api/v1/publish/:id", _admin.PublishPost)
+	router.PATCH("/api/v1/draft/:id", _admin.DraftPost)
 	router.DELETE("/api/v1/posts", _admin.DeletePost)
 	router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", _blog.GetPost)
 	router.GET("/api/v1/posts", _blog.ListPosts)

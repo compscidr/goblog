@@ -135,7 +135,7 @@ func (a Admin) UpdatePost(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "Missing ID, Title or Content")
 		return
 	}
-	requestPost.Slug = safeSlug(requestPost.Title)
+	requestPost.Slug = safeSlug(requestPost.Slug)
 
 	var existingPost blog.Post
 	err := a.db.Where("id = ?", requestPost.ID).First(&existingPost).Error
@@ -190,6 +190,25 @@ func (a Admin) DeletePost(c *gin.Context) {
 	a.db.Where("id = ?", requestPost.ID).Delete(&blog.Post{})
 
 	c.JSON(http.StatusOK, "")
+}
+
+func (a Admin) PublishPost(c *gin.Context) {
+	id := c.Param("id")
+	log.Println("Publishing post: ", id)
+
+	var post blog.Post
+	a.db.Where("id = ?", id).First(&post)
+	a.db.Model(&post).Select("draft").Update("draft", false)
+	c.JSON(http.StatusAccepted, post)
+}
+
+func (a Admin) DraftPost(c *gin.Context) {
+	id := c.Param("id")
+	log.Println("Drafting post: ", id)
+	var post blog.Post
+	a.db.Where("id = ?", id).First(&post)
+	a.db.Model(&post).Select("draft").Update("draft", true)
+	c.JSON(http.StatusAccepted, post)
 }
 
 //////HTML API///////

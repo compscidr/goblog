@@ -1,72 +1,16 @@
 {{ template "header.html" .}}
-
-  <script type="text/javascript">
-
-    function updatePost(publish) {
-      var tags = $("#tags").text().split(',')
-      for (var i = 0; i < tags.length; i++) {
-        tags[i] = {"name": tags[i].trim()}
-      }
-      var time = $("#created_at").val();
-      var vtime = moment.utc(time)
-      
-      var post = {
-        "id": {{ .post.ID }},
-        "created_at": vtime,
-        "title": $("#title").text(),
-        "content": simplemde.value(),
-        "tags": tags,
-        "draft": !publish,
-      }
-      console.log("PATCH: " + JSON.stringify(post));
-
-      $.ajax({
-        url: "/api/v1/posts",
-        type: "patch",
-        dataType: "json",
-        contentType: "application/json",
-        success: function(json) {
-          var time = moment(json.created_at);
-          var slug = json.slug;
-          window.location.href="/posts/" + time.format("YYYY/MM/DD") + "/" + slug;
-        },
-        data: JSON.stringify(post)
-      });
-    }
-
-    function deletePost() {
-      var post = {
-        "id": {{ .post.ID }},
-        "title": $("#title").text(),
-        "content": $("#content").text(),
-      }
-      console.log("PATCH: " + JSON.stringify(post));
-
-      $.ajax({
-        url: "/api/v1/posts",
-        type: "delete",
-        dataType: "json",
-        contentType: "application/json",
-        success: function(json) {
-          window.location.href = "/posts";
-        },
-        data: JSON.stringify(post)
-      });
-      return false;
-    }
-  </script>
-
+  <script src="/js/admin-script.js"></script>
   <div class="container">
 
     <div class="row">
       <div class="container left">
         {{ if .post.Draft }}
-          <h2 class="text-left" contenteditable="true" id="title" onfocusout="updatePost(false)">{{ .post.Title }}</h2>
+          <h2 class="text-left" contenteditable="true" id="title" onfocusout="updatePost({{ .post.ID }}, false)">{{ .post.Title }}</h2>
         {{ else }}
-        <h2 class="text-left" contenteditable="true" id="title" onfocusout="updatePost(true)">{{ .post.Title }}</h2>
+        <h2 class="text-left" contenteditable="true" id="title" onfocusout="updatePost({{ .post.ID }}, true)">{{ .post.Title }}</h2>
         {{ end }}
 
-        <p class="blog-post-meta text-left">Posted on {{ .post.CreatedAt.Format "Jan 02, 2006 15:04:05 UTC" }}. Last Edited on {{ .post.UpdatedAt.Format "Jan 02, 2006 15:04:05 UTC" }} [ <a href="#" onclick="return deletePost()">Delete</a>] </p>
+        <p class="blog-post-meta text-left">Posted on {{ .post.CreatedAt.Format "Jan 02, 2006 15:04:05 UTC" }}. Last Edited on {{ .post.UpdatedAt.Format "Jan 02, 2006 15:04:05 UTC" }} [ <a href="#" onclick="return deletePost($post.ID)">Delete</a>] </p>
         <p class="tags text-left">
           {{range .post.Tags}}
             <a href="/tag/{{.Name}}">#{{.Name}}</a>
@@ -78,9 +22,20 @@
       <div class="container left">
         <div class="spacer">&nbsp;</div>
         <h1>Editable</h1>
-        <p class="tags text-left" id="tags" contenteditable="true" onfocusout="updatePost()">{{range $i, $e := .post.Tags}}{{if $i}}, {{end}}{{$e.Name}}{{end}}</p>
+        <label for="slug">Slug</label>
+        <p class="form-control" id="slug" contenteditable="true" onfocusout="updatePost({{ .post.ID }}, true)">{{ .post.Slug }}</p>
+        <label for="tags">Tags</label>
+        {{ if .post.Draft }}
+        <p class="form-control" id="tags" contenteditable="true" onfocusout="updatePost({{ .post.ID }}, false)">{{range $i, $e := .post.Tags}}{{if $i}}, {{end}}{{$e.Name}}{{end}}</p>
+        {{ else }}
+        <p class="form-control" id="tags" contenteditable="true" onfocusout="updatePost({{ .post.ID }}, true)">{{range $i, $e := .post.Tags}}{{if $i}}, {{end}}{{$e.Name}}{{end}}</p>
+        {{ end }}
         <div class="text-left">
-          <textarea id="content" onfocusout="updatePost()" style="width: 100%; height: 50%;">{{ .post.Content }}</textarea>
+          {{ if .post.Draft }}
+          <textarea id="content" onfocusout="updatePost({{ .post.ID }}, false)" style="width: 100%; height: 50%;">{{ .post.Content }}</textarea>
+          {{ else }}
+          <textarea id="content" onfocusout="updatePost({{ .post.ID }}, true)" style="width: 100%; height: 50%;">{{ .post.Content }}</textarea>
+          {{ end }}
         </div>
         <div class="spacer">&nbsp;</div>
 
@@ -96,21 +51,21 @@
 
         <div class="form-group">
           {{ if .post.Draft }}
-          <button class="btn btn-primary" onclick="updatePost(false);">
+          <button class="btn btn-primary mt-2" onclick="updatePost({{ .post.ID }}, false);">
             Save
           </button>
-          <button class="btn btn-primary" onclick="updatePost(true);">
+          <button class="btn btn-primary mt-2" onclick="updatePost({{ .post.ID }}, true);">
             Publish
           </button>
           {{ else }}
-          <button class="btn btn-primary" onclick="updatePost(false);">
+          <button class="btn btn-primary mt-2" onclick="updatePost({{ .post.ID }}, false);">
             Back to Draft
           </button>
-          <button class="btn btn-primary" onclick="updatePost(true);">
+          <button class="btn btn-primary mt-2" onclick="updatePost({{ .post.ID }}, true);">
             Save
           </button>
           {{ end }}
-          <button class="btn btn-default" onClick="window.location.reload();">
+          <button class="btn btn-default mt-2" onClick="window.location.reload();">
               Cancel
           </button>
         </div>

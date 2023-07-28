@@ -1,5 +1,7 @@
 {{ template "header.html" .}}
-
+  {{ if .is_admin }}
+  <script src="/js/admin-script.js"></script>
+  {{ end }}
   <div class="spacer">&nbsp;</div>
 
   <div class="container">
@@ -13,7 +15,13 @@
           {{end}}
         </p>
         {{ if .is_admin }}
-        <p class="text-left"><a href="{{ .post.Adminlink }}">Edit this post</a></p>
+        <p class="text-left"><a href="{{ .post.Adminlink }}">Edit this post</a>
+          {{ if .post.Draft }}
+          <a href="" onClick="publishPost({{ .post.ID }})">Publish this post</a>
+          {{ else }}
+          <a href="" onClick="draftPost({{ .post.ID }})">Back to draft</a>
+          {{ end }}
+        </p>
         {{ end }}
         <div class="spacer">&nbsp;</div>
         <div id="html" class="text-left"></div>
