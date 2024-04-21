@@ -2,6 +2,7 @@ package blog
 
 import (
 	"errors"
+	scholar "github.com/compscidr/scholar"
 	"goblog/auth"
 	"log"
 	"net/http"
@@ -25,11 +26,12 @@ type Blog struct {
 	db      *gorm.DB
 	auth    auth.IAuth
 	Version string
+	scholar scholar.Scholar
 }
 
 // New constructs an Admin API
-func New(db *gorm.DB, auth auth.IAuth, version string) Blog {
-	api := Blog{db, auth, version}
+func New(db *gorm.DB, auth auth.IAuth, version string, scholar scholar.Scholar) Blog {
+	api := Blog{db, auth, version, scholar}
 	return api
 }
 
@@ -322,6 +324,7 @@ func (b Blog) Research(c *gin.Context) {
 		"version":   b.Version,
 		"title":     "Research Publications",
 		"recent":    b.GetLatest(),
+		"articles":  b.scholar.QueryProfileWithCache("SbUmSEAAAAAJ", 1),
 	})
 }
 
