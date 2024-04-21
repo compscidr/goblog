@@ -70,7 +70,7 @@ func main() {
 		setup_wizard()
 		err := godotenv.Load(".env")
 		if err != nil {
-			log.Println("Failed to read the .env file after the wizard, can't procced")
+			log.Println("Failed to read the .env file after the wizard, can't proceed")
 			return
 		}
 	}
@@ -174,6 +174,10 @@ func main() {
 	router.Use(static.Serve("/wp-content", static.LocalFile("www", false)))
 
 	router.GET("/admin", _admin.Admin)
+	router.GET("/admin/dashboard", _admin.AdminDashboard)
+	router.GET("/admin/posts", _admin.AdminPosts)
+	router.GET("/admin/newpost", _admin.AdminNewPost)
+	router.GET("/admin/settings", _admin.AdminSettings)
 
 	router.NoRoute(_blog.NoRoute)
 

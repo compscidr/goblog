@@ -55,7 +55,12 @@ func TestCreatePost(t *testing.T) {
 	router.PATCH("/api/v1/posts", ad.UpdatePost)
 	router.DELETE("/api/v1/posts", ad.DeletePost)
 	router.POST("/api/v1/upload", ad.UploadFile)
+
 	router.GET("/admin", ad.Admin)
+	router.GET("/admin/dashboard", ad.AdminDashboard)
+	router.GET("/admin/posts", ad.AdminPosts)
+	router.GET("/admin/newpost", ad.AdminNewPost)
+	router.GET("/admin/settings", ad.AdminSettings)
 
 	//improper content-type
 	testPost := blog.Post{
