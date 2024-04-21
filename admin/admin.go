@@ -223,6 +223,42 @@ func (a Admin) Admin(c *gin.Context) {
 	})
 }
 
+func (a Admin) AdminDashboard(c *gin.Context) {
+	c.HTML(http.StatusOK, "admin_dashboard.html", gin.H{
+		"posts":     a.b.GetPosts(true),
+		"logged_in": a.auth.IsLoggedIn(c),
+		"is_admin":  a.auth.IsAdmin(c),
+		"version":   a.version,
+	})
+}
+
+func (a Admin) AdminPosts(c *gin.Context) {
+	c.HTML(http.StatusOK, "admin_all_posts.html", gin.H{
+		"posts":     a.b.GetPosts(true),
+		"logged_in": a.auth.IsLoggedIn(c),
+		"is_admin":  a.auth.IsAdmin(c),
+		"version":   a.version,
+	})
+}
+
+func (a Admin) AdminNewPost(c *gin.Context) {
+	c.HTML(http.StatusOK, "admin_new_post.html", gin.H{
+		"posts":     a.b.GetPosts(true),
+		"logged_in": a.auth.IsLoggedIn(c),
+		"is_admin":  a.auth.IsAdmin(c),
+		"version":   a.version,
+	})
+}
+
+func (a Admin) AdminSettings(c *gin.Context) {
+	c.HTML(http.StatusOK, "admin_settings.html", gin.H{
+		"posts":     a.b.GetPosts(true),
+		"logged_in": a.auth.IsLoggedIn(c),
+		"is_admin":  a.auth.IsAdmin(c),
+		"version":   a.version,
+	})
+}
+
 func (a Admin) Post(c *gin.Context) {
 	if !a.auth.IsAdmin(c) {
 		log.Println("IS ADMIN RETURNED FALSE")
