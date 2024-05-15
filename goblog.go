@@ -137,6 +137,9 @@ func main() {
 	router.DELETE("/api/v1/posts", _admin.DeletePost)
 	router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", _blog.GetPost)
 	router.GET("/api/v1/posts", _blog.ListPosts)
+	router.GET("/api/v1/setting/:slug", _admin.GetSetting)
+	router.POST("/api/v1/setting", _admin.UpdateSetting)
+	router.PATCH("/api/v1/setting", _admin.UpdateSetting)
 
 	//all of this serves html full pages, but re-uses much of the logic of
 	//the json API. The json API is tested more easily. Also javascript can

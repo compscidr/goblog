@@ -211,6 +211,44 @@ func (a Admin) DraftPost(c *gin.Context) {
 	c.JSON(http.StatusAccepted, post)
 }
 
+func (a Admin) UpdateSetting(c *gin.Context) {
+	contentType := c.Request.Header.Get("content-type")
+	if contentType != "application/json" {
+		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
+		return
+	}
+
+	if !a.auth.IsAdmin(c) {
+		log.Println("IS ADMIN RETURNED FALSE")
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	var requestSetting blog.Setting
+	err := c.BindJSON(&requestSetting)
+	if err != nil {
+		log.Println("MALFORMED REQ: " + err.Error())
+		c.JSON(http.StatusBadRequest, "Malformed request")
+		return
+	}
+
+	var setting blog.Setting
+	err = a.db.Where("key = ?", setting.Key).First(&setting).Error
+	if err != nil {
+		a.db.Create(&setting)
+	} else {
+		a.db.Save(&setting)
+	}
+	c.JSON(http.StatusAccepted, setting)
+}
+
+func (a Admin) GetSetting(c *gin.Context) {
+	key := c.Param("key")
+	log.Println("Getting setting: ", key)
+
+	setting, err = a.db.Where("key = ?", key).First(&blog.Setting{})
+}
+
 //////HTML API///////
 
 // Admin is the admin dashboard of the website
