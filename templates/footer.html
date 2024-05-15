@@ -28,5 +28,7 @@
       </p>
     </div>
   </div>
-  <script>hljs.initHighlightingOnLoad();</script>
+{{ if .admin_page }}
+  <script>hljs.highlightAll();</script>
+{{ end }}
 </body>
