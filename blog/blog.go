@@ -177,6 +177,7 @@ func (b Blog) NoRoute(c *gin.Context) {
 					"post":      post,
 					"version":   b.Version,
 					"recent":    b.GetLatest(),
+					"admin_page": false,
 				})
 			} else {
 				c.HTML(http.StatusOK, "post.html", gin.H{
@@ -185,6 +186,7 @@ func (b Blog) NoRoute(c *gin.Context) {
 					"post":      post,
 					"version":   b.Version,
 					"recent":    b.GetLatest(),
+					"admin_page": false,
 				})
 			}
 			return
@@ -203,6 +205,7 @@ func (b Blog) NoRoute(c *gin.Context) {
 		"description": "The page at '" + c.Request.URL.String() + "' was not found",
 		"version":     b.Version,
 		"recent":      b.GetLatest(),
+		"admin_page": false,
 	})
 }
 
@@ -216,6 +219,7 @@ func (b Blog) Home(c *gin.Context) {
 		"version":   b.Version,
 		"title":     "Software Engineer",
 		"recent":    b.GetLatest(),
+		"admin_page": false,
 	})
 }
 
@@ -228,6 +232,7 @@ func (b Blog) Posts(c *gin.Context) {
 		"version":   b.Version,
 		"title":     "Posts",
 		"recent":    b.GetLatest(),
+		"admin_page": false,
 	})
 }
 
@@ -241,6 +246,7 @@ func (b Blog) Post(c *gin.Context) {
 			"version":     b.Version,
 			"title":       "Post Not Found",
 			"recent":      b.GetLatest(),
+			"admin_page": false,
 		})
 	} else {
 		c.HTML(http.StatusOK, "post.html", gin.H{
@@ -249,6 +255,7 @@ func (b Blog) Post(c *gin.Context) {
 			"post":      post,
 			"version":   b.Version,
 			"recent":    b.GetLatest(),
+			"admin_page": false,
 		})
 		//if b.auth.IsAdmin(c) {
 		//	c.HTML(http.StatusOK, "post-admin.html", gin.H{
@@ -279,6 +286,7 @@ func (b Blog) Tag(c *gin.Context) {
 			"version":     b.Version,
 			"title":       "Tag '" + tag + "' Not Found",
 			"recent":      b.GetLatest(),
+			"admin_page": false,
 		})
 	} else {
 		c.HTML(http.StatusOK, "tag.html", gin.H{
@@ -289,6 +297,7 @@ func (b Blog) Tag(c *gin.Context) {
 			"version":   b.Version,
 			"title":     "Posts with Tag '" + tag + "'",
 			"recent":    b.GetLatest(),
+			"admin_page": false,
 		})
 	}
 }
@@ -300,6 +309,7 @@ func (b Blog) Tags(c *gin.Context) {
 		"title":   "Tags",
 		"tags":    b.getTags(),
 		"recent":  b.GetLatest(),
+		"admin_page": false,
 	})
 }
 
@@ -311,6 +321,7 @@ func (b Blog) Speaking(c *gin.Context) {
 		"version":   b.Version,
 		"title":     "Presentations and Speaking",
 		"recent":    b.GetLatest(),
+		"admin_page": false,
 	})
 }
 
@@ -322,6 +333,7 @@ func (b Blog) Research(c *gin.Context) {
 		"version":   b.Version,
 		"title":     "Research Publications",
 		"recent":    b.GetLatest(),
+		"admin_page": false,
 	})
 }
 
@@ -333,6 +345,7 @@ func (b Blog) Projects(c *gin.Context) {
 		"version":   b.Version,
 		"title":     "Projects",
 		"recent":    b.GetLatest(),
+		"admin_page": false,
 	})
 }
 
@@ -344,6 +357,7 @@ func (b Blog) About(c *gin.Context) {
 		"version":   b.Version,
 		"title":     "About",
 		"recent":    b.GetLatest(),
+		"admin_page": false,
 	})
 }
 
@@ -357,6 +371,7 @@ func (b Blog) Archives(c *gin.Context) {
 		"byYear":      b.getArchivesByYear(),
 		"byYearMonth": b.getArchivesByYearMonth(),
 		"recent":      b.GetLatest(),
+		"admin_page": false,
 	})
 }
 
@@ -403,6 +418,7 @@ func (b Blog) Login(c *gin.Context) {
 				"version":   b.Version,
 				"title":     "Login Configuration Error",
 				"recent":    b.GetLatest(),
+				"admin_page": false,
 			})
 			return
 		}
@@ -416,6 +432,7 @@ func (b Blog) Login(c *gin.Context) {
 		"version":   b.Version,
 		"title":     "Login",
 		"recent":    b.GetLatest(),
+		"admin_page": false,
 	})
 }
 
