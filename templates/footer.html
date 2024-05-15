@@ -28,7 +28,7 @@
       </p>
     </div>
   </div>
-{{ if .admin_page }}
+{{ if or .admin_page .post }}
   <script>hljs.highlightAll();</script>
 {{ end }}
 </body>
