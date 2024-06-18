@@ -11,7 +11,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.9.0
 	gorm.io/driver/mysql v1.5.7
-	gorm.io/driver/sqlite v1.5.5
+	gorm.io/driver/sqlite v1.5.6
 	gorm.io/gorm v1.25.10
 )
 
@@ -19,8 +19,6 @@ require (
 	github.com/beevik/etree v1.1.0 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
-	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
-	github.com/chenzhuoyu/iasm v0.9.1 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
