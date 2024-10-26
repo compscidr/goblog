@@ -1,0 +1,56 @@
+{{ template "header.html" .}}
+<script type="text/javascript">
+
+    function createPost(publish) {
+        var tags = $("#tags").val().split(',')
+        for (var i = 0; i < tags.length; i++) {
+            tags[i] = {"name": tags[i].trim()}
+        }
+
+        var time = $("#created_at").val();
+        var vtime = moment.utc(time)
+
+        var post = {
+            "title": $("#title").val(),
+            "created_at": vtime,
+            "content": simplemde.value(),
+            "tags": tags,
+            "draft": !publish,
+        }
+        console.log("POST: " + JSON.stringify(post));
+
+        $.ajax({
+            url: "/api/v1/posts",
+            type: "post",
+            dataType: "json",
+            contentType: "application/json",
+            success: function(json) {
+                var time = moment(json.created_at);
+                var slug = json.slug;
+                window.location.href="/posts/" + time.format("YYYY/MM/DD") + "/" + slug;
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                alert("ERROR: " + textStatus + " " + errorThrown);
+            },
+            data: JSON.stringify(post)
+        });
+    }
+</script>
+
+<div class="container">
+    <div class="nav-scroller bg-body shadow-sm">
+
+        <!-- https://getbootstrap.com/docs/5.0/examples/offcanvas-navbar/ -->
+        <nav class="nav nav-underline" aria-label="Secondary navigation">
+            <a class="nav-link" href="/admin/dashboard">Dashboard</a>
+            <a class="nav-link" href="/admin/posts">All Posts</a>
+            <a class="nav-link" href="/admin/newpost">New Post</a>
+            <a class="nav-link active" aria-current="page" href="/admin/settings">Settings</a>
+        </nav>
+    </div>
+    <h1>Settings</h1>
+    <p>TODO</p>
+
+</div> <!-- / container -->
+
+{{ template "footer.html" .}}
