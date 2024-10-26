@@ -246,7 +246,12 @@ func (a Admin) GetSetting(c *gin.Context) {
 	key := c.Param("key")
 	log.Println("Getting setting: ", key)
 
-	setting, err = a.db.Where("key = ?", key).First(&blog.Setting{})
+	err := a.db.Where("key = ?", key).First(&blog.Setting{}).Error
+	if err != nil {
+		c.JSON(http.StatusNotFound, "Setting not found")
+	} else {
+		c.JSON(http.StatusOK, blog.Setting{})
+	}
 }
 
 //////HTML API///////
@@ -254,50 +259,50 @@ func (a Admin) GetSetting(c *gin.Context) {
 // Admin is the admin dashboard of the website
 func (a Admin) Admin(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin.html", gin.H{
-		"posts":     a.b.GetPosts(true),
-		"logged_in": a.auth.IsLoggedIn(c),
-		"is_admin":  a.auth.IsAdmin(c),
-		"version":   a.version,
+		"posts":      a.b.GetPosts(true),
+		"logged_in":  a.auth.IsLoggedIn(c),
+		"is_admin":   a.auth.IsAdmin(c),
+		"version":    a.version,
 		"admin_page": true,
 	})
 }
 
 func (a Admin) AdminDashboard(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin_dashboard.html", gin.H{
-		"posts":     a.b.GetPosts(true),
-		"logged_in": a.auth.IsLoggedIn(c),
-		"is_admin":  a.auth.IsAdmin(c),
-		"version":   a.version,
+		"posts":      a.b.GetPosts(true),
+		"logged_in":  a.auth.IsLoggedIn(c),
+		"is_admin":   a.auth.IsAdmin(c),
+		"version":    a.version,
 		"admin_page": true,
 	})
 }
 
 func (a Admin) AdminPosts(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin_all_posts.html", gin.H{
-		"posts":     a.b.GetPosts(true),
-		"logged_in": a.auth.IsLoggedIn(c),
-		"is_admin":  a.auth.IsAdmin(c),
-		"version":   a.version,
+		"posts":      a.b.GetPosts(true),
+		"logged_in":  a.auth.IsLoggedIn(c),
+		"is_admin":   a.auth.IsAdmin(c),
+		"version":    a.version,
 		"admin_page": true,
 	})
 }
 
 func (a Admin) AdminNewPost(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin_new_post.html", gin.H{
-		"posts":     a.b.GetPosts(true),
-		"logged_in": a.auth.IsLoggedIn(c),
-		"is_admin":  a.auth.IsAdmin(c),
-		"version":   a.version,
+		"posts":      a.b.GetPosts(true),
+		"logged_in":  a.auth.IsLoggedIn(c),
+		"is_admin":   a.auth.IsAdmin(c),
+		"version":    a.version,
 		"admin_page": true,
 	})
 }
 
 func (a Admin) AdminSettings(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin_settings.html", gin.H{
-		"posts":     a.b.GetPosts(true),
-		"logged_in": a.auth.IsLoggedIn(c),
-		"is_admin":  a.auth.IsAdmin(c),
-		"version":   a.version,
+		"posts":      a.b.GetPosts(true),
+		"logged_in":  a.auth.IsLoggedIn(c),
+		"is_admin":   a.auth.IsAdmin(c),
+		"version":    a.version,
 		"admin_page": true,
 	})
 }
@@ -316,14 +321,14 @@ func (a Admin) Post(c *gin.Context) {
 			"description": err.Error(),
 			"version":     a.b.Version,
 			"title":       "Post Not Found",
-			"admin_page": true,
+			"admin_page":  true,
 		})
 	} else {
 		c.HTML(http.StatusOK, "post-admin.html", gin.H{
-			"logged_in": a.auth.IsAdmin(c),
-			"is_admin":  a.auth.IsLoggedIn(c),
-			"post":      post,
-			"version":   a.b.Version,
+			"logged_in":  a.auth.IsAdmin(c),
+			"is_admin":   a.auth.IsLoggedIn(c),
+			"post":       post,
+			"version":    a.b.Version,
 			"admin_page": true,
 		})
 	}
