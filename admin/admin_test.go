@@ -45,7 +45,7 @@ func TestCreatePost(t *testing.T) {
 	db.AutoMigrate(&auth.BlogUser{})
 	db.AutoMigrate(&blog.Post{})
 	a := &Auth{}
-	sch := scholar.New()
+	sch := scholar.New("profiles.json", "articles.json")
 	b := blog.New(db, a, "test", sch)
 	ad := admin.New(db, a, b, "test")
 

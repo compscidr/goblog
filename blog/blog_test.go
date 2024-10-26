@@ -43,7 +43,7 @@ func TestBlogWorkflow(t *testing.T) {
 	db.AutoMigrate(&blog.Post{})
 	db.AutoMigrate(&blog.Tag{})
 	a := &Auth{}
-	sch := scholar.New()
+	sch := scholar.New("profiles.json", "articles.json")
 	b := blog.New(db, a, "test", sch)
 	admin := admin.New(db, a, b, "test")
 
