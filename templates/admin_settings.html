@@ -49,7 +49,12 @@
         </nav>
     </div>
     <h1>Settings</h1>
-    <p>TODO</p>
+    <form>
+        {{ range .settings }}
+        <label for="{{ .key }}" class="form-label">{{ .key }}</label>
+        <input type="text" id="{{ .key }}" name="{{ .key }}" value="{{ .value }}" placeholder="{{ .value }}" class="form-control" required>
+        {{ end }}
+    </form>
 
 </div> <!-- / container -->
 

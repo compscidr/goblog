@@ -304,6 +304,7 @@ func (a Admin) AdminSettings(c *gin.Context) {
 		"is_admin":   a.auth.IsAdmin(c),
 		"version":    a.version,
 		"admin_page": true,
+		"settings":   a.b.GetSettings(),
 	})
 }
 

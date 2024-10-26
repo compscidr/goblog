@@ -139,6 +139,12 @@ func (b Blog) getPostsByTag(c *gin.Context) ([]Post, error) {
 	return posts, nil
 }
 
+func (b Blog) GetSettings() []Setting {
+	var settings []Setting
+	b.db.Preload("Setting").Order("name asc").Find(&settings)
+	return settings
+}
+
 //////JSON API///////
 
 // ListPosts lists all blog posts
