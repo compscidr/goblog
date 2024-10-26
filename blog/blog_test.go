@@ -3,6 +3,7 @@ package blog_test
 import (
 	"bytes"
 	"encoding/json"
+	scholar "github.com/compscidr/scholar"
 	"goblog/admin"
 	"goblog/auth"
 	"goblog/blog"
@@ -42,7 +43,8 @@ func TestBlogWorkflow(t *testing.T) {
 	db.AutoMigrate(&blog.Post{})
 	db.AutoMigrate(&blog.Tag{})
 	a := &Auth{}
-	b := blog.New(db, a, "test")
+	sch := scholar.New("profiles.json", "articles.json")
+	b := blog.New(db, a, "test", sch)
 	admin := admin.New(db, a, b, "test")
 
 	router := gin.Default()
