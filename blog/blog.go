@@ -26,11 +26,11 @@ type Blog struct {
 	db      *gorm.DB
 	auth    auth.IAuth
 	Version string
-	scholar scholar.Scholar
+	scholar *scholar.Scholar
 }
 
 // New constructs an Admin API
-func New(db *gorm.DB, auth auth.IAuth, version string, scholar scholar.Scholar) Blog {
+func New(db *gorm.DB, auth auth.IAuth, version string, scholar *scholar.Scholar) Blog {
 	api := Blog{db, auth, version, scholar}
 	return api
 }
@@ -174,20 +174,20 @@ func (b Blog) NoRoute(c *gin.Context) {
 		if err == nil && post != nil {
 			if b.auth.IsAdmin(c) {
 				c.HTML(http.StatusOK, "post-admin.html", gin.H{
-					"logged_in": b.auth.IsLoggedIn(c),
-					"is_admin":  b.auth.IsAdmin(c),
-					"post":      post,
-					"version":   b.Version,
-					"recent":    b.GetLatest(),
+					"logged_in":  b.auth.IsLoggedIn(c),
+					"is_admin":   b.auth.IsAdmin(c),
+					"post":       post,
+					"version":    b.Version,
+					"recent":     b.GetLatest(),
 					"admin_page": false,
 				})
 			} else {
 				c.HTML(http.StatusOK, "post.html", gin.H{
-					"logged_in": b.auth.IsLoggedIn(c),
-					"is_admin":  b.auth.IsAdmin(c),
-					"post":      post,
-					"version":   b.Version,
-					"recent":    b.GetLatest(),
+					"logged_in":  b.auth.IsLoggedIn(c),
+					"is_admin":   b.auth.IsAdmin(c),
+					"post":       post,
+					"version":    b.Version,
+					"recent":     b.GetLatest(),
 					"admin_page": false,
 				})
 			}
@@ -207,7 +207,7 @@ func (b Blog) NoRoute(c *gin.Context) {
 		"description": "The page at '" + c.Request.URL.String() + "' was not found",
 		"version":     b.Version,
 		"recent":      b.GetLatest(),
-		"admin_page": false,
+		"admin_page":  false,
 	})
 }
 
@@ -216,11 +216,11 @@ func (b Blog) NoRoute(c *gin.Context) {
 // need to modify this function
 func (b Blog) Home(c *gin.Context) {
 	c.HTML(http.StatusOK, "home.html", gin.H{
-		"logged_in": b.auth.IsLoggedIn(c),
-		"is_admin":  b.auth.IsAdmin(c),
-		"version":   b.Version,
-		"title":     "Software Engineer",
-		"recent":    b.GetLatest(),
+		"logged_in":  b.auth.IsLoggedIn(c),
+		"is_admin":   b.auth.IsAdmin(c),
+		"version":    b.Version,
+		"title":      "Software Engineer",
+		"recent":     b.GetLatest(),
 		"admin_page": false,
 	})
 }
@@ -228,12 +228,12 @@ func (b Blog) Home(c *gin.Context) {
 // Posts is the index page for blog posts
 func (b Blog) Posts(c *gin.Context) {
 	c.HTML(http.StatusOK, "posts.html", gin.H{
-		"logged_in": b.auth.IsLoggedIn(c),
-		"is_admin":  b.auth.IsAdmin(c),
-		"posts":     b.GetPosts(false),
-		"version":   b.Version,
-		"title":     "Posts",
-		"recent":    b.GetLatest(),
+		"logged_in":  b.auth.IsLoggedIn(c),
+		"is_admin":   b.auth.IsAdmin(c),
+		"posts":      b.GetPosts(false),
+		"version":    b.Version,
+		"title":      "Posts",
+		"recent":     b.GetLatest(),
 		"admin_page": false,
 	})
 }
@@ -248,15 +248,15 @@ func (b Blog) Post(c *gin.Context) {
 			"version":     b.Version,
 			"title":       "Post Not Found",
 			"recent":      b.GetLatest(),
-			"admin_page": false,
+			"admin_page":  false,
 		})
 	} else {
 		c.HTML(http.StatusOK, "post.html", gin.H{
-			"logged_in": b.auth.IsLoggedIn(c),
-			"is_admin":  b.auth.IsAdmin(c),
-			"post":      post,
-			"version":   b.Version,
-			"recent":    b.GetLatest(),
+			"logged_in":  b.auth.IsLoggedIn(c),
+			"is_admin":   b.auth.IsAdmin(c),
+			"post":       post,
+			"version":    b.Version,
+			"recent":     b.GetLatest(),
 			"admin_page": false,
 		})
 		//if b.auth.IsAdmin(c) {
@@ -288,17 +288,17 @@ func (b Blog) Tag(c *gin.Context) {
 			"version":     b.Version,
 			"title":       "Tag '" + tag + "' Not Found",
 			"recent":      b.GetLatest(),
-			"admin_page": false,
+			"admin_page":  false,
 		})
 	} else {
 		c.HTML(http.StatusOK, "tag.html", gin.H{
-			"logged_in": b.auth.IsLoggedIn(c),
-			"is_admin":  b.auth.IsAdmin(c),
-			"posts":     posts,
-			"tag":       tag,
-			"version":   b.Version,
-			"title":     "Posts with Tag '" + tag + "'",
-			"recent":    b.GetLatest(),
+			"logged_in":  b.auth.IsLoggedIn(c),
+			"is_admin":   b.auth.IsAdmin(c),
+			"posts":      posts,
+			"tag":        tag,
+			"version":    b.Version,
+			"title":      "Posts with Tag '" + tag + "'",
+			"recent":     b.GetLatest(),
 			"admin_page": false,
 		})
 	}
@@ -307,10 +307,10 @@ func (b Blog) Tag(c *gin.Context) {
 // Tags is the index page for all Tags
 func (b Blog) Tags(c *gin.Context) {
 	c.HTML(http.StatusOK, "tags.html", gin.H{
-		"version": b.Version,
-		"title":   "Tags",
-		"tags":    b.getTags(),
-		"recent":  b.GetLatest(),
+		"version":    b.Version,
+		"title":      "Tags",
+		"tags":       b.getTags(),
+		"recent":     b.GetLatest(),
 		"admin_page": false,
 	})
 }
@@ -318,24 +318,26 @@ func (b Blog) Tags(c *gin.Context) {
 // Speaking is the index page for presentations
 func (b Blog) Speaking(c *gin.Context) {
 	c.HTML(http.StatusOK, "presentations.html", gin.H{
-		"logged_in": b.auth.IsLoggedIn(c),
-		"is_admin":  b.auth.IsAdmin(c),
-		"version":   b.Version,
-		"title":     "Presentations and Speaking",
-		"recent":    b.GetLatest(),
+		"logged_in":  b.auth.IsLoggedIn(c),
+		"is_admin":   b.auth.IsAdmin(c),
+		"version":    b.Version,
+		"title":      "Presentations and Speaking",
+		"recent":     b.GetLatest(),
 		"admin_page": false,
 	})
 }
 
 // Speaking is the index page for research publications
 func (b Blog) Research(c *gin.Context) {
+	articles := b.scholar.QueryProfileWithMemoryCache("SbUmSEAAAAAJ", 50)
+	b.scholar.SaveCache("profiles.json", "articles.json")
 	c.HTML(http.StatusOK, "research.html", gin.H{
-		"logged_in": b.auth.IsLoggedIn(c),
-		"is_admin":  b.auth.IsAdmin(c),
-		"version":   b.Version,
-		"title":     "Research Publications",
-		"recent":    b.GetLatest(),
-		"articles":  b.scholar.QueryProfileWithCache("SbUmSEAAAAAJ", 1),
+		"logged_in":  b.auth.IsLoggedIn(c),
+		"is_admin":   b.auth.IsAdmin(c),
+		"version":    b.Version,
+		"title":      "Research Publications",
+		"recent":     b.GetLatest(),
+		"articles":   articles,
 		"admin_page": false,
 	})
 }
@@ -343,11 +345,11 @@ func (b Blog) Research(c *gin.Context) {
 // Projects is the index page for projects / code
 func (b Blog) Projects(c *gin.Context) {
 	c.HTML(http.StatusOK, "projects.html", gin.H{
-		"logged_in": b.auth.IsLoggedIn(c),
-		"is_admin":  b.auth.IsAdmin(c),
-		"version":   b.Version,
-		"title":     "Projects",
-		"recent":    b.GetLatest(),
+		"logged_in":  b.auth.IsLoggedIn(c),
+		"is_admin":   b.auth.IsAdmin(c),
+		"version":    b.Version,
+		"title":      "Projects",
+		"recent":     b.GetLatest(),
 		"admin_page": false,
 	})
 }
@@ -355,11 +357,11 @@ func (b Blog) Projects(c *gin.Context) {
 // About is the about page
 func (b Blog) About(c *gin.Context) {
 	c.HTML(http.StatusOK, "about.html", gin.H{
-		"logged_in": b.auth.IsLoggedIn(c),
-		"is_admin":  b.auth.IsAdmin(c),
-		"version":   b.Version,
-		"title":     "About",
-		"recent":    b.GetLatest(),
+		"logged_in":  b.auth.IsLoggedIn(c),
+		"is_admin":   b.auth.IsAdmin(c),
+		"version":    b.Version,
+		"title":      "About",
+		"recent":     b.GetLatest(),
 		"admin_page": false,
 	})
 }
@@ -374,7 +376,7 @@ func (b Blog) Archives(c *gin.Context) {
 		"byYear":      b.getArchivesByYear(),
 		"byYearMonth": b.getArchivesByYearMonth(),
 		"recent":      b.GetLatest(),
-		"admin_page": false,
+		"admin_page":  false,
 	})
 }
 
@@ -416,11 +418,11 @@ func (b Blog) Login(c *gin.Context) {
 		if err != nil {
 			//todo: handle better - perhaps return error to browser
 			c.HTML(http.StatusInternalServerError, "Error loading .env file: "+err.Error(), gin.H{
-				"logged_in": b.auth.IsLoggedIn(c),
-				"is_admin":  b.auth.IsAdmin(c),
-				"version":   b.Version,
-				"title":     "Login Configuration Error",
-				"recent":    b.GetLatest(),
+				"logged_in":  b.auth.IsLoggedIn(c),
+				"is_admin":   b.auth.IsAdmin(c),
+				"version":    b.Version,
+				"title":      "Login Configuration Error",
+				"recent":     b.GetLatest(),
 				"admin_page": false,
 			})
 			return
@@ -429,12 +431,12 @@ func (b Blog) Login(c *gin.Context) {
 
 	clientID := os.Getenv("client_id")
 	c.HTML(http.StatusOK, "login.html", gin.H{
-		"logged_in": b.auth.IsLoggedIn(c),
-		"is_admin":  b.auth.IsAdmin(c),
-		"client_id": clientID,
-		"version":   b.Version,
-		"title":     "Login",
-		"recent":    b.GetLatest(),
+		"logged_in":  b.auth.IsLoggedIn(c),
+		"is_admin":   b.auth.IsAdmin(c),
+		"client_id":  clientID,
+		"version":    b.Version,
+		"title":      "Login",
+		"recent":     b.GetLatest(),
 		"admin_page": false,
 	})
 }

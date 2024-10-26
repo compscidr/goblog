@@ -8,9 +8,11 @@
     <h1>Research and Publications</h1>
     {{range .articles}}
       <div class="row research">
-        <a href="{{.scholarURL}}">{{.title}}</a> <br/>
-        {{.authors}} <br/>
-        <div class="col">{{.year}}</div>
+        <div class="col-8">
+          <a href="{{.ScholarURL}}">{{.Title}}</a> <br/>
+          {{.Authors}} <br/>
+        </div>
+        <div class="col">{{.Year}}</div>
       </div>
     {{end}}
   </div>

@@ -110,7 +110,7 @@ func main() {
 	router.Use(CORS())
 	store := cookie.NewStore([]byte("changelater"))
 	router.Use(sessions.Sessions("www.jasonernst.com", store))
-	sch := scholar.New()
+	sch := scholar.New("profiles.json", "articles.json")
 
 	_auth := auth.New(db, Version)
 	_blog := blog.New(db, &_auth, Version, sch)
