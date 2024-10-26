@@ -258,6 +258,7 @@ func (a Admin) Admin(c *gin.Context) {
 		"logged_in": a.auth.IsLoggedIn(c),
 		"is_admin":  a.auth.IsAdmin(c),
 		"version":   a.version,
+		"admin_page": true,
 	})
 }
 
@@ -267,6 +268,7 @@ func (a Admin) AdminDashboard(c *gin.Context) {
 		"logged_in": a.auth.IsLoggedIn(c),
 		"is_admin":  a.auth.IsAdmin(c),
 		"version":   a.version,
+		"admin_page": true,
 	})
 }
 
@@ -276,6 +278,7 @@ func (a Admin) AdminPosts(c *gin.Context) {
 		"logged_in": a.auth.IsLoggedIn(c),
 		"is_admin":  a.auth.IsAdmin(c),
 		"version":   a.version,
+		"admin_page": true,
 	})
 }
 
@@ -285,6 +288,7 @@ func (a Admin) AdminNewPost(c *gin.Context) {
 		"logged_in": a.auth.IsLoggedIn(c),
 		"is_admin":  a.auth.IsAdmin(c),
 		"version":   a.version,
+		"admin_page": true,
 	})
 }
 
@@ -294,6 +298,7 @@ func (a Admin) AdminSettings(c *gin.Context) {
 		"logged_in": a.auth.IsLoggedIn(c),
 		"is_admin":  a.auth.IsAdmin(c),
 		"version":   a.version,
+		"admin_page": true,
 	})
 }
 
@@ -311,6 +316,7 @@ func (a Admin) Post(c *gin.Context) {
 			"description": err.Error(),
 			"version":     a.b.Version,
 			"title":       "Post Not Found",
+			"admin_page": true,
 		})
 	} else {
 		c.HTML(http.StatusOK, "post-admin.html", gin.H{
@@ -318,6 +324,7 @@ func (a Admin) Post(c *gin.Context) {
 			"is_admin":  a.auth.IsLoggedIn(c),
 			"post":      post,
 			"version":   a.b.Version,
+			"admin_page": true,
 		})
 	}
 }
