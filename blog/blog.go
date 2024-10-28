@@ -23,7 +23,7 @@ import (
 // Blog API handles non-admin functions of the blog like listing posts, tags
 // comments, etc.
 type Blog struct {
-	db      *gorm.DB
+	db      **gorm.DB // needs a double pointer to be able to update the db
 	auth    auth.IAuth
 	Version string
 	scholar *scholar.Scholar
@@ -31,34 +31,42 @@ type Blog struct {
 
 // New constructs an Admin API
 func New(db *gorm.DB, auth auth.IAuth, version string, scholar *scholar.Scholar) Blog {
-	api := Blog{db, auth, version, scholar}
+	api := Blog{&db, auth, version, scholar}
 	return api
 }
 
+func (b *Blog) UpdateDb(db *gorm.DB) {
+	b.db = &db
+}
+
+func (b *Blog) IsDbNil() bool {
+	return (*b.db) == nil
+}
+
 // Generic Functions (not JSON or HTML)
-func (b Blog) GetPosts(drafts bool) []Post {
+func (b *Blog) GetPosts(drafts bool) []Post {
 	var posts []Post
 	if !drafts {
-		b.db.Preload("Tags").Order("created_at desc").Find(&posts, "draft = ?", drafts)
+		(*b.db).Preload("Tags").Order("created_at desc").Find(&posts, "draft = ?", drafts)
 	} else {
-		b.db.Preload("Tags").Order("created_at desc").Find(&posts)
+		(*b.db).Preload("Tags").Order("created_at desc").Find(&posts)
 	}
 	return posts
 }
 
-func (b Blog) GetLatest() Post {
+func (b *Blog) GetLatest() Post {
 	var post Post
-	b.db.Preload("Tags").Order("created_at desc").First(&post)
+	(*b.db).Preload("Tags").Order("created_at desc").First(&post)
 	return post
 }
 
-func (b Blog) getTags() []Tag {
+func (b *Blog) getTags() []Tag {
 	var tags []Tag
-	b.db.Preload("Posts").Order("name asc").Find(&tags)
+	(*b.db).Preload("Posts").Order("name asc").Find(&tags)
 	return tags
 }
 
-func (b Blog) getArchivesByYear() map[string][]Post {
+func (b *Blog) getArchivesByYear() map[string][]Post {
 	archive := make(map[string][]Post)
 	posts := b.GetPosts(false)
 	for _, post := range posts {
@@ -71,7 +79,7 @@ func (b Blog) getArchivesByYear() map[string][]Post {
 	return archive
 }
 
-func (b Blog) getArchivesByYearMonth() map[string][]Post {
+func (b *Blog) getArchivesByYearMonth() map[string][]Post {
 	archive := make(map[string][]Post)
 	posts := b.GetPosts(false)
 	for _, post := range posts {
@@ -86,7 +94,7 @@ func (b Blog) getArchivesByYearMonth() map[string][]Post {
 	return archive
 }
 
-func (b Blog) GetPostObject(c *gin.Context) (*Post, error) {
+func (b *Blog) GetPostObject(c *gin.Context) (*Post, error) {
 	var post Post
 	year, err := strconv.Atoi(c.Param("yyyy"))
 	if err != nil {
@@ -105,7 +113,7 @@ func (b Blog) GetPostObject(c *gin.Context) (*Post, error) {
 
 	log.Println("Looking for post: ", year, "/", month, "/", day, "/", slug)
 
-	if err := b.db.Preload("Tags").Where("created_at > ? AND slug LIKE ?", time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).First(&post).Error; err != nil {
+	if err := (*b.db).Preload("Tags").Where("created_at > ? AND slug LIKE ?", time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).First(&post).Error; err != nil {
 		return nil, errors.New("No post at " + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/" + strconv.Itoa(day) + "/" + slug)
 	}
 
@@ -114,11 +122,11 @@ func (b Blog) GetPostObject(c *gin.Context) (*Post, error) {
 	return &post, nil
 }
 
-func (b Blog) getPostByParams(year int, month int, day int, slug string) (*Post, error) {
+func (b *Blog) getPostByParams(year int, month int, day int, slug string) (*Post, error) {
 	log.Println("trying: " + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/" + strconv.Itoa(day) + "/" + slug)
 	var post Post
 	slug = url.QueryEscape(slug)
-	if err := b.db.Preload("Tags").Where("created_at > ? AND slug LIKE ?", time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).First(&post).Error; err != nil {
+	if err := (*b.db).Preload("Tags").Where("created_at > ? AND slug LIKE ?", time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).First(&post).Error; err != nil {
 		log.Println("NOT FOUND")
 		return nil, errors.New("No post at " + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/" + strconv.Itoa(day) + "/" + slug)
 	}
@@ -126,34 +134,34 @@ func (b Blog) getPostByParams(year int, month int, day int, slug string) (*Post,
 	return &post, nil
 }
 
-func (b Blog) getPostsByTag(c *gin.Context) ([]Post, error) {
+func (b *Blog) getPostsByTag(c *gin.Context) ([]Post, error) {
 	var posts []Post
 	var tag Tag
 	name := c.Param("name")
-	if err := b.db.Where("name = ?", name).First(&tag).Error; err != nil {
+	if err := (*b.db).Where("name = ?", name).First(&tag).Error; err != nil {
 		return nil, errors.New("No tag named " + name)
 	}
 
-	b.db.Model(&tag).Order("created_at desc").Association("Posts").Find(&posts)
+	(*b.db).Model(&tag).Order("created_at desc").Association("Posts").Find(&posts)
 	log.Print("POSTS: ", posts)
 	return posts, nil
 }
 
-func (b Blog) GetSettings() []Setting {
+func (b *Blog) GetSettings() []Setting {
 	var settings []Setting
-	b.db.Preload("Setting").Order("name asc").Find(&settings)
+	(*b.db).Preload("Setting").Order("name asc").Find(&settings)
 	return settings
 }
 
 //////JSON API///////
 
 // ListPosts lists all blog posts
-func (b Blog) ListPosts(c *gin.Context) {
+func (b *Blog) ListPosts(c *gin.Context) {
 	c.JSON(http.StatusOK, b.GetPosts(false))
 }
 
 // GetPost returns a post with yyyy/mm/dd/slug
-func (b Blog) GetPost(c *gin.Context) {
+func (b *Blog) GetPost(c *gin.Context) {
 	post, err := b.GetPostObject(c)
 	if err != nil {
 		log.Println("Bad request in GetPost: " + err.Error())
@@ -168,7 +176,7 @@ func (b Blog) GetPost(c *gin.Context) {
 //////HTML API///////
 
 // NoRoute returns a custom 404 page
-func (b Blog) NoRoute(c *gin.Context) {
+func (b *Blog) NoRoute(c *gin.Context) {
 
 	tokens := strings.Split(c.Request.URL.String(), "/")
 	// for some reason, first token is empty
@@ -220,7 +228,8 @@ func (b Blog) NoRoute(c *gin.Context) {
 // Home returns html of the home page using the template
 // if people want to have different stuff show on the home page they probably
 // need to modify this function
-func (b Blog) Home(c *gin.Context) {
+func (b *Blog) Home(c *gin.Context) {
+	b.checkValidDb(c)
 	c.HTML(http.StatusOK, "home.html", gin.H{
 		"logged_in":  b.auth.IsLoggedIn(c),
 		"is_admin":   b.auth.IsAdmin(c),
@@ -232,7 +241,7 @@ func (b Blog) Home(c *gin.Context) {
 }
 
 // Posts is the index page for blog posts
-func (b Blog) Posts(c *gin.Context) {
+func (b *Blog) Posts(c *gin.Context) {
 	c.HTML(http.StatusOK, "posts.html", gin.H{
 		"logged_in":  b.auth.IsLoggedIn(c),
 		"is_admin":   b.auth.IsAdmin(c),
@@ -245,7 +254,7 @@ func (b Blog) Posts(c *gin.Context) {
 }
 
 // Post is the page for all individual posts
-func (b Blog) Post(c *gin.Context) {
+func (b *Blog) Post(c *gin.Context) {
 	post, err := b.GetPostObject(c)
 	if err != nil {
 		c.HTML(http.StatusNotFound, "error.html", gin.H{
@@ -284,7 +293,7 @@ func (b Blog) Post(c *gin.Context) {
 }
 
 // Tag lists all posts with a given tag
-func (b Blog) Tag(c *gin.Context) {
+func (b *Blog) Tag(c *gin.Context) {
 	tag := c.Param("name")
 	posts, err := b.getPostsByTag(c)
 	if err != nil {
@@ -311,7 +320,7 @@ func (b Blog) Tag(c *gin.Context) {
 }
 
 // Tags is the index page for all Tags
-func (b Blog) Tags(c *gin.Context) {
+func (b *Blog) Tags(c *gin.Context) {
 	c.HTML(http.StatusOK, "tags.html", gin.H{
 		"version":    b.Version,
 		"title":      "Tags",
@@ -322,7 +331,7 @@ func (b Blog) Tags(c *gin.Context) {
 }
 
 // Speaking is the index page for presentations
-func (b Blog) Speaking(c *gin.Context) {
+func (b *Blog) Speaking(c *gin.Context) {
 	c.HTML(http.StatusOK, "presentations.html", gin.H{
 		"logged_in":  b.auth.IsLoggedIn(c),
 		"is_admin":   b.auth.IsAdmin(c),
@@ -334,7 +343,7 @@ func (b Blog) Speaking(c *gin.Context) {
 }
 
 // Speaking is the index page for research publications
-func (b Blog) Research(c *gin.Context) {
+func (b *Blog) Research(c *gin.Context) {
 	articles := b.scholar.QueryProfileWithMemoryCache("SbUmSEAAAAAJ", 50)
 	b.scholar.SaveCache("profiles.json", "articles.json")
 	c.HTML(http.StatusOK, "research.html", gin.H{
@@ -349,7 +358,7 @@ func (b Blog) Research(c *gin.Context) {
 }
 
 // Projects is the index page for projects / code
-func (b Blog) Projects(c *gin.Context) {
+func (b *Blog) Projects(c *gin.Context) {
 	c.HTML(http.StatusOK, "projects.html", gin.H{
 		"logged_in":  b.auth.IsLoggedIn(c),
 		"is_admin":   b.auth.IsAdmin(c),
@@ -361,7 +370,7 @@ func (b Blog) Projects(c *gin.Context) {
 }
 
 // About is the about page
-func (b Blog) About(c *gin.Context) {
+func (b *Blog) About(c *gin.Context) {
 	c.HTML(http.StatusOK, "about.html", gin.H{
 		"logged_in":  b.auth.IsLoggedIn(c),
 		"is_admin":   b.auth.IsAdmin(c),
@@ -373,7 +382,7 @@ func (b Blog) About(c *gin.Context) {
 }
 
 // Archives shows the posts by year, month, etc.
-func (b Blog) Archives(c *gin.Context) {
+func (b *Blog) Archives(c *gin.Context) {
 	c.HTML(http.StatusOK, "archives.html", gin.H{
 		"logged_in":   b.auth.IsLoggedIn(c),
 		"is_admin":    b.auth.IsAdmin(c),
@@ -386,7 +395,7 @@ func (b Blog) Archives(c *gin.Context) {
 	})
 }
 
-func (b Blog) Sitemap(c *gin.Context) {
+func (b *Blog) Sitemap(c *gin.Context) {
 	sm := stm.NewSitemap(1)
 	sm.SetDefaultHost("https://www.jasonernst.com")
 	sm.Create()
@@ -416,7 +425,7 @@ func (b Blog) Sitemap(c *gin.Context) {
 }
 
 // Login to the blog
-func (b Blog) Login(c *gin.Context) {
+func (b *Blog) Login(c *gin.Context) {
 	err := godotenv.Load(".env")
 	if err != nil {
 		//fall back to local config
@@ -448,9 +457,21 @@ func (b Blog) Login(c *gin.Context) {
 }
 
 // Logout of the blog
-func (b Blog) Logout(c *gin.Context) {
+func (b *Blog) Logout(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Delete("token")
 	session.Save()
 	c.Redirect(http.StatusTemporaryRedirect, "/")
+}
+
+func (b *Blog) checkValidDb(c *gin.Context) {
+	if b.db == nil {
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
+			"error":       "Database Not Found",
+			"description": "Database is not connected",
+			"version":     b.Version,
+			"title":       "Database Not Found",
+			"admin_page":  false,
+		})
+	}
 }

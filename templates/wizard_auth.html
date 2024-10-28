@@ -13,26 +13,13 @@
         <div class="card border-0 shadow my-5">
             <div class="card-body p-5" style="min-height: 600px;">
                 <h1 class="fw-light">Goblog Install Wizard</h1>
+                <h5>Github OAuth</h5>
                 {{ if .errors }}
                 <div class="alert alert-danger" role="alert">
                     {{ .errors }}
                 </div>
                 {{ end }}
                 <form action="wizard" method="GET" class="py4">
-                    <h5>Database</h5>
-                    <div class="mb-3">
-                        <p>Sqlite uses a file to store the database. MySQL requires a mysql server setup.</p>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="sqlite" id="sqlite" checked>
-                            <label class="form-check-label" for="sqlite">sqlite</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="mysql" id="mysql" disabled>
-                            <label class="form-check-label" for="mysql">mysql</label>
-                        </div>
-                    </div>
-
-                    <h5>Github OAuth</h5>
                     <p>You must go to <a href="https://github.com/settings/developers" target="_blank">https://github.com/settings/developers</a>
                     and create a "New OAuth App" to hook this site up to github for logins.
                     </p>

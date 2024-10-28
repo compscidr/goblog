@@ -3,193 +3,380 @@ package main
 //this implements https://jsonapi.org/format/ as best as possible
 
 import (
+	"fmt"
+	scholar "github.com/compscidr/scholar"
 	"github.com/joho/godotenv"
 	"goblog/admin"
 	"goblog/auth"
 	"goblog/blog"
 	"goblog/tools"
 	"goblog/wizard"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 	"log"
+	"net/http"
 	"os"
-	"strconv"
-	"syscall"
 
-	scholar "github.com/compscidr/scholar"
-	"github.com/fvbock/endless"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/mysql"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
+	"github.com/google/uuid"
 )
 
 // Version of the code generated from git describe
 var Version = "development"
 
-func setup_wizard() {
-	_wizard := wizard.New(Version)
-	router := gin.Default()
-	router.Use(CORS())
-	store := cookie.NewStore([]byte("changelater"))
-	router.Use(sessions.Sessions("www.jasonernst.com", store))
-	router.LoadHTMLGlob("templates/*.html")
-	router.GET("/", _wizard.Landing)
-	router.GET("/wizard", _wizard.SaveToken)
-	router.Use(static.Serve("/", static.LocalFile("www", false)))
-	router.GET("/login", _wizard.LoginCode)
-	// router.Run("0.0.0.0:7000")
-	server := endless.NewServer(":7000", router)
-	server.BeforeBegin = func(add string) {
-		log.Printf("Actual pid is %d", syscall.Getpid())
-		pid := syscall.Getpid()
-		f, err := os.Create("/tmp/goblog.pid")
+type goblog struct {
+	_wizard            *wizard.Wizard
+	_blog              *blog.Blog
+	_auth              *auth.Auth
+	_admin             *admin.Admin
+	sessionKey         string
+	router             *gin.Engine
+	handlersRegistered bool
+}
+
+func envFilePresent() bool {
+	_, err := os.Stat(".env")
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func isAuthConfigured() bool {
+	envFile, err := godotenv.Read(".env")
+	if err != nil {
+		log.Println("Couldn't read the .env file: " + err.Error())
+		return false
+	}
+	if envFile["client_id"] == "" || envFile["client_secret"] == "" {
+		return false
+	}
+	return true
+}
+
+func attemptConnectDb() *gorm.DB {
+	envFile, err := godotenv.Read(".env")
+	if err != nil {
+		log.Println("Couldn't read the .env file: " + err.Error())
+		return nil
+	}
+	database := envFile["database"]
+	if database != "mysql" && database != "sqlite" {
+		log.Println("Database type: " + database + " is not valid. Expecting `mysql` or `sqlite`")
+		return nil
+	}
+
+	if database == "sqlite" {
+		db_file := envFile["sqlite_db"]
+		db, err := gorm.Open(sqlite.Open(db_file), &gorm.Config{
+			DisableForeignKeyConstraintWhenMigrating: true,
+		})
 		if err != nil {
-			log.Println("Unable to create /tmp/goblog.pid")
+			log.Println("Error opening sqlite db: " + err.Error())
+			return nil
+		}
+		log.Println("opened sqlite db")
+		return db
+	} else {
+		host := envFile["MYSQL_HOST"]
+		port := envFile["MYSQL_PORT"]
+		user := envFile["MYSQL_USER"]
+		pass := envFile["MYSQL_PASSWORD"]
+		dbname := envFile["MYSQL_DATABASE"]
+		dsn := user + ":" + pass + "@tcp(" + host + ":" + port + ")/" + dbname + "?charset=utf8mb4&parseTime=True&loc=Local"
+		db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+		if err != nil {
+			log.Println("Error opening mysql db: " + err.Error())
+			return nil
+		}
+		log.Println("connected to mysql db")
+		return db
+	}
+}
+
+// depending on if the env file is present or not, we will show the wizard or the main site
+func (g goblog) rootHandler(c *gin.Context) {
+	if !envFilePresent() {
+		log.Println("Root handler: No .env file found")
+		c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+			"version": Version,
+			"title":   "GoBlog Install Wizard",
+		})
+		return
+	} else {
+		log.Println("Root handler:  Found .env file")
+		envFile, err := godotenv.Read(".env")
+		if err != nil {
+			c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+				"version": Version,
+				"title":   "GoBlog Install Wizard",
+				"errors":  "Couldn't read the .env file: " + err.Error(),
+			})
 			return
 		}
-		_, err = f.WriteString(strconv.Itoa(pid))
-		if err != nil {
-			log.Println("Unable to write to /tmp/goblog.pid")
+		fmt.Println(envFile)
+		// detect if the database hasn't be configured yet
+		if (envFile["database"] != "mysql") && (envFile["database"] != "sqlite") {
+			log.Println("Root handler:  Database is not configured, redirecting to db wizard")
+			c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+				"version": Version,
+				"title":   "GoBlog Install Wizard",
+			})
 			return
 		}
-		err = f.Close()
-		if err != nil {
-			log.Println("Unable to close /tmp/goblog.pid")
+		log.Println("Root handler: Database is configured")
+		if g._wizard.IsDbNil() {
+			log.Println("Root handler: Database is nil - need to connect")
+			db := attemptConnectDb()
+			if db == nil {
+				log.Println("Root handler: Couldn't connect to the database, showing db wizard")
+				// show the wizard and get them to re-enter the db info with an error message
+				c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+					"version": Version,
+					"title":   "GoBlog Install Wizard",
+					"errors":  "Couldn't connect to the database",
+				})
+				return
+			}
+			err := tools.Migrate(db)
+			if err != nil {
+				log.Println("Root handler: Couldn't migrate the database: " + err.Error())
+				// show the wizard with an error message saying the db isn't compatible and let them file a gh ticket
+				c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+					"version": Version,
+					"title":   "GoBlog Install Wizard",
+					"errors":  "Failed to Migrate the database: " + err.Error(),
+				})
+				return
+			}
+			log.Println("Root handler: Migrated the database, updating the db in the blog, auth, admin, and wizard")
+			g._blog.UpdateDb(db)
+			g._auth.UpdateDb(db)
+			g._admin.UpdateDb(db)
+			g._wizard.UpdateDb(db)
+
+			if !isAuthConfigured() {
+				g._wizard.Landing(c)
+				return
+			}
+			g.addRoutes()
+			g._blog.Home(c)
+		} else {
+			if !isAuthConfigured() {
+				g._wizard.Landing(c)
+				return
+			}
+			g._blog.Home(c)
 			return
 		}
 	}
-	server.ListenAndServe()
+}
+
+func (g goblog) loginHandler(c *gin.Context) {
+	if !envFilePresent() {
+		log.Println("Root handler: No .env file found")
+		c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+			"version": Version,
+			"title":   "GoBlog Install Wizard",
+		})
+		return
+	}
+	if g._wizard.IsDbNil() {
+		log.Println("Wizard db is nil in loginHandler")
+		c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+			"version": Version,
+			"title":   "GoBlog Install Wizard",
+			"errors":  "Database is not configured",
+		})
+		return
+	}
+	if !isAuthConfigured() {
+		err := g._wizard.LoginCode(c)
+		if err != nil {
+			c.HTML(http.StatusOK, "wizard_auth.html", gin.H{
+				"version": Version,
+				"title":   "GoBlog Install Wizard",
+				"errors":  "Couldn't get the login code: " + err.Error(),
+			})
+			return
+		} else {
+			g.addRoutes()
+			g._blog.Home(c)
+		}
+	} else {
+		g._blog.Login(c)
+	}
 }
 
 func main() {
 	log.Println("Starting blog version: ", Version)
-
-	err := godotenv.Load(".env")
-	if err != nil {
-		setup_wizard()
-		err := godotenv.Load(".env")
+	var sessionKey string
+	var db *gorm.DB = nil
+	if !envFilePresent() {
+		log.Println("No .env file found, creating one with a new session key")
+		sessionKey = uuid.New().String()
+		f, err := os.Create(".env")
 		if err != nil {
-			log.Println("Failed to read the .env file after the wizard, can't proceed")
+			log.Println("Couldn't create the .env file: " + err.Error())
 			return
+		}
+		_, err = f.WriteString("SESSION_KEY=" + sessionKey + "\n")
+		err = f.Close()
+		if err != nil {
+			log.Println("Couldn't close the .env file: " + err.Error())
+			return
+		}
+	} else {
+		log.Println("Found .env file")
+		envFile, err := godotenv.Read(".env")
+		if err != nil {
+			log.Println("Couldn't read the .env file: " + err.Error())
+			return
+		}
+		sessionKey = envFile["SESSION_KEY"]
+		if (sessionKey == "") || (len(sessionKey) != 36) {
+			log.Println("No session key found or it's invalid, creating a new one")
+			sessionKey = uuid.New().String()
+			f, err := os.OpenFile(".env", os.O_APPEND|os.O_WRONLY, 0644)
+			if err != nil {
+				log.Println("Couldn't open the .env file: " + err.Error())
+				return
+			}
+			_, err = f.WriteString("SESSION_KEY=" + sessionKey + "\n")
+			err = f.Close()
+			if err != nil {
+				log.Println("Couldn't close the .env file: " + err.Error())
+				return
+			}
+			log.Println("New Session key: ", sessionKey)
+		} else {
+			log.Println("Found Session key: ", sessionKey)
+		}
+
+		// database is configured, lets try to connect now
+		if (envFile["database"] == "mysql") || (envFile["database"] == "sqlite") {
+			log.Println("Database is configured, trying to connect")
+			db = attemptConnectDb()
+			if db == nil {
+				log.Println("Couldn't connect to the database")
+				return
+			}
+			err := tools.Migrate(db)
+			if err != nil {
+				log.Println("Couldn't migrate the database: " + err.Error())
+				return
+			}
+		} else {
+			log.Println("Database is not configured, should get routed to wizard")
 		}
 	}
 
-	database := os.Getenv("database")
-	if database != "mysql" && database != "sqlite" {
-		log.Println("Database type: " + database + " is not valid. Expecting `mysql` or `sqlite`")
+	_auth := auth.New(db, Version)
+	_sch := scholar.New("profiles.json", "articles.json")
+	_blog := blog.New(db, &_auth, Version, _sch)
+	_admin := admin.New(db, &_auth, &_blog, Version)
+	_wizard := wizard.New(db, Version)
+
+	// setup the minimal router at the start to support both the wizard and the main server once the wizard is done
+	router := gin.Default()
+
+	goblog := goblog{
+		_wizard:    &_wizard,
+		_blog:      &_blog,
+		_auth:      &_auth,
+		_admin:     &_admin,
+		sessionKey: sessionKey,
+		router:     router,
+	}
+
+	router.Use(CORS())
+	store := cookie.NewStore([]byte(sessionKey))
+	hostname, err := os.Hostname()
+	router.Use(sessions.Sessions(hostname, store))
+	log.Println("Session key: ", sessionKey)
+	log.Println("Hostname: ", hostname)
+	//todo - make the template folder configurable by command line arg
+	//so that people can pass in their own template folder instead of the default
+	//https://github.com/gin-gonic/gin/issues/464
+	router.LoadHTMLGlob("templates/*.html")
+	router.GET("/", goblog.rootHandler)
+	router.GET("/wizard", goblog._wizard.SaveToken)
+	router.GET("/login", goblog.loginHandler)
+	router.POST("/wizard_db", updateDB)
+	router.POST("/test_db", testDB)
+	//if we use true here - it will override the home route and just show files
+	router.Use(static.Serve("/", static.LocalFile("www", false)))
+	if err != nil {
+		log.Println("Couldn't get the hostname")
 		return
 	}
 
-	var db *gorm.DB
-	if database == "sqlite" {
-		db_file := os.Getenv("sqlite_db")
-		db, err = gorm.Open(sqlite.Open(db_file), &gorm.Config{
-			DisableForeignKeyConstraintWhenMigrating: true,
-		})
-		if err != nil {
-			panic("failed to open sqlite db: " + db_file)
-		}
-		log.Println("opened sqlite db")
-	} else {
-		user := os.Getenv("MYSQL_USER")
-		pass := os.Getenv("MYSQL_PASSWORD")
-		dbname := os.Getenv("MYSQL_DATABASE")
-		dsn := user + ":" + pass + "@tcp(db:3306)/" + dbname + "?charset=utf8mb4&parseTime=True&loc=Local"
-		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
-		if err != nil {
-			panic("failed to connect to mysql db")
-		}
-		log.Println("connected to mysql db")
+	if db != nil {
+		goblog.addRoutes()
 	}
 
-	tools.Migrate(db)
+	err = router.Run(":7000")
+	if err != nil {
+		log.Println("Error running goblog server: " + err.Error())
+	}
+}
 
-	router := gin.Default()
-	router.Use(CORS())
-	store := cookie.NewStore([]byte("changelater"))
-	router.Use(sessions.Sessions("www.jasonernst.com", store))
-	sch := scholar.New("profiles.json", "articles.json")
-
-	_auth := auth.New(db, Version)
-	_blog := blog.New(db, &_auth, Version, sch)
-	_admin := admin.New(db, &_auth, _blog, Version)
-
-	// todo: restrict cors properly to same domain: https://github.com/rs/cors
-	// this lets us get a request from localhost:8000 without the web browser
-	// bitching about it
-	//router.Use(cors.New(cors.Config{
-	//	AllowOrigins:     []string{"http://localhost", "http://localhost:8000"},
-	//	AllowMethods:     []string{"GET", "POST", "PATCH", "OPTIONS", "DELETE"},
-	//	ExposeHeaders: 	  []string{"Content-Length"},
-	//	AllowCredentials: true,
-	//	AllowAllOrigins:  false,
-	//	AllowOriginFunc:  func(origin string) bool { return true },
-	//}))
-
+func (g goblog) addRoutes() {
+	g.handlersRegistered = true
+	log.Println("Adding main blog routes")
 	//all of this is the json api
-	router.MaxMultipartMemory = 50 << 20
-	router.POST("/api/login", _auth.LoginPostHandler)
-	router.POST("/api/v1/posts", _admin.CreatePost)
-	router.POST("/api/v1/upload", _admin.UploadFile)
-	router.PATCH("/api/v1/posts", _admin.UpdatePost)
-	router.PATCH("/api/v1/publish/:id", _admin.PublishPost)
-	router.PATCH("/api/v1/draft/:id", _admin.DraftPost)
-	router.DELETE("/api/v1/posts", _admin.DeletePost)
-	router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", _blog.GetPost)
-	router.GET("/api/v1/posts", _blog.ListPosts)
-	router.GET("/api/v1/setting/:slug", _admin.GetSetting)
-	router.POST("/api/v1/setting", _admin.UpdateSetting)
-	router.PATCH("/api/v1/setting", _admin.UpdateSetting)
+	g.router.MaxMultipartMemory = 50 << 20
+	g.router.POST("/api/login", g._auth.LoginPostHandler)
+	g.router.POST("/api/v1/posts", g._admin.CreatePost)
+	g.router.POST("/api/v1/upload", g._admin.UploadFile)
+	g.router.PATCH("/api/v1/posts", g._admin.UpdatePost)
+	g.router.PATCH("/api/v1/publish/:id", g._admin.PublishPost)
+	g.router.PATCH("/api/v1/draft/:id", g._admin.DraftPost)
+	g.router.DELETE("/api/v1/posts", g._admin.DeletePost)
+	g.router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", g._blog.GetPost)
+	g.router.GET("/api/v1/posts", g._blog.ListPosts)
+	g.router.GET("/api/v1/setting/:slug", g._admin.GetSetting)
+	g.router.POST("/api/v1/setting", g._admin.UpdateSetting)
+	g.router.PATCH("/api/v1/setting", g._admin.UpdateSetting)
 
 	//all of this serves html full pages, but re-uses much of the logic of
 	//the json API. The json API is tested more easily. Also javascript can
 	//served in the html can be used to create and update posts by directly
 	//working with the json API.
-
-	//todo - make the template folder configurable by command line arg
-	//so that people can pass in their own template folder instead of the default
-	//https://github.com/gin-gonic/gin/issues/464
-	router.LoadHTMLGlob("templates/*.html")
-
-	//if we use true here - it will override the home route and just show files
-	router.Use(static.Serve("/", static.LocalFile("www", false)))
-	router.GET("/", _blog.Home)
-	router.GET("/index.php", _blog.Home)
-	router.GET("/posts/:yyyy/:mm/:dd/:slug", _blog.Post)
+	//g.router.GET("/", g._blog.Home)
+	g.router.GET("/index.php", g._blog.Home)
+	g.router.GET("/posts/:yyyy/:mm/:dd/:slug", g._blog.Post)
 	// lets posts work with our without the word posts in front
-	router.GET("/:yyyy/:mm/:dd/:slug", _blog.Post)
-	router.GET("/admin/posts/:yyyy/:mm/:dd/:slug", _admin.Post)
-	router.GET("/tag/:name", _blog.Tag)
-	router.GET("/login", _blog.Login)
-	router.GET("/logout", _blog.Logout)
+	g.router.GET("/:yyyy/:mm/:dd/:slug", g._blog.Post)
+	g.router.GET("/admin/posts/:yyyy/:mm/:dd/:slug", g._admin.Post)
+	g.router.GET("/tag/:name", g._blog.Tag)
+	//g.router.GET("/login", g._blog.Login)
+	g.router.GET("/logout", g._blog.Logout)
 
 	//todo: register a template mapping to a "page type"
-	router.GET("/posts", _blog.Posts)
-	router.GET("/blog", _blog.Posts)
-	router.GET("/tags", _blog.Tags)
-	router.GET("/presentations", _blog.Speaking)
-	router.GET("/research", _blog.Research)
-	router.GET("/projects", _blog.Projects)
-	router.GET("/about", _blog.About)
-	router.GET("/sitemap.xml", _blog.Sitemap)
-	router.GET("/archives", _blog.Archives)
+	g.router.GET("/posts", g._blog.Posts)
+	g.router.GET("/blog", g._blog.Posts)
+	g.router.GET("/tags", g._blog.Tags)
+	g.router.GET("/presentations", g._blog.Speaking)
+	g.router.GET("/research", g._blog.Research)
+	g.router.GET("/projects", g._blog.Projects)
+	g.router.GET("/about", g._blog.About)
+	g.router.GET("/sitemap.xml", g._blog.Sitemap)
+	g.router.GET("/archives", g._blog.Archives)
 	// lets old WordPress stuff stored at wp-content/uploads work
-	router.Use(static.Serve("/wp-content", static.LocalFile("www", false)))
+	g.router.Use(static.Serve("/wp-content", static.LocalFile("www", false)))
 
-	router.GET("/admin", _admin.Admin)
-	router.GET("/admin/dashboard", _admin.AdminDashboard)
-	router.GET("/admin/posts", _admin.AdminPosts)
-	router.GET("/admin/newpost", _admin.AdminNewPost)
-	router.GET("/admin/settings", _admin.AdminSettings)
+	g.router.GET("/admin", g._admin.Admin)
+	g.router.GET("/admin/dashboard", g._admin.AdminDashboard)
+	g.router.GET("/admin/posts", g._admin.AdminPosts)
+	g.router.GET("/admin/newpost", g._admin.AdminNewPost)
+	g.router.GET("/admin/settings", g._admin.AdminSettings)
 
-	router.NoRoute(_blog.NoRoute)
-
-	err = endless.ListenAndServe(":7000", router)
-	if err != nil {
-		log.Println("Error running goblog server: " + err.Error())
-	}
+	g.router.NoRoute(g._blog.NoRoute)
 }
 
 func CORS() gin.HandlerFunc {
@@ -199,5 +386,168 @@ func CORS() gin.HandlerFunc {
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, DELETE, OPTIONS, PATCH")
 		c.Next()
+	}
+}
+
+// parse the form which should have passed the db info
+// and then create the env file with it
+func updateDB(c *gin.Context) {
+	err := c.Request.ParseForm()
+	if err != nil {
+		log.Println("Couldn't parse the form: " + err.Error())
+		return
+	}
+	f, err := os.Create(".env")
+	if err != nil {
+		c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+			"version": Version,
+			"title":   "GoBlog Install Wizard",
+			"errors":  "Couldn't create the .env file: " + err.Error(),
+		})
+		return
+	}
+	defer f.Close()
+	db_type := c.PostForm("dbtype")
+	if (db_type != "mysql") && (db_type != "sqlite") {
+		c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+			"version": Version,
+			"title":   "GoBlog Install Wizard",
+			"errors":  "Invalid database type",
+		})
+		return
+	}
+	if db_type == "mysql" {
+		host := c.PostForm("mysql_host")
+		user := c.PostForm("mysql_user")
+		pass := c.PostForm("mysql_pass")
+		dbname := c.PostForm("mysql_dbname")
+		_, err = f.WriteString("database=mysql\n")
+		if err != nil {
+			c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+				"version": Version,
+				"title":   "GoBlog Install Wizard",
+				"errors":  "Couldn't write to the .env file: " + err.Error(),
+			})
+			return
+		}
+		_, err = f.WriteString("MYSQL_HOST=" + host + "\n")
+		if err != nil {
+			c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+				"version": Version,
+				"title":   "GoBlog Install Wizard",
+				"errors":  "Couldn't write to the .env file: " + err.Error(),
+			})
+			return
+		}
+		_, err = f.WriteString("MYSQL_USER=" + user + "\n")
+		if err != nil {
+			c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+				"version": Version,
+				"title":   "GoBlog Install Wizard",
+				"errors":  "Couldn't write to the .env file: " + err.Error(),
+			})
+			return
+		}
+		_, err = f.WriteString("MYSQL_PASSWORD=" + pass + "\n")
+		if err != nil {
+			c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+				"version": Version,
+				"title":   "GoBlog Install Wizard",
+				"errors":  "Couldn't write to the .env file: " + err.Error(),
+			})
+			return
+		}
+		_, err = f.WriteString("MYSQL_DATABASE=" + dbname + "\n")
+		if err != nil {
+			c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+				"version": Version,
+				"title":   "GoBlog Install Wizard",
+				"errors":  "Couldn't write to the .env file: " + err.Error(),
+			})
+			return
+		}
+	} else {
+		db_file := c.PostForm("sqlite_file")
+		_, err = f.WriteString("database=sqlite\n")
+		if err != nil {
+			c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+				"version": Version,
+				"title":   "GoBlog Install Wizard",
+				"errors":  "Couldn't write to the .env file: " + err.Error(),
+			})
+			return
+		}
+		_, err = f.WriteString("sqlite_db=" + db_file + "\n")
+		if err != nil {
+			c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+				"version": Version,
+				"title":   "GoBlog Install Wizard",
+				"errors":  "Couldn't write to the .env file: " + err.Error(),
+			})
+			return
+		}
+	}
+
+	// if we make it this far, success, redirect to /
+	c.Redirect(http.StatusSeeOther, "/")
+}
+
+func testDB(c *gin.Context) {
+	err := c.Request.ParseForm()
+	if err != nil {
+		log.Println("Couldn't parse the form: " + err.Error())
+		return
+	}
+	for key, value := range c.Request.PostForm {
+		log.Println("key: ", key, " value: ", value)
+	}
+
+	db_type := c.PostForm("dbtype")
+	if (db_type != "mysql") && (db_type != "sqlite") {
+		log.Println("Invalid database type: " + db_type)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid database type",
+		})
+		return
+	}
+	if db_type == "mysql" {
+		host := c.PostForm("mysql_host")
+		port := c.PostForm("mysql_port")
+		user := c.PostForm("mysql_user")
+		pass := c.PostForm("mysql_pass")
+		dbname := c.PostForm("mysql_dbname")
+		dsn := user + ":" + pass + "@tcp(" + host + ":" + port + ")/" + dbname + "?charset=utf8mb4&parseTime=True&loc=Local"
+		_, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+		if err != nil {
+			log.Println("Couldn't connect to the database: " + err.Error())
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Couldn't connect to the database: " + err.Error(),
+			})
+			return
+		} else {
+			log.Println("Connected to the database")
+			c.JSON(http.StatusOK, gin.H{
+				"success": "Connected to the database",
+			})
+			return
+		}
+	} else {
+		db_file := c.PostForm("sqlite_db")
+		_, err := gorm.Open(sqlite.Open(db_file), &gorm.Config{
+			DisableForeignKeyConstraintWhenMigrating: true,
+		})
+		if err != nil {
+			log.Println("Couldn't connect to the database: " + err.Error())
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Couldn't connect to the database: " + err.Error(),
+			})
+			return
+		} else {
+			log.Println("Connected to the database")
+			c.JSON(http.StatusOK, gin.H{
+				"success": "Connected to the database",
+			})
+			return
+		}
 	}
 }

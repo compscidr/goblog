@@ -21,16 +21,20 @@ var UploadsFolder = "uploads/"
 
 // Admin handles admin requests
 type Admin struct {
-	db      *gorm.DB
+	db      **gorm.DB // needs a double pointer to be able to update the db
 	auth    auth.IAuth
-	b       blog.Blog
+	b       *blog.Blog
 	version string
 }
 
 // New constructs an Admin API
-func New(db *gorm.DB, auth auth.IAuth, b blog.Blog, version string) Admin {
-	api := Admin{db, auth, b, version}
+func New(db *gorm.DB, auth auth.IAuth, b *blog.Blog, version string) Admin {
+	api := Admin{&db, auth, b, version}
 	return api
+}
+
+func (a *Admin) UpdateDb(db *gorm.DB) {
+	a.db = &db
 }
 
 // ////JSON API///////
@@ -42,7 +46,7 @@ func safeSlug(slug string) string {
 }
 
 // CreatePost adds a post if the user has permission
-func (a Admin) CreatePost(c *gin.Context) {
+func (a *Admin) CreatePost(c *gin.Context) {
 	contentType := c.Request.Header.Get("content-type")
 	if contentType != "application/json" {
 		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
@@ -71,7 +75,7 @@ func (a Admin) CreatePost(c *gin.Context) {
 	//todo: make tags work - need to get the relations working
 	requestPost.Slug = safeSlug(requestPost.Title)
 	log.Print("CREATING POST: ", requestPost)
-	a.db.Create(&requestPost)
+	(*a.db).Create(&requestPost)
 
 	log.Println("POST CREATED: ", requestPost)
 	c.JSON(http.StatusCreated, requestPost)
@@ -79,7 +83,7 @@ func (a Admin) CreatePost(c *gin.Context) {
 
 // UploadFile is the endpoint for storing files on the server
 // https://github.com/gin-gonic/examples/blob/master/upload-file/single/main.go
-func (a Admin) UploadFile(c *gin.Context) {
+func (a *Admin) UploadFile(c *gin.Context) {
 	log.Println("Upload file API hit")
 
 	if !a.auth.IsAdmin(c) {
@@ -109,7 +113,7 @@ func (a Admin) UploadFile(c *gin.Context) {
 
 // UpdatePost modifies an existing post
 // Requires the ID of the post, title and content to not be empty
-func (a Admin) UpdatePost(c *gin.Context) {
+func (a *Admin) UpdatePost(c *gin.Context) {
 	contentType := c.Request.Header.Get("content-type")
 	if contentType != "application/json" {
 		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
@@ -138,7 +142,7 @@ func (a Admin) UpdatePost(c *gin.Context) {
 	requestPost.Slug = safeSlug(requestPost.Slug)
 
 	var existingPost blog.Post
-	err := a.db.Where("id = ?", requestPost.ID).First(&existingPost).Error
+	err := (*a.db).Where("id = ?", requestPost.ID).First(&existingPost).Error
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, "Existing post with ID "+fmt.Sprint(requestPost.ID)+" not found")
@@ -146,7 +150,7 @@ func (a Admin) UpdatePost(c *gin.Context) {
 	}
 
 	//clear old associations
-	a.db.Model(&existingPost).Association("Tags").Clear()
+	(*a.db).Model(&existingPost).Association("Tags").Clear()
 
 	log.Println("UPDATING DRAFT AS: ", requestPost.Draft)
 
@@ -156,11 +160,11 @@ func (a Admin) UpdatePost(c *gin.Context) {
 	existingPost.Tags = requestPost.Tags
 	existingPost.CreatedAt = requestPost.CreatedAt
 	existingPost.Draft = requestPost.Draft
-	a.db.Model(&existingPost).Where("id = ?", requestPost.ID).Updates(&existingPost)
+	(*a.db).Model(&existingPost).Where("id = ?", requestPost.ID).Updates(&existingPost)
 
 	//https://stackoverflow.com/questions/56653423/gorm-doesnt-update-boolean-field-to-false
 	if !requestPost.Draft {
-		a.db.Model(&existingPost).Select("draft").Update("draft", false)
+		(*a.db).Model(&existingPost).Select("draft").Update("draft", false)
 	}
 
 	log.Println("POST UPDATED: ", existingPost)
@@ -168,7 +172,7 @@ func (a Admin) UpdatePost(c *gin.Context) {
 }
 
 // DeletePost deletes a post from the database
-func (a Admin) DeletePost(c *gin.Context) {
+func (a *Admin) DeletePost(c *gin.Context) {
 	contentType := c.Request.Header.Get("content-type")
 	if contentType != "application/json" {
 		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
@@ -187,31 +191,31 @@ func (a Admin) DeletePost(c *gin.Context) {
 		return
 	}
 
-	a.db.Where("id = ?", requestPost.ID).Delete(&blog.Post{})
+	(*a.db).Where("id = ?", requestPost.ID).Delete(&blog.Post{})
 
 	c.JSON(http.StatusOK, "")
 }
 
-func (a Admin) PublishPost(c *gin.Context) {
+func (a *Admin) PublishPost(c *gin.Context) {
 	id := c.Param("id")
 	log.Println("Publishing post: ", id)
 
 	var post blog.Post
-	a.db.Where("id = ?", id).First(&post)
-	a.db.Model(&post).Select("draft").Update("draft", false)
+	(*a.db).Where("id = ?", id).First(&post)
+	(*a.db).Model(&post).Select("draft").Update("draft", false)
 	c.JSON(http.StatusAccepted, post)
 }
 
-func (a Admin) DraftPost(c *gin.Context) {
+func (a *Admin) DraftPost(c *gin.Context) {
 	id := c.Param("id")
 	log.Println("Drafting post: ", id)
 	var post blog.Post
-	a.db.Where("id = ?", id).First(&post)
-	a.db.Model(&post).Select("draft").Update("draft", true)
+	(*a.db).Where("id = ?", id).First(&post)
+	(*a.db).Model(&post).Select("draft").Update("draft", true)
 	c.JSON(http.StatusAccepted, post)
 }
 
-func (a Admin) UpdateSetting(c *gin.Context) {
+func (a *Admin) UpdateSetting(c *gin.Context) {
 	contentType := c.Request.Header.Get("content-type")
 	if contentType != "application/json" {
 		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
@@ -233,20 +237,20 @@ func (a Admin) UpdateSetting(c *gin.Context) {
 	}
 
 	var setting blog.Setting
-	err = a.db.Where("key = ?", setting.Key).First(&setting).Error
+	err = (*a.db).Where("key = ?", setting.Key).First(&setting).Error
 	if err != nil {
-		a.db.Create(&setting)
+		(*a.db).Create(&setting)
 	} else {
-		a.db.Save(&setting)
+		(*a.db).Save(&setting)
 	}
 	c.JSON(http.StatusAccepted, setting)
 }
 
-func (a Admin) GetSetting(c *gin.Context) {
+func (a *Admin) GetSetting(c *gin.Context) {
 	key := c.Param("key")
 	log.Println("Getting setting: ", key)
 
-	err := a.db.Where("key = ?", key).First(&blog.Setting{}).Error
+	err := (*a.db).Where("key = ?", key).First(&blog.Setting{}).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, "Setting not found")
 	} else {
@@ -257,7 +261,7 @@ func (a Admin) GetSetting(c *gin.Context) {
 //////HTML API///////
 
 // Admin is the admin dashboard of the website
-func (a Admin) Admin(c *gin.Context) {
+func (a *Admin) Admin(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin.html", gin.H{
 		"posts":      a.b.GetPosts(true),
 		"logged_in":  a.auth.IsLoggedIn(c),
@@ -267,7 +271,7 @@ func (a Admin) Admin(c *gin.Context) {
 	})
 }
 
-func (a Admin) AdminDashboard(c *gin.Context) {
+func (a *Admin) AdminDashboard(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin_dashboard.html", gin.H{
 		"posts":      a.b.GetPosts(true),
 		"logged_in":  a.auth.IsLoggedIn(c),
@@ -277,7 +281,7 @@ func (a Admin) AdminDashboard(c *gin.Context) {
 	})
 }
 
-func (a Admin) AdminPosts(c *gin.Context) {
+func (a *Admin) AdminPosts(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin_all_posts.html", gin.H{
 		"posts":      a.b.GetPosts(true),
 		"logged_in":  a.auth.IsLoggedIn(c),
@@ -287,7 +291,7 @@ func (a Admin) AdminPosts(c *gin.Context) {
 	})
 }
 
-func (a Admin) AdminNewPost(c *gin.Context) {
+func (a *Admin) AdminNewPost(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin_new_post.html", gin.H{
 		"posts":      a.b.GetPosts(true),
 		"logged_in":  a.auth.IsLoggedIn(c),
@@ -297,7 +301,7 @@ func (a Admin) AdminNewPost(c *gin.Context) {
 	})
 }
 
-func (a Admin) AdminSettings(c *gin.Context) {
+func (a *Admin) AdminSettings(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin_settings.html", gin.H{
 		"posts":      a.b.GetPosts(true),
 		"logged_in":  a.auth.IsLoggedIn(c),
@@ -308,7 +312,7 @@ func (a Admin) AdminSettings(c *gin.Context) {
 	})
 }
 
-func (a Admin) Post(c *gin.Context) {
+func (a *Admin) Post(c *gin.Context) {
 	if !a.auth.IsAdmin(c) {
 		log.Println("IS ADMIN RETURNED FALSE")
 		c.JSON(http.StatusUnauthorized, "Not Authorized")
