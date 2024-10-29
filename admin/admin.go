@@ -304,8 +304,8 @@ func (a *Admin) GetSettings(c *gin.Context) {
 		return
 	}
 
-	settings := a.b.GetSettings()
-	c.JSON(http.StatusOK, settings)
+	settingsMap := a.b.GetSettings()
+	c.JSON(http.StatusOK, settingsMap)
 }
 
 //////HTML API///////
@@ -318,6 +318,7 @@ func (a *Admin) Admin(c *gin.Context) {
 		"is_admin":   a.auth.IsAdmin(c),
 		"version":    a.version,
 		"admin_page": true,
+		"settings":   a.b.GetSettings(),
 	})
 }
 
@@ -328,6 +329,7 @@ func (a *Admin) AdminDashboard(c *gin.Context) {
 		"is_admin":   a.auth.IsAdmin(c),
 		"version":    a.version,
 		"admin_page": true,
+		"settings":   a.b.GetSettings(),
 	})
 }
 
@@ -338,6 +340,7 @@ func (a *Admin) AdminPosts(c *gin.Context) {
 		"is_admin":   a.auth.IsAdmin(c),
 		"version":    a.version,
 		"admin_page": true,
+		"settings":   a.b.GetSettings(),
 	})
 }
 
@@ -348,6 +351,7 @@ func (a *Admin) AdminNewPost(c *gin.Context) {
 		"is_admin":   a.auth.IsAdmin(c),
 		"version":    a.version,
 		"admin_page": true,
+		"settings":   a.b.GetSettings(),
 	})
 }
 
@@ -377,6 +381,7 @@ func (a *Admin) Post(c *gin.Context) {
 			"version":     a.b.Version,
 			"title":       "Post Not Found",
 			"admin_page":  true,
+			"settings":    a.b.GetSettings(),
 		})
 	} else {
 		c.HTML(http.StatusOK, "post-admin.html", gin.H{
@@ -385,6 +390,7 @@ func (a *Admin) Post(c *gin.Context) {
 			"post":       post,
 			"version":    a.b.Version,
 			"admin_page": true,
+			"settings":   a.b.GetSettings(),
 		})
 	}
 }

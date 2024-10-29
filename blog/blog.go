@@ -147,10 +147,15 @@ func (b *Blog) getPostsByTag(c *gin.Context) ([]Post, error) {
 	return posts, nil
 }
 
-func (b *Blog) GetSettings() []Setting {
+func (b *Blog) GetSettings() map[string]Setting {
 	var settings []Setting
 	(*b.db).Find(&settings)
-	return settings
+
+	settingsMap := make(map[string]Setting)
+	for _, setting := range settings {
+		settingsMap[setting.Key] = setting
+	}
+	return settingsMap
 }
 
 //////JSON API///////
@@ -194,6 +199,7 @@ func (b *Blog) NoRoute(c *gin.Context) {
 					"version":    b.Version,
 					"recent":     b.GetLatest(),
 					"admin_page": false,
+					"settings":   b.GetSettings(),
 				})
 			} else {
 				c.HTML(http.StatusOK, "post.html", gin.H{
@@ -203,6 +209,7 @@ func (b *Blog) NoRoute(c *gin.Context) {
 					"version":    b.Version,
 					"recent":     b.GetLatest(),
 					"admin_page": false,
+					"settings":   b.GetSettings(),
 				})
 			}
 			return
@@ -222,6 +229,7 @@ func (b *Blog) NoRoute(c *gin.Context) {
 		"version":     b.Version,
 		"recent":      b.GetLatest(),
 		"admin_page":  false,
+		"settings":    b.GetSettings(),
 	})
 }
 
@@ -237,6 +245,7 @@ func (b *Blog) Home(c *gin.Context) {
 		"title":      "Software Engineer",
 		"recent":     b.GetLatest(),
 		"admin_page": false,
+		"settings":   b.GetSettings(),
 	})
 }
 
@@ -250,6 +259,7 @@ func (b *Blog) Posts(c *gin.Context) {
 		"title":      "Posts",
 		"recent":     b.GetLatest(),
 		"admin_page": false,
+		"settings":   b.GetSettings(),
 	})
 }
 
@@ -264,6 +274,7 @@ func (b *Blog) Post(c *gin.Context) {
 			"title":       "Post Not Found",
 			"recent":      b.GetLatest(),
 			"admin_page":  false,
+			"settings":    b.GetSettings(),
 		})
 	} else {
 		c.HTML(http.StatusOK, "post.html", gin.H{
@@ -273,6 +284,7 @@ func (b *Blog) Post(c *gin.Context) {
 			"version":    b.Version,
 			"recent":     b.GetLatest(),
 			"admin_page": false,
+			"settings":   b.GetSettings(),
 		})
 		//if b.auth.IsAdmin(c) {
 		//	c.HTML(http.StatusOK, "post-admin.html", gin.H{
@@ -304,6 +316,7 @@ func (b *Blog) Tag(c *gin.Context) {
 			"title":       "Tag '" + tag + "' Not Found",
 			"recent":      b.GetLatest(),
 			"admin_page":  false,
+			"settings":    b.GetSettings(),
 		})
 	} else {
 		c.HTML(http.StatusOK, "tag.html", gin.H{
@@ -315,6 +328,7 @@ func (b *Blog) Tag(c *gin.Context) {
 			"title":      "Posts with Tag '" + tag + "'",
 			"recent":     b.GetLatest(),
 			"admin_page": false,
+			"settings":   b.GetSettings(),
 		})
 	}
 }
@@ -327,6 +341,7 @@ func (b *Blog) Tags(c *gin.Context) {
 		"tags":       b.getTags(),
 		"recent":     b.GetLatest(),
 		"admin_page": false,
+		"settings":   b.GetSettings(),
 	})
 }
 
@@ -339,6 +354,7 @@ func (b *Blog) Speaking(c *gin.Context) {
 		"title":      "Presentations and Speaking",
 		"recent":     b.GetLatest(),
 		"admin_page": false,
+		"settings":   b.GetSettings(),
 	})
 }
 
@@ -354,6 +370,7 @@ func (b *Blog) Research(c *gin.Context) {
 		"recent":     b.GetLatest(),
 		"articles":   articles,
 		"admin_page": false,
+		"settings":   b.GetSettings(),
 	})
 }
 
@@ -366,6 +383,7 @@ func (b *Blog) Projects(c *gin.Context) {
 		"title":      "Projects",
 		"recent":     b.GetLatest(),
 		"admin_page": false,
+		"settings":   b.GetSettings(),
 	})
 }
 
@@ -378,6 +396,7 @@ func (b *Blog) About(c *gin.Context) {
 		"title":      "About",
 		"recent":     b.GetLatest(),
 		"admin_page": false,
+		"settings":   b.GetSettings(),
 	})
 }
 
@@ -392,6 +411,7 @@ func (b *Blog) Archives(c *gin.Context) {
 		"byYearMonth": b.getArchivesByYearMonth(),
 		"recent":      b.GetLatest(),
 		"admin_page":  false,
+		"settings":    b.GetSettings(),
 	})
 }
 
@@ -439,6 +459,7 @@ func (b *Blog) Login(c *gin.Context) {
 				"title":      "Login Configuration Error",
 				"recent":     b.GetLatest(),
 				"admin_page": false,
+				"settings":   b.GetSettings(),
 			})
 			return
 		}
@@ -453,6 +474,7 @@ func (b *Blog) Login(c *gin.Context) {
 		"title":      "Login",
 		"recent":     b.GetLatest(),
 		"admin_page": false,
+		"settings":   b.GetSettings(),
 	})
 }
 
@@ -472,6 +494,7 @@ func (b *Blog) checkValidDb(c *gin.Context) {
 			"version":     b.Version,
 			"title":       "Database Not Found",
 			"admin_page":  false,
+			"settings":    b.GetSettings(),
 		})
 	}
 }

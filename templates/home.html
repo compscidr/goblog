@@ -1,12 +1,12 @@
 {{ template "header.html" .}}
   <div class="text-center">
     <div class="container align-self-center">
-      <a href="/posts" title="Read posts by Jason Ernst"><img src="img/jason.jpg" class="rounded-circle img-responsive profile" style="max-width:300px;" alt="Jason Ernst"/></a>
-      <h1>Jason Ernst</h1>
-      <h4>Software Engineer</h4>
+      <a href="/posts" title="Read posts by {{ .settings.site_title.Value }}"><img src="img/jason.jpg" class="rounded-circle img-responsive profile" style="max-width:300px;" alt="{{ .settings.site_title.Value }}"/></a>
+      <h1>{{ .settings.site_title.Value }}</h1>
+      <h4>{{ .settings.site_subtitle.Value }}</h4>
       <div style="width: 355px; margin: auto;">
         <p class="keywords">
-          Decentralization, Mesh Networks, Robotics
+          {{ .settings.site_tags.Value }}
         </p>
       </div>
     </div>

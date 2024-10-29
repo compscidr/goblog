@@ -1,15 +1,35 @@
   <div id="footer" class="text-center">
       <div class="footer">
-        <a href="https://github.com/compscidr" target="_blank" title="Jason Ernst on Github"><i class="fab fa-github fa-1x"></i></a>
-        <a href="https://www.linkedin.com/in/jasonbernst/" target="_blank" title="Jason Ernst on LinkedIn"><i class="fab fa-linkedin fa-1x"></i></a>
-        <a href="https://x.com/compscidr" target="_blank" title="Jason Ernst on X"><i class="fab fa-x-twitter fa-1x"></i></a>
-        <a href="https://keybase.io/compscidr" target="_blank" title="Jason Ernst on Keybase"><i class="fab fa-keybase fa-1x"></i></a>
+        {{ if .settings.github_url.Value }}
+          <a href="{{ .settings.github_url.Value }}" target="_blank" title="{{ .settings.site_title.Value }} on Github"><i class="fab fa-github fa-1x"></i></a>
+        {{ end }}
+        {{ if .settings.linkedin_url.Value }}
+        <a href="{{ .settings.linkedin_url.Value }}" target="_blank" title="{{ .settings.site_title.Value }} on LinkedIn"><i class="fab fa-linkedin fa-1x"></i></a>
+        {{ end }}
+        {{ if .settings.x_url.Value }}
+        <a href="{{ .settings.x_url.Value }}" target="_blank" title="{{ .settings.site_title.Value }} on X"><i class="fab fa-twitter fa-1x"></i></a>
+        {{ end }}
+        {{ if .settings.keybase_url.Value }}
+        <a href="{{ .settings.keybase_url.Value }}" target="_blank" title="{{ .settings.site_title.Value }} on Keybase"><i class="fab fa-keybase fa-1x"></i></a>
+        {{ end }}
+        {{ if .settings.instagram_url.Value }}
         <a href="https://www.instagram.com/compscidr/" target="_blank" title="Jason Ernst on Instagram"><i class="fab fa-instagram fa-1x"></i></a>
-        <a href="https://www.facebook.com/jason.b.ernst" target="_blank" title="Jason Ernst on Facebook"><i class="fab fa-facebook fa-1x"></i></a>
-        <a href="https://www.strava.com/athletes/2021127" target="_blank" title="Jason Ernst on Strava"><i class="fab fa-strava fa-1x"></i></a>
-        <a href="https://open.spotify.com/user/csgrad?si=0lcz0klQTUyEU0JEc6RBRg" target="_blank" title="Jason Ernst on Spotify"><i class="fab fa-spotify fa-1x"></i></a>
-        <a href="https://live.xbox.com/en-US/Profile?gamertag=compscidr" target="_blank" title="Jason Ernst on Xbox"><i class="fab fa-xbox fa-1x"></i></a>
-        <a href="https://steamcommunity.com/id/compscidr/" target="_blank" title="Jason Ernst on Steam"><i class="fab fa-steam fa-1x"></i></a>
+        {{ end }}
+        {{ if .settings.facebook_url.Value }}
+        <a href="{{ .settings.facebook_url.Value }}" target="_blank" title="Jason Ernst on Facebook"><i class="fab fa-facebook fa-1x"></i></a>
+        {{ end }}
+        {{ if .settings.strava_url.Value }}
+        <a href="{{ .settings.strava_url.Value }}" target="_blank" title="Jason Ernst on Strava"><i class="fab fa-strava fa-1x"></i></a>
+        {{ end }}
+        {{ if .settings.spotify_url.Value }}
+        <a href="{{ .settings.spotify_url.Value }}" target="_blank" title="Jason Ernst on Spotify"><i class="fab fa-spotify fa-1x"></i></a>
+        {{ end }}
+        {{ if .settings.xbox_url.Value }}
+        <a href="{{ .settings.xbox_url.Value }}" target="_blank" title="Jason Ernst on Xbox"><i class="fab fa-xbox fa-1x"></i></a>
+        {{ end }}
+        {{ if .settings.steam_url.Value }}
+        <a href="{{ .settings.steam_url.Value }}" target="_blank" title="Jason Ernst on Steam"><i class="fab fa-steam fa-1x"></i></a>
+        {{ end }}
       </div> <!-- /footer -->
       <div class="spacer version">Powered by <a href="https://github.com/compscidr/goblog" target="goblog {{ .version }}">goblog {{ .version }}</a></div>
   </div>
