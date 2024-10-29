@@ -17,34 +17,38 @@ import (
 	"gorm.io/gorm"
 )
 
-//IAuth interface for auth so that it can be mocked easier
+// IAuth interface for auth so that it can be mocked easier
 type IAuth interface {
 	IsAdmin(c *gin.Context) bool
 	IsLoggedIn(c *gin.Context) bool
 }
 
-//Auth API
+// Auth API
 type Auth struct {
-	db      *gorm.DB
+	db      **gorm.DB // needs a double pointer to be able to update the db
 	version string
 }
 
-//New constructs an Auth API
+// New constructs an Auth API
 func New(db *gorm.DB, version string) Auth {
-	api := Auth{db, version}
+	api := Auth{&db, version}
 	return api
 }
 
-//AccessTokenResponse comes from Github OAuth API when the user has successfully
-//authenticated - note the github api provides more fields but we can just leave
-//them out and it will parse just fine - cool!
+// AccessTokenResponse comes from Github OAuth API when the user has successfully
+// authenticated - note the github api provides more fields but we can just leave
+// them out and it will parse just fine - cool!
 type AccessTokenResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-//use the Github app credentials + the code we received from javascript
-//client side to make the access token (bearer) request
-func (a Auth) requestAccessToken(parsedCode string) (*AccessTokenResponse, error) {
+func (a *Auth) UpdateDb(db *gorm.DB) {
+	a.db = &db
+}
+
+// use the Github app credentials + the code we received from javascript
+// client side to make the access token (bearer) request
+func (a *Auth) requestAccessToken(parsedCode string) (*AccessTokenResponse, error) {
 	err := godotenv.Load(".env")
 	if err != nil {
 		return nil, errors.New("Error loading .env file: " + err.Error())
@@ -91,7 +95,7 @@ func (a Auth) requestAccessToken(parsedCode string) (*AccessTokenResponse, error
 }
 
 // formatRequest generates ascii representation of a request
-func (a Auth) formatRequest(r *http.Request) string {
+func (a *Auth) formatRequest(r *http.Request) string {
 	// Create return string
 	var request []string // Add the request string
 	url := fmt.Sprintf("%v %v %v", r.Method, r.URL, r.Proto)
@@ -113,8 +117,8 @@ func (a Auth) formatRequest(r *http.Request) string {
 	return strings.Join(request, "\n")
 }
 
-//todo: make these request functions generalized
-func (a Auth) RequestUser(accessToken string) (*BlogUser, error) {
+// todo: make these request functions generalized
+func (a *Auth) RequestUser(accessToken string) (*BlogUser, error) {
 	data := &BlogUser{}
 	//get the user info from Github
 	req, err := http.NewRequest("GET", "https://api.github.com/user", strings.NewReader(""))
@@ -154,13 +158,13 @@ func (a Auth) RequestUser(accessToken string) (*BlogUser, error) {
 	return data, nil
 }
 
-//LoginPostHandler should be called with the code provided by github. After
-//receiving the code, this will reach out to github to retrieve and auth token
-//which is stored in the db along with the user information from github.
-//this can then be used for authorization when the api user supplies the same
-//auth token later on for API access. Only one auth token per user can be used
-//at once. Logout should remove the auth token from the table.
-func (a Auth) LoginPostHandler(c *gin.Context) {
+// LoginPostHandler should be called with the code provided by github. After
+// receiving the code, this will reach out to github to retrieve and auth token
+// which is stored in the db along with the user information from github.
+// this can then be used for authorization when the api user supplies the same
+// auth token later on for API access. Only one auth token per user can be used
+// at once. Logout should remove the auth token from the table.
+func (a *Auth) LoginPostHandler(c *gin.Context) {
 	parsedCode := c.PostForm("code")
 	data, err := a.requestAccessToken(parsedCode)
 	if err != nil {
@@ -176,11 +180,11 @@ func (a Auth) LoginPostHandler(c *gin.Context) {
 
 	//check if user exists, if not add them, if they do update access token
 	var existingUser BlogUser
-	err = a.db.Where("ID = ?", user.ID).First(&existingUser).Error
+	err = (*a.db).Where("ID = ?", user.ID).First(&existingUser).Error
 	if err != nil {
-		a.db.Create(&user)
+		(*a.db).Create(&user)
 	} else {
-		a.db.Model(&user).Where("ID = ?", user.ID).Updates(&user)
+		(*a.db).Model(&user).Where("ID = ?", user.ID).Updates(&user)
 		existingUser = *user
 	}
 
@@ -192,16 +196,25 @@ func (a Auth) LoginPostHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, existingUser)
 }
 
-//DisplayUserTable is a debug function, shows the user table
-func (a Auth) DisplayUserTable() {
+// DisplayUserTable is a debug function, shows the user table
+func (a *Auth) DisplayUserTable() {
 	var users []BlogUser
-	a.db.Find(&users)
+	(*a.db).Find(&users)
 	log.Println(users)
 }
 
-//IsAdmin returns true if the user logged in is the admin user
-//First tries for a session token, and if that fails falls back on an auth token
-func (a Auth) IsAdmin(c *gin.Context) bool {
+// IsAdmin returns true if the user logged in is the admin user
+// First tries for a session token, and if that fails falls back on an auth token
+func (a *Auth) IsAdmin(c *gin.Context) bool {
+
+	// if there is no admin user in the db, then we can't have an admin user, so we'll just return true for now, mostly
+	// so the wizard can upload images
+	var adminUser AdminUser
+	err := (*a.db).First(&adminUser).Error
+	if err != nil {
+		return true
+	}
+
 	session := sessions.Default(c)
 	token := session.Get("token")
 	if token == nil {
@@ -216,28 +229,27 @@ func (a Auth) IsAdmin(c *gin.Context) bool {
 
 	// first make sure the access token matches a logged in user
 	var existingUser BlogUser
-	err := a.db.Where("access_token = ?", token).First(&existingUser).Error
+	err = (*a.db).Where("access_token = ?", token).First(&existingUser).Error
 	if err != nil {
 		return false
 	}
 	// next make sure the logged in user is an admin
-	var adminUser AdminUser
-	err = a.db.Where("blog_user_id = ?", existingUser.ID).First(&adminUser).Error
+	err = (*a.db).Where("blog_user_id = ?", existingUser.ID).First(&adminUser).Error
 	if err != nil {
 		return false
 	}
 	return true
 }
 
-//IsLoggedIn Returns true if the user is logged in, false otherwise
-func (a Auth) IsLoggedIn(c *gin.Context) bool {
+// IsLoggedIn Returns true if the user is logged in, false otherwise
+func (a *Auth) IsLoggedIn(c *gin.Context) bool {
 	session := sessions.Default(c)
 	token := session.Get("token")
 	if token == nil {
 		return false
 	}
 	var existingUser BlogUser
-	err := a.db.Where("access_token = ?", token).First(&existingUser).Error
+	err := (*a.db).Where("access_token = ?", token).First(&existingUser).Error
 	if err != nil {
 		return false
 	}
