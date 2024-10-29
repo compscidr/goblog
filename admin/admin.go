@@ -215,7 +215,7 @@ func (a *Admin) DraftPost(c *gin.Context) {
 	c.JSON(http.StatusAccepted, post)
 }
 
-func (a *Admin) UpdateSetting(c *gin.Context) {
+func (a *Admin) AddSetting(c *gin.Context) {
 	contentType := c.Request.Header.Get("content-type")
 	if contentType != "application/json" {
 		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
@@ -236,17 +236,56 @@ func (a *Admin) UpdateSetting(c *gin.Context) {
 		return
 	}
 
-	var setting blog.Setting
-	err = (*a.db).Where("key = ?", setting.Key).First(&setting).Error
+	if requestSetting.Key == "" {
+		c.JSON(http.StatusBadRequest, "Missing Key Name for Setting")
+		return
+	}
+
+	log.Print("CREATING SETTING: ", requestSetting)
+	(*a.db).Create(&requestSetting)
+
+	log.Println("SETTING CREATED: ", requestSetting)
+	c.JSON(http.StatusCreated, requestSetting)
+}
+
+func (a *Admin) UpdateSettings(c *gin.Context) {
+	contentType := c.Request.Header.Get("content-type")
+	if contentType != "application/json" {
+		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
+		return
+	}
+
+	if !a.auth.IsAdmin(c) {
+		log.Println("IS ADMIN RETURNED FALSE")
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	var requestSettings []blog.Setting
+	err := c.BindJSON(&requestSettings)
 	if err != nil {
-		(*a.db).Create(&setting)
-	} else {
+		log.Println("MALFORMED REQ: " + err.Error())
+		c.JSON(http.StatusBadRequest, "Malformed request")
+		return
+	}
+
+	for _, setting := range requestSettings {
+		if setting.Key == "" {
+			c.JSON(http.StatusBadRequest, "Missing Key Name for Setting")
+			return
+		}
 		(*a.db).Save(&setting)
 	}
-	c.JSON(http.StatusAccepted, setting)
+	c.JSON(http.StatusAccepted, requestSettings)
 }
 
 func (a *Admin) GetSetting(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		log.Println("IS ADMIN RETURNED FALSE")
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
 	key := c.Param("key")
 	log.Println("Getting setting: ", key)
 
@@ -256,6 +295,17 @@ func (a *Admin) GetSetting(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, blog.Setting{})
 	}
+}
+
+func (a *Admin) GetSettings(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		log.Println("IS ADMIN RETURNED FALSE")
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	settings := a.b.GetSettings()
+	c.JSON(http.StatusOK, settings)
 }
 
 //////HTML API///////

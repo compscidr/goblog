@@ -1,7 +1,6 @@
 package blog
 
 type Setting struct {
-	ID    uint   `gorm:"primary_key"`
-	Key   string `json:"key"`
+	Key   string `gorm:"primary_key" json:"key"`
 	Value string `json:"value"`
 }

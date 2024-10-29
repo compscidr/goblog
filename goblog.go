@@ -304,8 +304,9 @@ func main() {
 	//https://github.com/gin-gonic/gin/issues/464
 	router.LoadHTMLGlob("templates/*.html")
 	router.GET("/", goblog.rootHandler)
-	router.GET("/wizard", goblog._wizard.SaveToken)
 	router.GET("/login", goblog.loginHandler)
+	router.GET("/wizard", goblog._wizard.SaveToken)
+	router.POST("/wizard_settings", goblog._wizard.Settings)
 	router.POST("/wizard_db", updateDB)
 	router.POST("/test_db", testDB)
 	//if we use true here - it will override the home route and just show files
@@ -326,6 +327,10 @@ func main() {
 }
 
 func (g goblog) addRoutes() {
+	if g.handlersRegistered {
+		log.Println("Handlers already registered")
+		return
+	}
 	g.handlersRegistered = true
 	log.Println("Adding main blog routes")
 	//all of this is the json api
@@ -340,21 +345,20 @@ func (g goblog) addRoutes() {
 	g.router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", g._blog.GetPost)
 	g.router.GET("/api/v1/posts", g._blog.ListPosts)
 	g.router.GET("/api/v1/setting/:slug", g._admin.GetSetting)
-	g.router.POST("/api/v1/setting", g._admin.UpdateSetting)
-	g.router.PATCH("/api/v1/setting", g._admin.UpdateSetting)
+	g.router.GET("/api/v1/settings", g._admin.GetSettings)
+	g.router.POST("/api/v1/setting", g._admin.AddSetting)
+	g.router.PATCH("/api/v1/settings", g._admin.UpdateSettings)
 
 	//all of this serves html full pages, but re-uses much of the logic of
 	//the json API. The json API is tested more easily. Also javascript can
 	//served in the html can be used to create and update posts by directly
 	//working with the json API.
-	//g.router.GET("/", g._blog.Home)
 	g.router.GET("/index.php", g._blog.Home)
 	g.router.GET("/posts/:yyyy/:mm/:dd/:slug", g._blog.Post)
 	// lets posts work with our without the word posts in front
 	g.router.GET("/:yyyy/:mm/:dd/:slug", g._blog.Post)
 	g.router.GET("/admin/posts/:yyyy/:mm/:dd/:slug", g._admin.Post)
 	g.router.GET("/tag/:name", g._blog.Tag)
-	//g.router.GET("/login", g._blog.Login)
 	g.router.GET("/logout", g._blog.Logout)
 
 	//todo: register a template mapping to a "page type"

@@ -149,7 +149,7 @@ func (b *Blog) getPostsByTag(c *gin.Context) ([]Post, error) {
 
 func (b *Blog) GetSettings() []Setting {
 	var settings []Setting
-	(*b.db).Preload("Setting").Order("name asc").Find(&settings)
+	(*b.db).Find(&settings)
 	return settings
 }
 

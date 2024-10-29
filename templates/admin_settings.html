@@ -1,45 +1,7 @@
 {{ template "header.html" .}}
-<script type="text/javascript">
-
-    function createPost(publish) {
-        var tags = $("#tags").val().split(',')
-        for (var i = 0; i < tags.length; i++) {
-            tags[i] = {"name": tags[i].trim()}
-        }
-
-        var time = $("#created_at").val();
-        var vtime = moment.utc(time)
-
-        var post = {
-            "title": $("#title").val(),
-            "created_at": vtime,
-            "content": simplemde.value(),
-            "tags": tags,
-            "draft": !publish,
-        }
-        console.log("POST: " + JSON.stringify(post));
-
-        $.ajax({
-            url: "/api/v1/posts",
-            type: "post",
-            dataType: "json",
-            contentType: "application/json",
-            success: function(json) {
-                var time = moment(json.created_at);
-                var slug = json.slug;
-                window.location.href="/posts/" + time.format("YYYY/MM/DD") + "/" + slug;
-            },
-            error: function(jqXHR, textStatus, errorThrown) {
-                alert("ERROR: " + textStatus + " " + errorThrown);
-            },
-            data: JSON.stringify(post)
-        });
-    }
-</script>
-
+<script src="/js/admin-script.js"></script>
 <div class="container">
     <div class="nav-scroller bg-body shadow-sm">
-
         <!-- https://getbootstrap.com/docs/5.0/examples/offcanvas-navbar/ -->
         <nav class="nav nav-underline" aria-label="Secondary navigation">
             <a class="nav-link" href="/admin/dashboard">Dashboard</a>
@@ -49,11 +11,16 @@
         </nav>
     </div>
     <h1>Settings</h1>
-    <form>
+    <div id="ajax-error" class="alert alert-danger" role="alert" style="display: none;"></div>
+    <form id="settings-form">
         {{ range .settings }}
-        <label for="{{ .key }}" class="form-label">{{ .key }}</label>
-        <input type="text" id="{{ .key }}" name="{{ .key }}" value="{{ .value }}" placeholder="{{ .value }}" class="form-control" required>
+        <label for="{{ .Key }}" class="form-label">{{ .Key }}</label>
+        <input type="text" id="{{ .Key }}" name="{{ .Key }}" value="{{ .Value }}" class="form-control" required>
         {{ end }}
+
+        <button class="btn btn-primary mt-2" onclick="updateSettings();">
+            Save
+        </button>
     </form>
 
 </div> <!-- / container -->
