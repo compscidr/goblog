@@ -1,5 +1,5 @@
 // take the form data and use the patch method to update the settings
-function updateSettings() {
+function updateSettings(redirect) {
     $("#ajax-error").hide();
     var settings = [];
 
@@ -14,20 +14,22 @@ function updateSettings() {
             if (this.url) {
                 value = this.url
             } else {
-                return
+                if (redirect !== undefined) {
+                    // this is the startup wizard, make sure we have some default value or they won't be created
+                    // at all
+                    if (this.name === "favicon") {
+                        value = "/img/favicon.ico"
+                    } else if (this.name === "landing_page_image") {
+                        value = "/img/profile.png"
+                    }
+                } else {
+                    // otherwise if the value isn't filled in, leave it what it was so it doesn't get erased
+                    return
+                }
             }
         } else if (type === "submit") {
             return
         }
-
-        // var value
-        // if (type === "file") {
-        //     value = this.filename
-        // } else if (type === "text") {
-        //     value = this.value
-        // } else {
-        //     return
-        // }
         settings.push(
             {"key": key, "value": value, "type": type}
         )
@@ -43,6 +45,10 @@ function updateSettings() {
             // change #ajax-error to success and show "settings updated"
             $("#ajax-error").html("Settings updated").show();
             $("#ajax-error").removeClass("alert-danger").addClass("alert-success");
+
+            if (redirect !== undefined) {
+                window.location = redirect;
+            }
         },
         error: function(jqXHR, textStatus, errorThrown) {
             // show #ajax-error with the error message

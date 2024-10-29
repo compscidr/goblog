@@ -7,7 +7,6 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"goblog/auth"
-	"goblog/blog"
 	"gorm.io/gorm"
 	"io"
 	"log"
@@ -215,33 +214,4 @@ func (w *Wizard) updateAdminUser(accessToken string) error {
 	}
 
 	return nil
-}
-
-func (w *Wizard) Settings(c *gin.Context) {
-	if w.IsDbNil() {
-		c.HTML(http.StatusOK, "wizard_settings.html", gin.H{
-			"version": w.Version,
-			"errors":  "DB is nil",
-		})
-		return
-	}
-
-	err := c.Request.ParseForm()
-	if err != nil {
-		c.HTML(http.StatusOK, "wizard_settings.html", gin.H{
-			"version": w.Version,
-			"errors":  "Error parsing form: " + err.Error(),
-		})
-		return
-	}
-
-	for key, value := range c.Request.PostForm {
-		setting := blog.Setting{Key: key, Value: value[0]}
-		err = (*w.db).Save(&setting).Error
-		if err != nil {
-			log.Println("Error saving setting: ", err)
-		}
-	}
-
-	c.Redirect(http.StatusFound, "/wizard?page=auth")
 }

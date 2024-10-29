@@ -306,9 +306,10 @@ func main() {
 	router.GET("/", goblog.rootHandler)
 	router.GET("/login", goblog.loginHandler)
 	router.GET("/wizard", goblog._wizard.SaveToken)
-	router.POST("/wizard_settings", goblog._wizard.Settings)
 	router.POST("/wizard_db", updateDB)
 	router.POST("/test_db", testDB)
+	router.POST("/api/v1/upload", goblog._admin.UploadFile)
+	router.PATCH("/api/v1/settings", goblog._admin.UpdateSettings)
 	//if we use true here - it will override the home route and just show files
 	router.Use(static.Serve("/", static.LocalFile("www", false)))
 	if err != nil {
@@ -337,7 +338,6 @@ func (g goblog) addRoutes() {
 	g.router.MaxMultipartMemory = 50 << 20
 	g.router.POST("/api/login", g._auth.LoginPostHandler)
 	g.router.POST("/api/v1/posts", g._admin.CreatePost)
-	g.router.POST("/api/v1/upload", g._admin.UploadFile)
 	g.router.PATCH("/api/v1/posts", g._admin.UpdatePost)
 	g.router.PATCH("/api/v1/publish/:id", g._admin.PublishPost)
 	g.router.PATCH("/api/v1/draft/:id", g._admin.DraftPost)
@@ -347,7 +347,6 @@ func (g goblog) addRoutes() {
 	g.router.GET("/api/v1/setting/:slug", g._admin.GetSetting)
 	g.router.GET("/api/v1/settings", g._admin.GetSettings)
 	g.router.POST("/api/v1/setting", g._admin.AddSetting)
-	g.router.PATCH("/api/v1/settings", g._admin.UpdateSettings)
 
 	//all of this serves html full pages, but re-uses much of the logic of
 	//the json API. The json API is tested more easily. Also javascript can
@@ -422,9 +421,10 @@ func updateDB(c *gin.Context) {
 	}
 	if db_type == "mysql" {
 		host := c.PostForm("mysql_host")
+		port := c.PostForm("mysql_port")
 		user := c.PostForm("mysql_user")
 		pass := c.PostForm("mysql_pass")
-		dbname := c.PostForm("mysql_dbname")
+		dbname := c.PostForm("mysql_db")
 		_, err = f.WriteString("database=mysql\n")
 		if err != nil {
 			c.HTML(http.StatusOK, "wizard_db.html", gin.H{
@@ -435,6 +435,15 @@ func updateDB(c *gin.Context) {
 			return
 		}
 		_, err = f.WriteString("MYSQL_HOST=" + host + "\n")
+		if err != nil {
+			c.HTML(http.StatusOK, "wizard_db.html", gin.H{
+				"version": Version,
+				"title":   "GoBlog Install Wizard",
+				"errors":  "Couldn't write to the .env file: " + err.Error(),
+			})
+			return
+		}
+		_, err = f.WriteString("MYSQL_PORT=" + port + "\n")
 		if err != nil {
 			c.HTML(http.StatusOK, "wizard_db.html", gin.H{
 				"version": Version,
@@ -519,7 +528,7 @@ func testDB(c *gin.Context) {
 		port := c.PostForm("mysql_port")
 		user := c.PostForm("mysql_user")
 		pass := c.PostForm("mysql_pass")
-		dbname := c.PostForm("mysql_dbname")
+		dbname := c.PostForm("mysql_db")
 		dsn := user + ":" + pass + "@tcp(" + host + ":" + port + ")/" + dbname + "?charset=utf8mb4&parseTime=True&loc=Local"
 		_, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 		if err != nil {
@@ -529,6 +538,7 @@ func testDB(c *gin.Context) {
 			})
 			return
 		} else {
+			log.Println("Connected to the database")
 			log.Println("Connected to the database")
 			c.JSON(http.StatusOK, gin.H{
 				"success": "Connected to the database",

@@ -47,7 +47,7 @@ func TestCreatePost(t *testing.T) {
 	a := &Auth{}
 	sch := scholar.New("profiles.json", "articles.json")
 	b := blog.New(db, a, "test", sch)
-	ad := admin.New(db, a, b, "test")
+	ad := admin.New(db, a, &b, "test")
 
 	router := gin.Default()
 	store := cookie.NewStore([]byte("changelater"))

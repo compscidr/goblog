@@ -206,6 +206,15 @@ func (a *Auth) DisplayUserTable() {
 // IsAdmin returns true if the user logged in is the admin user
 // First tries for a session token, and if that fails falls back on an auth token
 func (a *Auth) IsAdmin(c *gin.Context) bool {
+
+	// if there is no admin user in the db, then we can't have an admin user, so we'll just return true for now, mostly
+	// so the wizard can upload images
+	var adminUser AdminUser
+	err := (*a.db).First(&adminUser).Error
+	if err != nil {
+		return true
+	}
+
 	session := sessions.Default(c)
 	token := session.Get("token")
 	if token == nil {
@@ -220,12 +229,11 @@ func (a *Auth) IsAdmin(c *gin.Context) bool {
 
 	// first make sure the access token matches a logged in user
 	var existingUser BlogUser
-	err := (*a.db).Where("access_token = ?", token).First(&existingUser).Error
+	err = (*a.db).Where("access_token = ?", token).First(&existingUser).Error
 	if err != nil {
 		return false
 	}
 	// next make sure the logged in user is an admin
-	var adminUser AdminUser
 	err = (*a.db).Where("blog_user_id = ?", existingUser.ID).First(&adminUser).Error
 	if err != nil {
 		return false

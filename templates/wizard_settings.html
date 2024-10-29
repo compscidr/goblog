@@ -9,17 +9,19 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous"></script>
 </head>
 <body>
+<script src="/js/admin-script.js"></script>
 <div class="container">
     <div class="card border-0 shadow my-5">
         <div class="card-body p-5" style="min-height: 600px;">
             <h1 class="fw-light">Goblog Install Wizard</h1>
+            <div id="ajax-error" class="alert alert-danger" role="alert" style="display: none;"></div>
             <h5>Goblog Settings</h5>
             {{ if .errors }}
             <div class="alert alert-danger" role="alert">
                 {{ .errors }}
             </div>
             {{ end }}
-            <form action="wizard_settings" method="POST" class="py4" enctype="multipart/form-data">
+            <form id="settings-form" enctype="multipart/form-data">
                 <div class="mb-4 row">
                     <div class="col">
                         <label for="site_title" class="form-label">Site Title:</label>
@@ -119,9 +121,9 @@
                     </div>
                 </div>
 
-                <button id="settings-button" class="btn btn-primary" type="submit">
+                <a class="btn btn-primary mt-2" onclick="updateSettings('/wizard?page=auth');">
                     Save Settings
-                </button>
+                </a>
             </form>
             <div class="version text-center">Powered by <a href="https://github.com/compscidr/goblog" target="goblog {{ .version }}">goblog {{ .version }}</a></div>
         </div>

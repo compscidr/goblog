@@ -45,7 +45,7 @@ func TestBlogWorkflow(t *testing.T) {
 	a := &Auth{}
 	sch := scholar.New("profiles.json", "articles.json")
 	b := blog.New(db, a, "test", sch)
-	admin := admin.New(db, a, b, "test")
+	admin := admin.New(db, a, &b, "test")
 
 	router := gin.Default()
 	store := cookie.NewStore([]byte("changelater"))
