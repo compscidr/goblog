@@ -12,12 +12,15 @@
     </div>
     <h1>Settings</h1>
     <div id="ajax-error" class="alert alert-danger" role="alert" style="display: none;"></div>
-    <form id="settings-form">
+    <form id="settings-form" enctype="multipart/form-data">
         {{ range .settings }}
         <label for="{{ .Key }}" class="form-label">{{ .Key }}</label>
-        <input type="text" id="{{ .Key }}" name="{{ .Key }}" value="{{ .Value }}" class="form-control" required>
+            {{ if eq .Type "file" }}
+            <input type="{{ .Type }}" id="{{ .Key }}" name="{{ .Key }}" class="form-control" oninput="uploadFile(this)" required>
+            {{ else }}
+            <input type="{{ .Type }}" id="{{ .Key }}" name="{{ .Key }}" value="{{ .Value }}" class="form-control" required>
+            {{ end }}
         {{ end }}
-
         <button class="btn btn-primary mt-2" onclick="updateSettings();">
             Save
         </button>

@@ -2,13 +2,36 @@
 function updateSettings() {
     $("#ajax-error").hide();
     var settings = [];
-    for (var i = 0; i < $("#settings-form").serializeArray().length; i++) {
-        var key = $("#settings-form").serializeArray()[i].name;
-        var value = $("#settings-form").serializeArray()[i].value;
+
+    // iterate over all input fields in the form and create a json object with the key, value, and type
+    $("#settings-form :input").each(function() {
+        var key = this.name;
+        var type = this.type;
+        var value = this.value
+
+        if (type === "file") {
+            // just get the filename without the path
+            if (this.url) {
+                value = this.url
+            } else {
+                return
+            }
+        } else if (type === "submit") {
+            return
+        }
+
+        // var value
+        // if (type === "file") {
+        //     value = this.filename
+        // } else if (type === "text") {
+        //     value = this.value
+        // } else {
+        //     return
+        // }
         settings.push(
-            {"key": key, "value": value}
+            {"key": key, "value": value, "type": type}
         )
-    }
+    });
     console.log("PATCH: " + JSON.stringify(settings));
 
     $.ajax({
@@ -27,6 +50,31 @@ function updateSettings() {
             $("#ajax-error").removeClass("alert-success").addClass("alert-danger");
         },
         data: JSON.stringify(settings)
+    });
+}
+
+// this is mostly used by the settings page to upload a file. Post uploads use a different method since they can
+// be pasted directly into the editor, however, on the backend they use the same post method to save the file
+function uploadFile(fileInput) {
+    console.log("uploading file: " + fileInput.files[0].name);
+    var formData = new FormData();
+    var file = fileInput.files[0];
+    formData.append("file", file);
+    $.ajax({
+        url: "/api/v1/upload",
+        type: "post",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(json) {
+            var url = json.filename;
+            console.log("uploaded file: " + url);
+            // insert the url into the settings form so that when it gets submitted it will be saved in the db
+            fileInput.url = url;
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.log("ERROR: " + textStatus + " " + errorThrown);
+        }
     });
 }
 

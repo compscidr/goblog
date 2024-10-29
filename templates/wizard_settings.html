@@ -19,7 +19,7 @@
                 {{ .errors }}
             </div>
             {{ end }}
-            <form action="wizard_settings" method="POST" class="py4">
+            <form action="wizard_settings" method="POST" class="py4" enctype="multipart/form-data">
                 <div class="mb-4 row">
                     <div class="col">
                         <label for="site_title" class="form-label">Site Title:</label>
@@ -43,11 +43,11 @@
                 <div class="mb-4 row">
                     <div class="col">
                         <label for="landing_page_image" class="form-label">Landing Page Image (should be square):</label>
-                        <input type="file" class="form-control" id="landing_page_image" name="landing_page_image">
+                        <input type="file" class="form-control" id="landing_page_image" name="landing_page_image" oninput="uploadFile(this)">
                     </div>
                     <div class="col">
                         <label for="favicon" class="form-label">Favicon:</label>
-                        <input type="file" class="form-control" id="favicon" name="favicon">
+                        <input type="file" class="form-control" id="favicon" name="favicon" oninput="uploadFile(this)">
                     </div>
                 </div>
                 <div class="mb-4 row">
