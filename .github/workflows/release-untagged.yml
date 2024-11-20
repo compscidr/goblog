@@ -39,7 +39,7 @@ jobs:
         run: go test -race -coverprofile=coverage.txt -covermode=atomic goblog/...
 
       - name: Code Coverage
-        uses: codecov/codecov-action@v5.0.4
+        uses: codecov/codecov-action@v5.0.5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
