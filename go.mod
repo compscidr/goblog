@@ -2,7 +2,7 @@ module goblog
 
 go 1.23
 
-toolchain go1.24.0
+toolchain go1.24.1
 
 require (
 	github.com/compscidr/scholar v1.0.5
