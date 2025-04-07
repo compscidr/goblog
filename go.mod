@@ -7,7 +7,7 @@ toolchain go1.24.2
 require (
 	github.com/compscidr/scholar v1.0.5
 	github.com/gin-contrib/sessions v1.0.3
-	github.com/gin-contrib/static v1.1.3
+	github.com/gin-contrib/static v1.1.5
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
 	github.com/ikeikeikeike/go-sitemap-generator/v2 v2.0.2
