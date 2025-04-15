@@ -2,7 +2,7 @@ version: "3.0"
 services:
   db:
     container_name: db
-    image: mysql:9.2
+    image: mysql:9.3
     restart: always
     env_file:
       template.env
