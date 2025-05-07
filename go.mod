@@ -6,7 +6,7 @@ toolchain go1.24.3
 
 require (
 	github.com/compscidr/scholar v1.0.9
-	github.com/gin-contrib/sessions v1.0.2 // https://github.com/gin-contrib/sessions/issues/287
+	github.com/gin-contrib/sessions v1.0.3 // https://github.com/gin-contrib/sessions/issues/287
 	github.com/gin-contrib/static v1.1.5
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
