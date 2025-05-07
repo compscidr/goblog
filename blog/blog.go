@@ -360,18 +360,33 @@ func (b *Blog) Speaking(c *gin.Context) {
 
 // Speaking is the index page for research publications
 func (b *Blog) Research(c *gin.Context) {
-	articles := b.scholar.QueryProfileWithMemoryCache("SbUmSEAAAAAJ", 50)
-	b.scholar.SaveCache("profiles.json", "articles.json")
-	c.HTML(http.StatusOK, "research.html", gin.H{
-		"logged_in":  b.auth.IsLoggedIn(c),
-		"is_admin":   b.auth.IsAdmin(c),
-		"version":    b.Version,
-		"title":      "Research Publications",
-		"recent":     b.GetLatest(),
-		"articles":   articles,
-		"admin_page": false,
-		"settings":   b.GetSettings(),
-	})
+	articles, err := b.scholar.QueryProfileWithMemoryCache("SbUmSEAAAAAJ", 50)
+	if err == nil {
+		b.scholar.SaveCache("profiles.json", "articles.json")
+		c.HTML(http.StatusOK, "research.html", gin.H{
+			"logged_in":  b.auth.IsLoggedIn(c),
+			"is_admin":   b.auth.IsAdmin(c),
+			"version":    b.Version,
+			"title":      "Research Publications",
+			"recent":     b.GetLatest(),
+			"articles":   articles,
+			"admin_page": false,
+			"settings":   b.GetSettings(),
+		})
+	} else {
+		articles := make([]*scholar.Article, 0)
+		c.HTML(http.StatusOK, "research.html", gin.H{
+			"logged_in":  b.auth.IsLoggedIn(c),
+			"is_admin":   b.auth.IsAdmin(c),
+			"version":    b.Version,
+			"title":      "Research Publications",
+			"recent":     b.GetLatest(),
+			"articles":   articles,
+			"admin_page": false,
+			"settings":   b.GetSettings(),
+			"errors":     err.Error(),
+		})
+	}
 }
 
 // Projects is the index page for projects / code

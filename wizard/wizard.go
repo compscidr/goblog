@@ -72,7 +72,6 @@ func (w *Wizard) SaveToken(c *gin.Context) {
 		})
 		return
 	}
-
 	session := sessions.Default(c)
 	session.Set("client_id", clientId)
 	session.Set("client_secret", clientSecret)

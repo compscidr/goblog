@@ -6,6 +6,11 @@
 
   <div class="container">
     <h1>Research and Publications</h1>
+    {{ if .errors }}
+    <div class="alert alert-danger" role="alert">
+      {{ .errors }}
+    </div>
+    {{ end }}
     {{range .articles}}
       <div class="row research">
         <div class="col-8">
