@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.24.3
 
 require (
-	github.com/compscidr/scholar v1.0.7
+	github.com/compscidr/scholar v1.0.8
 	github.com/gin-contrib/sessions v1.0.3
 	github.com/gin-contrib/static v1.1.5
 	github.com/gin-gonic/gin v1.10.0
