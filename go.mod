@@ -8,7 +8,7 @@ require (
 	github.com/compscidr/scholar v1.0.9
 	github.com/gin-contrib/sessions v1.0.2 // https://github.com/gin-contrib/sessions/issues/287
 	github.com/gin-contrib/static v1.1.5
-	github.com/gin-gonic/gin v1.10.0
+	github.com/gin-gonic/gin v1.10.1
 	github.com/google/uuid v1.6.0
 	github.com/ikeikeikeike/go-sitemap-generator/v2 v2.0.2
 	github.com/joho/godotenv v1.5.1
