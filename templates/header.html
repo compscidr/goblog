@@ -88,11 +88,9 @@
     </div>
     <div class="menu clearfix" id="navigation">
       <a href="/" title="Home: {{ .settings.site_title.Value }}">Home</a>
-      <a href="/posts" title="Blog posts by Jason Ernst">Writing</a>
-      <!-- <a href="/presentations" title="Presentations by Jason Ernst">Speaking</a>
-      <a href="/projects" title="Code and Projects by Jason Ernst">Code</a> -->
-      <a href="/research" title="Research publications by Jason Ernst">Research</a>
-      <a href="/about" title="About Jason Ernst">About</a>
+      {{ range .nav_pages }}
+      <a href="/{{ .Slug }}" title="{{ .Title }}">{{ .Title }}</a>
+      {{ end }}
       {{ if .is_admin }}
         <a href="/admin" title="Admin">Admin</a>
       {{ end }}

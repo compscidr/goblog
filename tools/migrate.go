@@ -298,7 +298,7 @@ func Migrate(db *gorm.DB) error {
 		}
 	}
 
-	err := db.AutoMigrate(&auth.BlogUser{}, &blog.Post{}, &blog.Tag{}, &auth.AdminUser{}, &blog.Setting{}, &blog.Comment{}, &blog.Backlink{}, &blog.ExternalBacklink{})
+	err := db.AutoMigrate(&auth.BlogUser{}, &blog.Post{}, &blog.Tag{}, &auth.AdminUser{}, &blog.Setting{}, &blog.Comment{}, &blog.Backlink{}, &blog.ExternalBacklink{}, &blog.Page{})
 	if err != nil {
 		log.Println("Error migrating tables: " + err.Error())
 		return err
@@ -306,6 +306,84 @@ func Migrate(db *gorm.DB) error {
 
 	seedDefaultSettings(db)
 	seedBacklinks(db)
+	seedDefaultPages(db)
 
 	return nil
+}
+
+// seedDefaultPages creates the default pages (Writing, Research, About) if no pages exist.
+func seedDefaultPages(db *gorm.DB) {
+	var count int64
+	db.Model(&blog.Page{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	log.Println("Seeding default pages")
+
+	aboutContent := `I'm currently Principal Software Engineer at a startup working on mobile networks on phones. At the University of Guelph in Canada I hold adjunct Professor status and serve on the committee of several graduate students who are studying wireless networks and occasionally still co-publish research papers.
+
+Prior to this I was a Senior Software Engineer at two different robotics startups in San Francisco (Rapid Robotics and Osaro). I was also the CTO and first developer at a startup in Vancouver called RightMesh which was building a mesh networking library for Android phones. During this time I was also an adjunct professor at the University of Guelph and was the industrial PI of a [$2.13M MITACS grant to improve connectivity in Northern Canada](https://betakit.com/u-of-guelph-left-investing-2-13-million-in-rightmesh-project-improving-northern-connectivity/), specifically Rigolet. RightMesh raised $30M in an ICO in 2018.
+
+Before that I was the CTO of [Redtree Robotics](https://montrealgazette.com/business/local-business/montreal-startup-ecosystem-fertile-playground-for-entrepreneurs) which was working on a robotics hardware software platform to enable plug-and-play swarm robotics. I started this company with a friend during grad school and we raised some seed funding from Real Ventures.
+
+I've won, sponsored, and mentored [hackathons](https://uwaterloo.ca/news/waterloo-student-wins-national-hackathon). I love to give [talks](https://www.bbc.co.uk/programmes/w3csvpcr) and present papers.
+
+I also enjoy driving, working on cars, video games, contributing to [open source](https://github.com/compscidr), cycling, running, and [travel](https://nomadlist.com/@compscidr).
+
+[Tags](/tags) [Archives](/archives)`
+
+	defaults := []blog.Page{
+		{
+			Title:     "Writing",
+			Slug:      "posts",
+			HeroURL:   "/vid/redtree.mp4",
+			HeroType:  "video",
+			PageType:  blog.PageTypeWriting,
+			ShowInNav: true,
+			NavOrder:  1,
+			Enabled:   true,
+		},
+		{
+			Title:     "Research",
+			Slug:      "research",
+			HeroURL:   "/img/aidecentralized.jpg",
+			HeroType:  "image",
+			PageType:  blog.PageTypeResearch,
+			ShowInNav: true,
+			NavOrder:  2,
+			Enabled:   true,
+			ScholarID: "SbUmSEAAAAAJ",
+		},
+		{
+			Title:     "About",
+			Slug:      "about",
+			Content:   aboutContent,
+			HeroURL:   "/img/hero_rigolet.jpg",
+			HeroType:  "image",
+			PageType:  blog.PageTypeAbout,
+			ShowInNav: true,
+			NavOrder:  3,
+			Enabled:   true,
+		},
+		{
+			Title:     "Tags",
+			Slug:      "tags",
+			PageType:  blog.PageTypeTags,
+			ShowInNav: false,
+			NavOrder:  4,
+			Enabled:   true,
+		},
+		{
+			Title:     "Archives",
+			Slug:      "archives",
+			PageType:  blog.PageTypeArchives,
+			ShowInNav: false,
+			NavOrder:  5,
+			Enabled:   true,
+		},
+	}
+	for _, p := range defaults {
+		db.Create(&p)
+	}
 }
