@@ -43,4 +43,109 @@
       </p>
     </div>
   </noscript>
+
+  <!-- Comments Section -->
+  <div class="container">
+    <div class="row">
+      <div class="container left">
+        <hr>
+        <h3 class="text-left" id="comments">Comments ({{ len .comments }})</h3>
+
+        {{ if .comment_error }}
+        <div class="alert alert-danger" role="alert">
+          {{ if eq .comment_error "missing_fields" }}Name and comment are required.
+          {{ else if eq .comment_error "rate_limit" }}Please wait a minute before posting another comment.
+          {{ else if eq .comment_error "name_too_long" }}Name is too long (max 100 characters).
+          {{ else if eq .comment_error "content_too_long" }}Comment is too long (max 5000 characters).
+          {{ else }}An error occurred. Please try again.
+          {{ end }}
+        </div>
+        {{ end }}
+
+        {{ range .comments }}
+        <div class="comment" id="comment-{{ .ID }}">
+          <div class="comment-meta">
+            <strong>{{ .Name }}</strong> &mdash; {{ .CreatedAt.Format "Jan 02, 2006 15:04 UTC" }}
+            {{ if $.is_admin }}
+            <a href="javascript:void(0)" onclick="deleteComment({{ .ID }})" class="text-danger" style="margin-left: 10px;">[delete]</a>
+            {{ end }}
+          </div>
+          <div class="comment-content" id="comment-content-{{ .ID }}"></div>
+          <noscript>
+            <div class="comment-content">{{ .Content }}</div>
+          </noscript>
+        </div>
+        {{ end }}
+
+        <script type="text/javascript">
+          {{ range .comments }}
+          (function() {
+            var raw = {{ .Content }};
+            var el = document.getElementById("comment-content-{{ .ID }}");
+            if (el && typeof converter !== 'undefined') {
+              el.innerHTML = converter.makeHtml(raw);
+            } else if (el) {
+              el.textContent = raw;
+            }
+          })();
+          {{ end }}
+        </script>
+
+        <hr>
+        <h4 class="text-left">Leave a Comment</h4>
+        <form method="POST" action="/comments">
+          <input type="hidden" name="post_id" value="{{ .post.ID }}">
+          <input type="hidden" name="redirect" value="{{ .post.Permalink }}">
+          <div style="display:none;">
+            <label for="website">Website</label>
+            <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="comment-name">Name *</label>
+            <input type="text" class="form-control" id="comment-name" name="name" required maxlength="100">
+          </div>
+          <div class="form-group">
+            <label for="comment-email">Email (not displayed)</label>
+            <input type="email" class="form-control" id="comment-email" name="email" maxlength="254">
+          </div>
+          <div class="form-group">
+            <label for="comment-content">Comment * <small>(Markdown supported)</small></label>
+            <textarea class="form-control" id="comment-content" name="content" rows="4" required maxlength="5000"></textarea>
+          </div>
+          <div id="comment-preview" class="comment-content" style="display:none; padding: 10px; border: 1px solid #ddd; margin-bottom: 10px;"></div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="previewComment()">Preview</button>
+          <button type="submit" class="btn btn-primary btn-sm">Submit Comment</button>
+        </form>
+
+        <script type="text/javascript">
+          function previewComment() {
+            var content = document.getElementById("comment-content").value;
+            var preview = document.getElementById("comment-preview");
+            if (typeof converter !== 'undefined') {
+              preview.innerHTML = converter.makeHtml(content);
+            } else {
+              preview.textContent = content;
+            }
+            preview.style.display = "block";
+          }
+
+          function deleteComment(id) {
+            if (!confirm("Delete this comment?")) return;
+            fetch("/api/v1/comments", {
+              method: "DELETE",
+              headers: {"Content-Type": "application/json"},
+              body: JSON.stringify({"id": id})
+            }).then(function(resp) {
+              if (resp.ok) {
+                var el = document.getElementById("comment-" + id);
+                if (el) el.remove();
+              } else {
+                alert("Failed to delete comment.");
+              }
+            });
+          }
+        </script>
+      </div>
+    </div>
+  </div>
 {{ template "footer.html" .}}

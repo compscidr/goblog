@@ -237,7 +237,7 @@ func Migrate(db *gorm.DB) error {
 		}
 	}
 
-	err := db.AutoMigrate(&auth.BlogUser{}, &blog.Post{}, &blog.Tag{}, &auth.AdminUser{}, &blog.Setting{})
+	err := db.AutoMigrate(&auth.BlogUser{}, &blog.Post{}, &blog.Tag{}, &auth.AdminUser{}, &blog.Setting{}, &blog.Comment{})
 	if err != nil {
 		log.Println("Error migrating tables: " + err.Error())
 		return err

@@ -44,6 +44,7 @@ func TestCreatePost(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
 	db.AutoMigrate(&auth.BlogUser{})
 	db.AutoMigrate(&blog.Post{})
+	db.AutoMigrate(&blog.Comment{})
 	a := &Auth{}
 	sch := scholar.New("profiles.json", "articles.json")
 	b := blog.New(db, a, "test", sch)
@@ -56,6 +57,7 @@ func TestCreatePost(t *testing.T) {
 	router.GET("/api/v1/posts", b.ListPosts)
 	router.PATCH("/api/v1/posts", ad.UpdatePost)
 	router.DELETE("/api/v1/posts", ad.DeletePost)
+	router.DELETE("/api/v1/comments", ad.DeleteComment)
 	router.POST("/api/v1/upload", ad.UploadFile)
 
 	router.GET("/admin", ad.Admin)
@@ -301,5 +303,31 @@ func TestCreatePost(t *testing.T) {
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+	}
+
+	// Create a comment to test deletion
+	comment := blog.Comment{PostID: post.ID, Name: "Tester", Content: "A test comment"}
+	db.Create(&comment)
+
+	// Delete comment: not admin -> 401
+	commentJSON, _ := json.Marshal(comment)
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/api/v1/comments", bytes.NewBuffer(commentJSON))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("Expected status %d for non-admin delete comment but got %d", http.StatusUnauthorized, w.Code)
+	}
+
+	// Delete comment: admin -> 200
+	commentJSON, _ = json.Marshal(comment)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/api/v1/comments", bytes.NewBuffer(commentJSON))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status %d for admin delete comment but got %d", http.StatusOK, w.Code)
 	}
 }

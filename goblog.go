@@ -342,6 +342,8 @@ func (g goblog) addRoutes() {
 	g.router.PATCH("/api/v1/publish/:id", g._admin.PublishPost)
 	g.router.PATCH("/api/v1/draft/:id", g._admin.DraftPost)
 	g.router.DELETE("/api/v1/posts", g._admin.DeletePost)
+	g.router.POST("/comments", g._blog.SubmitComment)
+	g.router.DELETE("/api/v1/comments", g._admin.DeleteComment)
 	g.router.GET("/api/v1/posts/:yyyy/:mm/:dd/:slug", g._blog.GetPost)
 	g.router.GET("/api/v1/posts", g._blog.ListPosts)
 	g.router.GET("/api/v1/setting/:slug", g._admin.GetSetting)

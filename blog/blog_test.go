@@ -9,6 +9,7 @@ import (
 	"goblog/blog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -42,6 +43,7 @@ func TestBlogWorkflow(t *testing.T) {
 	db.AutoMigrate(&auth.BlogUser{})
 	db.AutoMigrate(&blog.Post{})
 	db.AutoMigrate(&blog.Tag{})
+	db.AutoMigrate(&blog.Comment{})
 	a := &Auth{}
 	sch := scholar.New("profiles.json", "articles.json")
 	b := blog.New(db, a, "test", sch)
@@ -58,6 +60,7 @@ func TestBlogWorkflow(t *testing.T) {
 
 	//html requests
 	router.GET("/posts/:yyyy/:mm/:dd/:slug", b.Post)
+	router.POST("/comments", b.SubmitComment)
 	router.GET("/tag/*name", b.Tag)
 	router.GET("/posts", b.Posts)
 	router.GET("/tags", b.Tags)
@@ -310,4 +313,62 @@ func TestBlogWorkflow(t *testing.T) {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusInternalServerError, w.Code)
 	}
 	os.Rename("local.env.old", "local.env")
+
+	// Comment tests
+
+	// Valid comment submission -> 303 redirect
+	formData := "post_id=" + strconv.Itoa(int(post.ID)) + "&name=TestUser&content=Great+post!&redirect=" + url.QueryEscape(post.Permalink())
+	req, _ = http.NewRequest("POST", "/comments", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("Expected status %d for valid comment but got %d", http.StatusSeeOther, w.Code)
+	}
+	location := w.Header().Get("Location")
+	if !strings.Contains(location, "#comment-") {
+		t.Errorf("Expected redirect to contain #comment- anchor but got: %s", location)
+	}
+
+	// Missing fields -> error redirect
+	formData = "post_id=" + strconv.Itoa(int(post.ID)) + "&name=&content=&redirect=" + url.QueryEscape(post.Permalink())
+	req, _ = http.NewRequest("POST", "/comments", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("Expected status %d for missing fields but got %d", http.StatusSeeOther, w.Code)
+	}
+	location = w.Header().Get("Location")
+	if !strings.Contains(location, "comment_error=missing_fields") {
+		t.Errorf("Expected redirect with missing_fields error but got: %s", location)
+	}
+
+	// Honeypot filled -> silent redirect (no error)
+	formData = "post_id=" + strconv.Itoa(int(post.ID)) + "&name=Bot&content=spam&website=http://spam.com&redirect=" + url.QueryEscape(post.Permalink())
+	req, _ = http.NewRequest("POST", "/comments", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("Expected status %d for honeypot but got %d", http.StatusSeeOther, w.Code)
+	}
+	location = w.Header().Get("Location")
+	if strings.Contains(location, "comment_error") {
+		t.Errorf("Honeypot should silently redirect without error, but got: %s", location)
+	}
+
+	// Rate limiting -> error redirect (already posted above from same IP)
+	formData = "post_id=" + strconv.Itoa(int(post.ID)) + "&name=TestUser2&content=Another+comment&redirect=" + url.QueryEscape(post.Permalink())
+	req, _ = http.NewRequest("POST", "/comments", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("Expected status %d for rate limit but got %d", http.StatusSeeOther, w.Code)
+	}
+	location = w.Header().Get("Location")
+	if !strings.Contains(location, "comment_error=rate_limit") {
+		t.Errorf("Expected redirect with rate_limit error but got: %s", location)
+	}
 }
