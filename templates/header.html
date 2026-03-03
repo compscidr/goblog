@@ -101,6 +101,9 @@
       {{ else }}
         <a href="/login" title="Login">Login</a>
       {{ end }}
+      <form action="/search" method="GET" class="nav-search">
+        <input type="text" name="q" placeholder="Search..." class="nav-search-input" aria-label="Search site" />
+      </form>
     </div>
   </div>
   <div class="wrapper">

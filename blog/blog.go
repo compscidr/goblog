@@ -168,6 +168,16 @@ func (b *Blog) GetSettings() map[string]Setting {
 	return settingsMap
 }
 
+func (b *Blog) SearchPosts(query string) []Post {
+	var posts []Post
+	escaped := strings.ReplaceAll(query, `\`, `\\`)
+	escaped = strings.ReplaceAll(escaped, "%", `\%`)
+	escaped = strings.ReplaceAll(escaped, "_", `\_`)
+	q := "%" + escaped + "%"
+	(*b.db).Preload("Tags").Where("draft = ? AND (title LIKE ? ESCAPE '\\' OR content LIKE ? ESCAPE '\\')", false, q, q).Order("created_at desc").Find(&posts)
+	return posts
+}
+
 //////JSON API///////
 
 // ListPosts lists all blog posts
@@ -318,6 +328,26 @@ func (b *Blog) Post(c *gin.Context) {
 		//	})
 		//}
 	}
+}
+
+// Search handles the search page
+func (b *Blog) Search(c *gin.Context) {
+	query := strings.TrimSpace(c.Query("q"))
+	var posts []Post
+	if query != "" {
+		posts = b.SearchPosts(query)
+	}
+	c.HTML(http.StatusOK, "search.html", gin.H{
+		"logged_in":  b.auth.IsLoggedIn(c),
+		"is_admin":   b.auth.IsAdmin(c),
+		"posts":      posts,
+		"query":      query,
+		"version":    b.Version,
+		"title":      "Search",
+		"recent":     b.GetLatest(),
+		"admin_page": false,
+		"settings":   b.GetSettings(),
+	})
 }
 
 // Tag lists all posts with a given tag

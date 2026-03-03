@@ -363,6 +363,7 @@ func (g goblog) addRoutes() {
 	g.router.GET("/logout", g._blog.Logout)
 
 	//todo: register a template mapping to a "page type"
+	g.router.GET("/search", g._blog.Search)
 	g.router.GET("/posts", g._blog.Posts)
 	g.router.GET("/blog", g._blog.Posts)
 	g.router.GET("/tags", g._blog.Tags)
