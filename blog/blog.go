@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
+
 	scholar "github.com/compscidr/scholar"
 	"goblog/auth"
 	"log"
@@ -52,6 +54,19 @@ func (b *Blog) UpdateDb(db *gorm.DB) {
 
 func (b *Blog) IsDbNil() bool {
 	return (*b.db) == nil
+}
+
+// sortArticlesByDateDesc sorts scholar articles by publication date in descending order.
+func sortArticlesByDateDesc(articles []*scholar.Article) {
+	sort.Slice(articles, func(i, j int) bool {
+		if articles[i].Year != articles[j].Year {
+			return articles[i].Year > articles[j].Year
+		}
+		if articles[i].Month != articles[j].Month {
+			return articles[i].Month > articles[j].Month
+		}
+		return articles[i].Day > articles[j].Day
+	})
 }
 
 // Generic Functions (not JSON or HTML)
@@ -333,6 +348,7 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 	case PageTypeResearch:
 		articles, err := b.scholar.QueryProfileWithMemoryCache(page.ScholarID, 50)
 		if err == nil {
+			sortArticlesByDateDesc(articles)
 			b.scholar.SaveCache("profiles.json", "articles.json")
 			c.HTML(http.StatusOK, "page_research.html", gin.H{
 				"logged_in":  b.auth.IsLoggedIn(c),
@@ -662,6 +678,7 @@ func (b *Blog) Speaking(c *gin.Context) {
 func (b *Blog) Research(c *gin.Context) {
 	articles, err := b.scholar.QueryProfileWithMemoryCache("SbUmSEAAAAAJ", 50)
 	if err == nil {
+		sortArticlesByDateDesc(articles)
 		b.scholar.SaveCache("profiles.json", "articles.json")
 		c.HTML(http.StatusOK, "research.html", gin.H{
 			"logged_in":  b.auth.IsLoggedIn(c),
