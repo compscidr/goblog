@@ -58,7 +58,7 @@ func TestBlogWorkflow(t *testing.T) {
 
 	//html requests
 	router.GET("/posts/:yyyy/:mm/:dd/:slug", b.Post)
-	router.GET("/tag/:name", b.Tag)
+	router.GET("/tag/*name", b.Tag)
 	router.GET("/posts", b.Posts)
 	router.GET("/tags", b.Tags)
 	router.GET("/", b.Home)
