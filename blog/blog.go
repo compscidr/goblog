@@ -170,11 +170,11 @@ func (b *Blog) GetSettings() map[string]Setting {
 
 func (b *Blog) SearchPosts(query string) []Post {
 	var posts []Post
-	escaped := strings.ReplaceAll(query, `\`, `\\`)
-	escaped = strings.ReplaceAll(escaped, "%", `\%`)
-	escaped = strings.ReplaceAll(escaped, "_", `\_`)
+	escaped := strings.ReplaceAll(query, "!", "!!")
+	escaped = strings.ReplaceAll(escaped, "%", "!%")
+	escaped = strings.ReplaceAll(escaped, "_", "!_")
 	q := "%" + escaped + "%"
-	(*b.db).Preload("Tags").Where("draft = ? AND (title LIKE ? ESCAPE '\\' OR content LIKE ? ESCAPE '\\')", false, q, q).Order("created_at desc").Find(&posts)
+	(*b.db).Preload("Tags").Where("draft = ? AND (title LIKE ? ESCAPE '!' OR content LIKE ? ESCAPE '!')", false, q, q).Order("created_at desc").Find(&posts)
 	return posts
 }
 

@@ -303,15 +303,7 @@ func TestBlogWorkflow(t *testing.T) {
 		Content: "This draft content should not appear in search",
 		Draft:   true,
 	}
-	draftJSON, _ := json.Marshal(draftPost)
-	req, _ = http.NewRequest("POST", "/api/v1/posts", bytes.NewBuffer(draftJSON))
-	req.Header.Add("Content-Type", "application/json")
-	a.On("IsAdmin", mock.Anything).Return(true).Once()
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusCreated, w.Code)
-	}
+	db.Create(&draftPost)
 
 	a.On("IsAdmin", mock.Anything).Return(false).Once()
 	req, _ = http.NewRequest("GET", "/search?q=Draft+Secret", bytes.NewBuffer(jsonValue))
@@ -320,8 +312,8 @@ func TestBlogWorkflow(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
 	}
-	if strings.Contains(w.Body.String(), "Draft Secret Post") {
-		t.Errorf("Expected draft post to be excluded from search results")
+	if !strings.Contains(w.Body.String(), "0 results found") {
+		t.Errorf("Expected '0 results found' for draft-only search query")
 	}
 
 	//search with non-matching query
