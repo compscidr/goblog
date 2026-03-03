@@ -556,6 +556,18 @@ func TestExternalBacklinks(t *testing.T) {
 		t.Errorf("Expected self-referral to be skipped, got %d backlinks", len(backlinks))
 	}
 
+	// Self-referral with port mismatch should still be skipped
+	req, _ = http.NewRequest("GET", "/track", nil)
+	req.Header.Set("Referer", "https://myblog.com:443/other-page")
+	req.Host = "myblog.com:8080"
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	backlinks = b.GetExternalBacklinks(post.ID)
+	if len(backlinks) != 1 {
+		t.Errorf("Expected self-referral with different port to be skipped, got %d backlinks", len(backlinks))
+	}
+
 	// Empty referer should be skipped
 	req, _ = http.NewRequest("GET", "/track", nil)
 	req.Host = "myblog.com"

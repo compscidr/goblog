@@ -29,15 +29,15 @@ type Tag struct {
 
 // Backlink tracks which posts link to other posts internally
 type Backlink struct {
-	SourcePostID uint `gorm:"primaryKey"`
-	TargetPostID uint `gorm:"primaryKey"`
+	SourcePostID uint `gorm:"primaryKey;index"`
+	TargetPostID uint `gorm:"primaryKey;index"`
 }
 
 // ExternalBacklink tracks external sites linking to blog posts via HTTP Referer
 type ExternalBacklink struct {
 	ID        uint      `gorm:"primaryKey"`
-	PostID    uint      `json:"post_id"`
-	Referer   string    `json:"referer"`
+	PostID    uint      `gorm:"uniqueIndex:idx_post_referer" json:"post_id"`
+	Referer   string    `gorm:"uniqueIndex:idx_post_referer;type:text" json:"referer"`
 	FirstSeen time.Time `json:"first_seen"`
 	LastSeen  time.Time `json:"last_seen"`
 	HitCount  int       `json:"hit_count"`

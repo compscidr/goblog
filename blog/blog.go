@@ -190,16 +190,30 @@ func (b *Blog) ComputeBacklinks(post *Post) {
 	matches := reInternalLink.FindAllStringSubmatch(post.Content, -1)
 	seen := make(map[uint]bool)
 	for _, match := range matches {
-		year, _ := strconv.Atoi(match[1])
-		month, _ := strconv.Atoi(match[2])
-		day, _ := strconv.Atoi(match[3])
-		slug := match[4]
-
-		target, err := b.getPostByParams(year, month, day, slug)
-		if err != nil || target == nil || target.ID == post.ID {
+		year, err := strconv.Atoi(match[1])
+		if err != nil {
 			continue
 		}
-		if seen[target.ID] {
+		month, err := strconv.Atoi(match[2])
+		if err != nil {
+			continue
+		}
+		day, err := strconv.Atoi(match[3])
+		if err != nil {
+			continue
+		}
+		slug := match[4]
+
+		// Use exact slug match and bounded date range
+		var target Post
+		startOfDay := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+		endOfDay := startOfDay.Add(24 * time.Hour)
+		if err := (*b.db).Preload("Tags").
+			Where("slug = ? AND created_at >= ? AND created_at < ?", slug, startOfDay, endOfDay).
+			First(&target).Error; err != nil {
+			continue
+		}
+		if target.ID == post.ID || seen[target.ID] {
 			continue
 		}
 		seen[target.ID] = true
@@ -246,13 +260,16 @@ func (b *Blog) TrackReferer(c *gin.Context, postID uint) {
 		return
 	}
 
-	// Skip self-referrals
-	host := c.Request.Host
-	if strings.EqualFold(parsed.Host, host) {
+	// Skip self-referrals (compare hostnames without ports)
+	reqHost := c.Request.Host
+	if i := strings.LastIndex(reqHost, ":"); i != -1 {
+		reqHost = reqHost[:i]
+	}
+	if strings.EqualFold(parsed.Hostname(), reqHost) {
 		return
 	}
 
-	// Skip common bots/empty schemes
+	// Skip non-HTTP(S) schemes
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
 		return
 	}
@@ -261,6 +278,10 @@ func (b *Blog) TrackReferer(c *gin.Context, postID uint) {
 	var existing ExternalBacklink
 	result := (*b.db).Where("post_id = ? AND referer = ?", postID, referer).First(&existing)
 	if result.Error != nil {
+		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			log.Printf("Error querying external backlinks: %v", result.Error)
+			return
+		}
 		// New referer
 		(*b.db).Create(&ExternalBacklink{
 			PostID:    postID,
@@ -272,7 +293,7 @@ func (b *Blog) TrackReferer(c *gin.Context, postID uint) {
 	} else {
 		(*b.db).Model(&existing).Updates(map[string]interface{}{
 			"last_seen": now,
-			"hit_count": existing.HitCount + 1,
+			"hit_count": gorm.Expr("hit_count + ?", 1),
 		})
 	}
 }

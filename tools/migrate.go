@@ -249,14 +249,28 @@ func seedBacklinks(db *gorm.DB) {
 		matches := reInternalLink.FindAllStringSubmatch(post.Content, -1)
 		seen := make(map[uint]bool)
 		for _, match := range matches {
-			year, _ := strconv.Atoi(match[1])
-			month, _ := strconv.Atoi(match[2])
-			day, _ := strconv.Atoi(match[3])
+			year, err := strconv.Atoi(match[1])
+			if err != nil {
+				log.Printf("seedBacklinks: invalid year %q in post %d: %v", match[1], post.ID, err)
+				continue
+			}
+			month, err := strconv.Atoi(match[2])
+			if err != nil {
+				log.Printf("seedBacklinks: invalid month %q in post %d: %v", match[2], post.ID, err)
+				continue
+			}
+			day, err := strconv.Atoi(match[3])
+			if err != nil {
+				log.Printf("seedBacklinks: invalid day %q in post %d: %v", match[3], post.ID, err)
+				continue
+			}
 			slug := match[4]
 
+			// Use exact slug match and bounded date range
 			var target blog.Post
-			if err := db.Where("created_at > ? AND slug LIKE ?",
-				time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).
+			startOfDay := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+			endOfDay := startOfDay.Add(24 * time.Hour)
+			if err := db.Where("slug = ? AND created_at >= ? AND created_at < ?", slug, startOfDay, endOfDay).
 				First(&target).Error; err != nil {
 				continue
 			}
@@ -264,7 +278,9 @@ func seedBacklinks(db *gorm.DB) {
 				continue
 			}
 			seen[target.ID] = true
-			db.Create(&blog.Backlink{SourcePostID: post.ID, TargetPostID: target.ID})
+			if err := db.Create(&blog.Backlink{SourcePostID: post.ID, TargetPostID: target.ID}).Error; err != nil {
+				log.Printf("seedBacklinks: error creating backlink from post %d to %d: %v", post.ID, target.ID, err)
+			}
 		}
 	}
 }
