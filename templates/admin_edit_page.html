@@ -126,7 +126,7 @@ function savePage() {
             }, 3000);
         },
         error: function(jqXHR, textStatus, errorThrown) {
-            document.getElementById('ajax-error').textContent = "Error saving page: " + jqXHR.responseJSON;
+            document.getElementById('ajax-error').textContent = "Error saving page: " + (jqXHR.responseText || errorThrown);
             document.getElementById('ajax-error').style.display = '';
             document.getElementById('ajax-success').style.display = 'none';
         }

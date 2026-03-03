@@ -415,8 +415,8 @@ func TestCreatePost(t *testing.T) {
 		t.Errorf("Expected list pages to contain updated title")
 	}
 
-	// Admin pages HTML
-	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	// Admin pages HTML (IsAdmin called twice: auth check + template data)
+	a.On("IsAdmin", mock.Anything).Return(true).Twice()
 	a.On("IsLoggedIn", mock.Anything).Return(true).Once()
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/admin/pages", nil)
@@ -425,8 +425,8 @@ func TestCreatePost(t *testing.T) {
 		t.Fatalf("Expected status %d for admin pages but got %d", http.StatusOK, w.Code)
 	}
 
-	// Admin edit page HTML
-	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	// Admin edit page HTML (IsAdmin called twice: auth check + template data)
+	a.On("IsAdmin", mock.Anything).Return(true).Twice()
 	a.On("IsLoggedIn", mock.Anything).Return(true).Once()
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/admin/pages/"+strconv.Itoa(int(createdPage.ID)), nil)

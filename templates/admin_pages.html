@@ -64,7 +64,7 @@ function createPage() {
             window.location.href = "/admin/pages/" + json.id;
         },
         error: function(jqXHR, textStatus, errorThrown) {
-            alert("Error creating page: " + jqXHR.responseJSON);
+            alert("Error creating page: " + (jqXHR.responseText || errorThrown));
         }
     });
 }

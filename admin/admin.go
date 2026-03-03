@@ -450,8 +450,7 @@ func (a *Admin) ListPages(c *gin.Context) {
 
 // CreatePage creates a new page
 func (a *Admin) CreatePage(c *gin.Context) {
-	contentType := c.Request.Header.Get("content-type")
-	if contentType != "application/json" {
+	if !strings.HasPrefix(c.ContentType(), "application/json") {
 		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
 		return
 	}
@@ -501,8 +500,7 @@ func (a *Admin) CreatePage(c *gin.Context) {
 
 // UpdatePage updates an existing page
 func (a *Admin) UpdatePage(c *gin.Context) {
-	contentType := c.Request.Header.Get("content-type")
-	if contentType != "application/json" {
+	if !strings.HasPrefix(c.ContentType(), "application/json") {
 		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
 		return
 	}
@@ -535,6 +533,11 @@ func (a *Admin) UpdatePage(c *gin.Context) {
 		return
 	}
 
+	if !reSlugValid.MatchString(requestPage.Slug) {
+		c.JSON(http.StatusBadRequest, "Slug contains invalid characters")
+		return
+	}
+
 	if isReservedSlug(requestPage.Slug) {
 		c.JSON(http.StatusBadRequest, "Slug '"+requestPage.Slug+"' is reserved")
 		return
@@ -562,14 +565,15 @@ func (a *Admin) UpdatePage(c *gin.Context) {
 	// Handle GORM zero-value booleans
 	(*a.db).Model(&existingPage).Select("show_in_nav").Update("show_in_nav", requestPage.ShowInNav)
 	(*a.db).Model(&existingPage).Select("enabled").Update("enabled", requestPage.Enabled)
+	existingPage.ShowInNav = requestPage.ShowInNav
+	existingPage.Enabled = requestPage.Enabled
 
 	c.JSON(http.StatusAccepted, existingPage)
 }
 
 // DeletePage deletes a page
 func (a *Admin) DeletePage(c *gin.Context) {
-	contentType := c.Request.Header.Get("content-type")
-	if contentType != "application/json" {
+	if !strings.HasPrefix(c.ContentType(), "application/json") {
 		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
 		return
 	}
@@ -591,6 +595,11 @@ func (a *Admin) DeletePage(c *gin.Context) {
 
 // AdminPages renders the admin page listing
 func (a *Admin) AdminPages(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
 	var pages []blog.Page
 	(*a.db).Order("nav_order asc").Find(&pages)
 	c.HTML(http.StatusOK, "admin_pages.html", gin.H{
@@ -607,6 +616,11 @@ func (a *Admin) AdminPages(c *gin.Context) {
 
 // AdminEditPage renders the form to edit a single page
 func (a *Admin) AdminEditPage(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {

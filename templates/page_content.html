@@ -25,10 +25,11 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js" integrity="sha512-LhccdVNGe2QMEfI3x4DVV3ckMRe36TfydKss6mJpdHjNFiV07dFpS2xzeZedptKZrwxfICJpez09iNioiSZ3hA==" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" integrity="sha512-H+rglffZ6G3gk0B8Lbl5PDagD3E9Bqu/ceria/CpBwOnOmRHKIaN2VhBPviGFn3LMQjgRTMjfCMSGGJiHaNXOQ==" crossorigin="anonymous"></script>
   <script>
     var converter = new showdown.Converter();
     var content = {{ .page.Content }};
-    document.getElementById('page-content').innerHTML = converter.makeHtml(content);
+    document.getElementById('page-content').innerHTML = DOMPurify.sanitize(converter.makeHtml(content));
   </script>
 
 {{ template "footer.html" .}}
