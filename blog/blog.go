@@ -2,6 +2,7 @@ package blog
 
 import (
 	"errors"
+	"fmt"
 	scholar "github.com/compscidr/scholar"
 	"goblog/auth"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-contrib/sessions"
@@ -23,15 +25,23 @@ import (
 // Blog API handles non-admin functions of the blog like listing posts, tags
 // comments, etc.
 type Blog struct {
-	db      **gorm.DB // needs a double pointer to be able to update the db
-	auth    auth.IAuth
-	Version string
-	scholar *scholar.Scholar
+	db             **gorm.DB // needs a double pointer to be able to update the db
+	auth           auth.IAuth
+	Version        string
+	scholar        *scholar.Scholar
+	commentLimiter map[string]time.Time
+	limiterMu      sync.Mutex
 }
 
 // New constructs an Admin API
 func New(db *gorm.DB, auth auth.IAuth, version string, scholar *scholar.Scholar) Blog {
-	api := Blog{&db, auth, version, scholar}
+	api := Blog{
+		db:             &db,
+		auth:           auth,
+		Version:        version,
+		scholar:        scholar,
+		commentLimiter: make(map[string]time.Time),
+	}
 	return api
 }
 
@@ -193,23 +203,27 @@ func (b *Blog) NoRoute(c *gin.Context) {
 		if err == nil && post != nil {
 			if b.auth.IsAdmin(c) {
 				c.HTML(http.StatusOK, "post-admin.html", gin.H{
-					"logged_in":  b.auth.IsLoggedIn(c),
-					"is_admin":   b.auth.IsAdmin(c),
-					"post":       post,
-					"version":    b.Version,
-					"recent":     b.GetLatest(),
-					"admin_page": false,
-					"settings":   b.GetSettings(),
+					"logged_in":     b.auth.IsLoggedIn(c),
+					"is_admin":      b.auth.IsAdmin(c),
+					"post":          post,
+					"version":       b.Version,
+					"recent":        b.GetLatest(),
+					"admin_page":    false,
+					"settings":      b.GetSettings(),
+					"comments":      b.getCommentsByPostID(post.ID),
+					"comment_error": c.Query("comment_error"),
 				})
 			} else {
 				c.HTML(http.StatusOK, "post.html", gin.H{
-					"logged_in":  b.auth.IsLoggedIn(c),
-					"is_admin":   b.auth.IsAdmin(c),
-					"post":       post,
-					"version":    b.Version,
-					"recent":     b.GetLatest(),
-					"admin_page": false,
-					"settings":   b.GetSettings(),
+					"logged_in":     b.auth.IsLoggedIn(c),
+					"is_admin":      b.auth.IsAdmin(c),
+					"post":          post,
+					"version":       b.Version,
+					"recent":        b.GetLatest(),
+					"admin_page":    false,
+					"settings":      b.GetSettings(),
+					"comments":      b.getCommentsByPostID(post.ID),
+					"comment_error": c.Query("comment_error"),
 				})
 			}
 			return
@@ -278,13 +292,15 @@ func (b *Blog) Post(c *gin.Context) {
 		})
 	} else {
 		c.HTML(http.StatusOK, "post.html", gin.H{
-			"logged_in":  b.auth.IsLoggedIn(c),
-			"is_admin":   b.auth.IsAdmin(c),
-			"post":       post,
-			"version":    b.Version,
-			"recent":     b.GetLatest(),
-			"admin_page": false,
-			"settings":   b.GetSettings(),
+			"logged_in":     b.auth.IsLoggedIn(c),
+			"is_admin":      b.auth.IsAdmin(c),
+			"post":          post,
+			"version":       b.Version,
+			"recent":        b.GetLatest(),
+			"admin_page":    false,
+			"settings":      b.GetSettings(),
+			"comments":      b.getCommentsByPostID(post.ID),
+			"comment_error": c.Query("comment_error"),
 		})
 		//if b.auth.IsAdmin(c) {
 		//	c.HTML(http.StatusOK, "post-admin.html", gin.H{
@@ -499,6 +515,111 @@ func (b *Blog) Logout(c *gin.Context) {
 	session.Delete("token")
 	session.Save()
 	c.Redirect(http.StatusTemporaryRedirect, "/")
+}
+
+func (b *Blog) canComment(ip string) bool {
+	b.limiterMu.Lock()
+	defer b.limiterMu.Unlock()
+	if last, ok := b.commentLimiter[ip]; ok {
+		if time.Since(last) < time.Minute {
+			return false
+		}
+	}
+	return true
+}
+
+func (b *Blog) recordComment(ip string) {
+	b.limiterMu.Lock()
+	defer b.limiterMu.Unlock()
+	b.commentLimiter[ip] = time.Now()
+}
+
+func (b *Blog) getCommentsByPostID(postID uint) []Comment {
+	var comments []Comment
+	(*b.db).Where("post_id = ?", postID).Order("created_at asc").Find(&comments)
+	return comments
+}
+
+// GetRecentComments returns the most recent comments across all posts
+func (b *Blog) GetRecentComments(limit int) []Comment {
+	var comments []Comment
+	(*b.db).Order("created_at desc").Limit(limit).Find(&comments)
+	return comments
+}
+
+// GetPostsByIDs returns a map of post ID to Post for the given IDs
+func (b *Blog) GetPostsByIDs(ids []uint) map[uint]Post {
+	result := make(map[uint]Post)
+	if len(ids) == 0 {
+		return result
+	}
+	var posts []Post
+	(*b.db).Where("id IN ?", ids).Find(&posts)
+	for _, p := range posts {
+		result[p.ID] = p
+	}
+	return result
+}
+
+// SubmitComment handles POST /comments form submissions
+func (b *Blog) SubmitComment(c *gin.Context) {
+	redirect := c.PostForm("redirect")
+	if redirect == "" {
+		redirect = "/"
+	}
+
+	// Honeypot check - if website field is filled, silently redirect
+	if c.PostForm("website") != "" {
+		c.Redirect(http.StatusSeeOther, redirect)
+		return
+	}
+
+	postIDStr := c.PostForm("post_id")
+	name := strings.TrimSpace(c.PostForm("name"))
+	email := strings.TrimSpace(c.PostForm("email"))
+	content := strings.TrimSpace(c.PostForm("content"))
+
+	postID, err := strconv.ParseUint(postIDStr, 10, 64)
+	if err != nil || postID == 0 {
+		c.Redirect(http.StatusSeeOther, redirect+"?comment_error=invalid_post")
+		return
+	}
+
+	if name == "" || content == "" {
+		c.Redirect(http.StatusSeeOther, redirect+"?comment_error=missing_fields")
+		return
+	}
+
+	if len(name) > 100 {
+		c.Redirect(http.StatusSeeOther, redirect+"?comment_error=name_too_long")
+		return
+	}
+	if len(email) > 254 {
+		c.Redirect(http.StatusSeeOther, redirect+"?comment_error=email_too_long")
+		return
+	}
+	if len(content) > 5000 {
+		c.Redirect(http.StatusSeeOther, redirect+"?comment_error=content_too_long")
+		return
+	}
+
+	ip := c.ClientIP()
+	if !b.canComment(ip) {
+		c.Redirect(http.StatusSeeOther, redirect+"?comment_error=rate_limit")
+		return
+	}
+
+	comment := Comment{
+		PostID:    uint(postID),
+		Name:      name,
+		Email:     email,
+		Content:   content,
+		IPAddress: ip,
+	}
+	(*b.db).Create(&comment)
+	b.recordComment(ip)
+
+	c.Redirect(http.StatusSeeOther, redirect+fmt.Sprintf("#comment-%d", comment.ID))
 }
 
 func (b *Blog) checkValidDb(c *gin.Context) {

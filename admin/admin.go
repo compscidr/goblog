@@ -196,6 +196,30 @@ func (a *Admin) DeletePost(c *gin.Context) {
 	c.JSON(http.StatusOK, "")
 }
 
+// DeleteComment deletes a comment from the database
+func (a *Admin) DeleteComment(c *gin.Context) {
+	contentType := c.Request.Header.Get("content-type")
+	if contentType != "application/json" {
+		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
+		return
+	}
+
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	var requestComment blog.Comment
+	if c.BindJSON(&requestComment) != nil {
+		c.JSON(http.StatusBadRequest, "Malformed request, missing some information")
+		return
+	}
+
+	(*a.db).Where("id = ?", requestComment.ID).Delete(&blog.Comment{})
+
+	c.JSON(http.StatusOK, "")
+}
+
 func (a *Admin) PublishPost(c *gin.Context) {
 	id := c.Param("id")
 	log.Println("Publishing post: ", id)
@@ -317,19 +341,29 @@ func (a *Admin) Admin(c *gin.Context) {
 		"logged_in":  a.auth.IsLoggedIn(c),
 		"is_admin":   a.auth.IsAdmin(c),
 		"version":    a.version,
+		"recent":     a.b.GetLatest(),
 		"admin_page": true,
 		"settings":   a.b.GetSettings(),
 	})
 }
 
 func (a *Admin) AdminDashboard(c *gin.Context) {
+	recentComments := a.b.GetRecentComments(10)
+	var postIDs []uint
+	for _, comment := range recentComments {
+		postIDs = append(postIDs, comment.PostID)
+	}
+	commentPosts := a.b.GetPostsByIDs(postIDs)
 	c.HTML(http.StatusOK, "admin_dashboard.html", gin.H{
-		"posts":      a.b.GetPosts(true),
-		"logged_in":  a.auth.IsLoggedIn(c),
-		"is_admin":   a.auth.IsAdmin(c),
-		"version":    a.version,
-		"admin_page": true,
-		"settings":   a.b.GetSettings(),
+		"posts":           a.b.GetPosts(true),
+		"logged_in":       a.auth.IsLoggedIn(c),
+		"is_admin":        a.auth.IsAdmin(c),
+		"version":         a.version,
+		"recent":          a.b.GetLatest(),
+		"admin_page":      true,
+		"settings":        a.b.GetSettings(),
+		"recent_comments": recentComments,
+		"comment_posts":   commentPosts,
 	})
 }
 
@@ -339,6 +373,7 @@ func (a *Admin) AdminPosts(c *gin.Context) {
 		"logged_in":  a.auth.IsLoggedIn(c),
 		"is_admin":   a.auth.IsAdmin(c),
 		"version":    a.version,
+		"recent":     a.b.GetLatest(),
 		"admin_page": true,
 		"settings":   a.b.GetSettings(),
 	})
@@ -350,6 +385,7 @@ func (a *Admin) AdminNewPost(c *gin.Context) {
 		"logged_in":  a.auth.IsLoggedIn(c),
 		"is_admin":   a.auth.IsAdmin(c),
 		"version":    a.version,
+		"recent":     a.b.GetLatest(),
 		"admin_page": true,
 		"settings":   a.b.GetSettings(),
 	})
@@ -361,6 +397,7 @@ func (a *Admin) AdminSettings(c *gin.Context) {
 		"logged_in":  a.auth.IsLoggedIn(c),
 		"is_admin":   a.auth.IsAdmin(c),
 		"version":    a.version,
+		"recent":     a.b.GetLatest(),
 		"admin_page": true,
 		"settings":   a.b.GetSettings(),
 	})
@@ -380,6 +417,7 @@ func (a *Admin) Post(c *gin.Context) {
 			"description": err.Error(),
 			"version":     a.b.Version,
 			"title":       "Post Not Found",
+			"recent":      a.b.GetLatest(),
 			"admin_page":  true,
 			"settings":    a.b.GetSettings(),
 		})
@@ -389,6 +427,7 @@ func (a *Admin) Post(c *gin.Context) {
 			"is_admin":   a.auth.IsLoggedIn(c),
 			"post":       post,
 			"version":    a.b.Version,
+			"recent":     a.b.GetLatest(),
 			"admin_page": true,
 			"settings":   a.b.GetSettings(),
 		})
