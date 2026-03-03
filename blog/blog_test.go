@@ -70,6 +70,7 @@ func TestBlogWorkflow(t *testing.T) {
 	router.GET("/projects", b.Projects)
 	router.GET("/about", b.About)
 
+	router.GET("/search", b.Search)
 	router.GET("/login", b.Login)
 	router.GET("/logout", b.Logout)
 
@@ -282,6 +283,52 @@ func TestBlogWorkflow(t *testing.T) {
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+	}
+
+	//search with matching query
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	req, _ = http.NewRequest("GET", "/search?q=Test", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+	}
+	if !strings.Contains(w.Body.String(), testPost.Title) {
+		t.Errorf("Expected search results to contain post title: %s", testPost.Title)
+	}
+
+	//search should exclude draft posts
+	draftPost := blog.Post{
+		Title:   "Draft Secret Post",
+		Content: "This draft content should not appear in search",
+		Draft:   true,
+	}
+	db.Create(&draftPost)
+
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	req, _ = http.NewRequest("GET", "/search?q=Draft+Secret", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "0 results found") {
+		t.Errorf("Expected '0 results found' for draft-only search query")
+	}
+
+	//search with non-matching query
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	req, _ = http.NewRequest("GET", "/search?q=zzzznonexistent", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "No results found") {
+		t.Errorf("Expected 'No results found' message in empty search results")
+	}
+	if !strings.Contains(w.Body.String(), "0 results found") {
+		t.Errorf("Expected '0 results found' in empty search results")
 	}
 
 	//logout

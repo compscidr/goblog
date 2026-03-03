@@ -57,3 +57,12 @@ video {
 .comment { border-bottom: 1px solid #eee; padding: 15px 0; text-align: left; }
 .comment-meta { color: #999; font-size: 13px; margin-bottom: 5px; }
 .comment-content { font-size: 14px; }
+
+/* Search */
+.nav-search { display: inline; margin-left: 10px; }
+.nav-search-input { font-family: 'Source Code Pro', monospace; font-size: 13px; padding: 2px 8px; border: 1px solid #ccc; border-radius: 3px; width: 140px; vertical-align: baseline; }
+.nav-search-input:focus { outline: none; border-color: #007bff; }
+.search-page-form { margin: 20px 0; }
+.search-page-input { font-family: 'Source Code Pro', monospace; font-size: 14px; padding: 6px 10px; border: 1px solid #ccc; border-radius: 3px; width: 300px; }
+.search-page-btn { font-family: 'Source Code Pro', monospace; font-size: 14px; padding: 6px 16px; border: 1px solid #333; border-radius: 3px; background: #333; color: #EEE; cursor: pointer; }
+.search-page-btn:hover { background: #555; }
