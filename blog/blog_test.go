@@ -108,7 +108,7 @@ func TestBlogWorkflow(t *testing.T) {
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	if !strings.Contains(w.Body.String(), testPost.Title) {
-		t.Errorf("Expected to see a post with title: " + testPost.Title + " but didn't")
+		t.Errorf("Expected to see a post with title: %s but didn't", testPost.Title)
 	}
 
 	//get specific post
@@ -123,7 +123,7 @@ func TestBlogWorkflow(t *testing.T) {
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	if !strings.Contains(w.Body.String(), testPost.Title) {
-		t.Errorf("Expected to see a post with title: " + testPost.Title + " but didn't")
+		t.Errorf("Expected to see a post with title: %s but didn't", testPost.Title)
 	}
 
 	//bad year
@@ -230,7 +230,7 @@ func TestBlogWorkflow(t *testing.T) {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
 	}
 	if !strings.Contains(w.Body.String(), testPost.Title) {
-		t.Errorf("Expected to see a post with title: " + testPost.Title + " but didn't")
+		t.Errorf("Expected to see a post with title: %s but didn't", testPost.Title)
 	}
 
 	//html post as admin - TODO: fix this test, it doesn't seem to recognize the IsAdmin true mock
@@ -242,7 +242,7 @@ func TestBlogWorkflow(t *testing.T) {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
 	}
 	if !strings.Contains(w.Body.String(), testPost.Title) {
-		t.Errorf("Expected to see a post with title: " + testPost.Title + " but didn't")
+		t.Errorf("Expected to see a post with title: %s but didn't", testPost.Title)
 	}
 
 	//html post not found
