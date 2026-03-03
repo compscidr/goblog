@@ -2,7 +2,9 @@ package blog
 
 import (
 	"bytes"
+	"html/template"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -34,6 +36,93 @@ func (p Post) PreviewContent(length int) string {
 		return string(runes[:length])
 	}
 	return string(runes)
+}
+
+var (
+	reFencedCode = regexp.MustCompile("(?s)```[^\n]*\n(.*?)```")
+	reInlineCode = regexp.MustCompile("`([^`]+)`")
+	reImages     = regexp.MustCompile(`!\[([^\]]*)\]\([^)]+\)`)
+	reLinks        = regexp.MustCompile(`\[([^\]]+)\]\([^)]+\)`)
+	reLinksWithURL = regexp.MustCompile(`\[([^\]]+)\]\(([^)]+)\)`)
+	reHeadings     = regexp.MustCompile(`(?m)^#{1,6}\s+`)
+	reBold       = regexp.MustCompile(`\*\*(.+?)\*\*`)
+	reItalic     = regexp.MustCompile(`\*(.+?)\*`)
+	reUBold      = regexp.MustCompile(`__(.+?)__`)
+	reUItalic    = regexp.MustCompile(`_(.+?)_`)
+	reHR         = regexp.MustCompile(`(?m)^[-*_]{3,}\s*$`)
+	reWhitespace = regexp.MustCompile(`\s+`)
+)
+
+// PlainTextPreview strips markdown syntax and returns clean plain text for previews
+func (p Post) PlainTextPreview(length int) string {
+	s := p.Content
+	s = reFencedCode.ReplaceAllString(s, "$1")
+	s = reInlineCode.ReplaceAllString(s, "$1")
+	s = reImages.ReplaceAllString(s, "$1")
+	s = reLinks.ReplaceAllString(s, "$1")
+	s = reHeadings.ReplaceAllString(s, "")
+	s = reBold.ReplaceAllString(s, "$1")
+	s = reItalic.ReplaceAllString(s, "$1")
+	s = reUBold.ReplaceAllString(s, "$1")
+	s = reUItalic.ReplaceAllString(s, "$1")
+	s = reHR.ReplaceAllString(s, "")
+	s = reWhitespace.ReplaceAllString(s, " ")
+	s = strings.TrimSpace(s)
+
+	runes := bytes.Runes([]byte(s))
+	if len(runes) > length {
+		return string(runes[:length]) + "..."
+	}
+	return s
+}
+
+// HTMLPreview strips markdown syntax but preserves links as HTML hyperlinks
+func (p Post) HTMLPreview(length int) template.HTML {
+	s := p.Content
+	s = reFencedCode.ReplaceAllString(s, "<code>$1</code>")
+	s = reInlineCode.ReplaceAllString(s, "<code>$1</code>")
+	s = reImages.ReplaceAllString(s, "$1")
+	s = reLinksWithURL.ReplaceAllString(s, `<a href="$2">$1</a>`)
+	s = reHeadings.ReplaceAllString(s, "")
+	s = reBold.ReplaceAllString(s, "$1")
+	s = reItalic.ReplaceAllString(s, "$1")
+	s = reUBold.ReplaceAllString(s, "$1")
+	s = reUItalic.ReplaceAllString(s, "$1")
+	s = reHR.ReplaceAllString(s, "")
+	s = reWhitespace.ReplaceAllString(s, " ")
+	s = strings.TrimSpace(s)
+
+	// Truncate by visible character count, skipping HTML tags
+	runes := []rune(s)
+	visible := 0
+	cutoff := len(runes)
+	inTag := false
+	for i, r := range runes {
+		if r == '<' {
+			inTag = true
+		} else if r == '>' {
+			inTag = false
+		} else if !inTag {
+			visible++
+			if visible > length {
+				cutoff = i
+				break
+			}
+		}
+	}
+
+	if cutoff < len(runes) {
+		result := string(runes[:cutoff])
+		if strings.Count(result, "<a ") > strings.Count(result, "</a>") {
+			result += "</a>"
+		}
+		if strings.Count(result, "<code>") > strings.Count(result, "</code>") {
+			result += "</code>"
+		}
+		result += "..."
+		return template.HTML(result)
+	}
+	return template.HTML(s)
 }
 
 // Permalink returns the link to the post relative to root
