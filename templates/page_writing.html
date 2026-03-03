@@ -19,6 +19,9 @@
   <div class="container">
 
     <h1 class="text-left">{{ .page.Title }}</h1>
+    {{ if .is_admin }}
+    <p class="text-left"><a href="/admin/pages/{{ .page.ID }}">Edit this page</a></p>
+    {{ end }}
 
     {{ range .posts }}
     <div class="row">

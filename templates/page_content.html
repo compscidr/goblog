@@ -18,6 +18,9 @@
 
   <div class="container">
     <h1>{{ .page.Title }}</h1>
+    {{ if .is_admin }}
+    <p class="text-left"><a href="/admin/pages/{{ .page.ID }}">Edit this page</a></p>
+    {{ end }}
     <div id="page-content"></div>
   </div>
 

@@ -8,6 +8,9 @@
 
   <div class="container">
     <h1>{{ .page.Title }}</h1>
+    {{ if .is_admin }}
+    <p class="text-left"><a href="/admin/pages/{{ .page.ID }}">Edit this page</a></p>
+    {{ end }}
     {{ if .errors }}
     <div class="alert alert-danger" role="alert">
       {{ .errors }}
