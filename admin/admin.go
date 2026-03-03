@@ -80,9 +80,18 @@ func (a *Admin) CreatePost(c *gin.Context) {
 	// Default to "posts" type if not specified
 	if requestPost.PostTypeID == 0 {
 		var defaultType blog.PostType
-		if err := (*a.db).Where("slug = ?", "posts").First(&defaultType).Error; err == nil {
-			requestPost.PostTypeID = defaultType.ID
+		if err := (*a.db).Where("slug = ?", "posts").First(&defaultType).Error; err != nil {
+			c.JSON(http.StatusBadRequest, "Default post type not found")
+			return
 		}
+		requestPost.PostTypeID = defaultType.ID
+	}
+
+	// Validate that the PostType exists
+	var postType blog.PostType
+	if err := (*a.db).First(&postType, requestPost.PostTypeID).Error; err != nil {
+		c.JSON(http.StatusBadRequest, "Invalid post_type_id")
+		return
 	}
 
 	log.Print("CREATING POST: ", requestPost)
@@ -791,6 +800,11 @@ func (a *Admin) UpdatePostType(c *gin.Context) {
 		return
 	}
 
+	if req.Name == "" {
+		c.JSON(http.StatusBadRequest, "Missing Name")
+		return
+	}
+
 	req.Slug = sanitizeSlug(req.Slug)
 	if req.Slug == "" {
 		c.JSON(http.StatusBadRequest, "Missing or invalid Slug")
@@ -840,6 +854,17 @@ func (a *Admin) DeletePostType(c *gin.Context) {
 	var req blog.PostType
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, "Malformed request")
+		return
+	}
+
+	if req.ID == 0 {
+		c.JSON(http.StatusBadRequest, "Missing post type ID")
+		return
+	}
+
+	var existing blog.PostType
+	if err := (*a.db).Where("id = ?", req.ID).First(&existing).Error; err != nil {
+		c.JSON(http.StatusNotFound, "Post type not found")
 		return
 	}
 

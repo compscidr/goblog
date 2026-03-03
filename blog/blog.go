@@ -154,9 +154,13 @@ func (b *Blog) getPostsByTag(c *gin.Context) ([]Post, error) {
 	}
 
 	(*b.db).Model(&tag).Order("created_at desc").Association("Posts").Find(&posts)
-	// Load PostType for each post
-	for i := range posts {
-		(*b.db).Preload("PostType").First(&posts[i], posts[i].ID)
+	// Batch-load PostType for all posts to avoid N+1 queries
+	if len(posts) > 0 {
+		ids := make([]uint, len(posts))
+		for i, p := range posts {
+			ids[i] = p.ID
+		}
+		(*b.db).Preload("PostType").Where("id IN ?", ids).Order("created_at desc").Find(&posts)
 	}
 	log.Print("POSTS: ", posts)
 	return posts, nil
@@ -227,21 +231,33 @@ func (b *Blog) ComputeBacklinks(post *Post) {
 
 // GetBacklinks returns posts that link TO the given post.
 func (b *Blog) GetBacklinks(postID uint) []Post {
+	var backlinks []Backlink
+	(*b.db).Where("target_post_id = ?", postID).Find(&backlinks)
+	if len(backlinks) == 0 {
+		return nil
+	}
+	ids := make([]uint, len(backlinks))
+	for i, bl := range backlinks {
+		ids[i] = bl.SourcePostID
+	}
 	var posts []Post
-	(*b.db).Raw(`SELECT p.* FROM posts p
-		INNER JOIN backlinks bl ON bl.source_post_id = p.id
-		WHERE bl.target_post_id = ? AND p.deleted_at IS NULL
-		ORDER BY p.created_at DESC`, postID).Scan(&posts)
+	(*b.db).Preload("PostType").Where("id IN ? AND deleted_at IS NULL", ids).Order("created_at desc").Find(&posts)
 	return posts
 }
 
 // GetOutboundLinks returns posts that the given post links TO.
 func (b *Blog) GetOutboundLinks(postID uint) []Post {
+	var backlinks []Backlink
+	(*b.db).Where("source_post_id = ?", postID).Find(&backlinks)
+	if len(backlinks) == 0 {
+		return nil
+	}
+	ids := make([]uint, len(backlinks))
+	for i, bl := range backlinks {
+		ids[i] = bl.TargetPostID
+	}
 	var posts []Post
-	(*b.db).Raw(`SELECT p.* FROM posts p
-		INNER JOIN backlinks bl ON bl.target_post_id = p.id
-		WHERE bl.source_post_id = ? AND p.deleted_at IS NULL
-		ORDER BY p.created_at DESC`, postID).Scan(&posts)
+	(*b.db).Preload("PostType").Where("id IN ? AND deleted_at IS NULL", ids).Order("created_at desc").Find(&posts)
 	return posts
 }
 

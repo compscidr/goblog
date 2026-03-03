@@ -208,10 +208,15 @@ func seedDefaultPostType(db *gorm.DB) {
 		Slug:        "posts",
 		Description: "Blog posts",
 	}
-	db.Create(&defaultType)
+	if err := db.Create(&defaultType).Error; err != nil {
+		log.Printf("Failed to seed default post type: %v", err)
+		return
+	}
 
 	// Assign all existing posts with post_type_id = 0 to the default type
-	db.Model(&blog.Post{}).Where("post_type_id = 0 OR post_type_id IS NULL").Update("post_type_id", defaultType.ID)
+	if err := db.Model(&blog.Post{}).Where("post_type_id = 0 OR post_type_id IS NULL").Update("post_type_id", defaultType.ID).Error; err != nil {
+		log.Printf("Failed to assign existing posts to default post type: %v", err)
+	}
 }
 
 // seedDefaultSettings inserts default settings if the settings table is empty.

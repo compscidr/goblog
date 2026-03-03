@@ -32,11 +32,19 @@
         {{ end }}
         {{ if .post_types }}
         <label for="post_type_id">Post Type</label>
-        <select class="form-control" id="post_type_id">
+        {{ if .post.Draft }}
+        <select class="form-control" id="post_type_id" onchange="updatePost({{ .post.ID }}, false)">
           {{ range $.post_types }}
           <option value="{{ .ID }}" {{ if eq .ID $.post.PostTypeID }}selected{{ end }}>{{ .Name }}</option>
           {{ end }}
         </select>
+        {{ else }}
+        <select class="form-control" id="post_type_id" onchange="updatePost({{ .post.ID }}, true)">
+          {{ range $.post_types }}
+          <option value="{{ .ID }}" {{ if eq .ID $.post.PostTypeID }}selected{{ end }}>{{ .Name }}</option>
+          {{ end }}
+        </select>
+        {{ end }}
         {{ end }}
         <div class="text-left">
           {{ if .post.Draft }}
