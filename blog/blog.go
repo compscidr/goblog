@@ -73,16 +73,16 @@ func sortArticlesByDateDesc(articles []*scholar.Article) {
 func (b *Blog) GetPosts(drafts bool) []Post {
 	var posts []Post
 	if !drafts {
-		(*b.db).Preload("Tags").Order("created_at desc").Find(&posts, "draft = ?", drafts)
+		(*b.db).Preload("Tags").Preload("PostType").Order("created_at desc").Find(&posts, "draft = ?", drafts)
 	} else {
-		(*b.db).Preload("Tags").Order("created_at desc").Find(&posts)
+		(*b.db).Preload("Tags").Preload("PostType").Order("created_at desc").Find(&posts)
 	}
 	return posts
 }
 
 func (b *Blog) GetLatest() Post {
 	var post Post
-	(*b.db).Preload("Tags").Order("created_at desc").First(&post)
+	(*b.db).Preload("Tags").Preload("PostType").Order("created_at desc").First(&post)
 	return post
 }
 
@@ -139,7 +139,7 @@ func (b *Blog) GetPostObject(c *gin.Context) (*Post, error) {
 
 	log.Println("Looking for post: ", year, "/", month, "/", day, "/", slug)
 
-	if err := (*b.db).Preload("Tags").Where("created_at > ? AND slug LIKE ?", time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).First(&post).Error; err != nil {
+	if err := (*b.db).Preload("Tags").Preload("PostType").Where("created_at > ? AND slug LIKE ?", time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).First(&post).Error; err != nil {
 		return nil, errors.New("No post at " + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/" + strconv.Itoa(day) + "/" + slug)
 	}
 
@@ -152,7 +152,7 @@ func (b *Blog) getPostByParams(year int, month int, day int, slug string) (*Post
 	log.Println("trying: " + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/" + strconv.Itoa(day) + "/" + slug)
 	var post Post
 	slug = url.QueryEscape(slug)
-	if err := (*b.db).Preload("Tags").Where("created_at > ? AND slug LIKE ?", time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).First(&post).Error; err != nil {
+	if err := (*b.db).Preload("Tags").Preload("PostType").Where("created_at > ? AND slug LIKE ?", time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).First(&post).Error; err != nil {
 		log.Println("NOT FOUND")
 		return nil, errors.New("No post at " + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/" + strconv.Itoa(day) + "/" + slug)
 	}
@@ -169,6 +169,14 @@ func (b *Blog) getPostsByTag(c *gin.Context) ([]Post, error) {
 	}
 
 	(*b.db).Model(&tag).Order("created_at desc").Association("Posts").Find(&posts)
+	// Batch-load PostType for all posts to avoid N+1 queries
+	if len(posts) > 0 {
+		ids := make([]uint, len(posts))
+		for i, p := range posts {
+			ids[i] = p.ID
+		}
+		(*b.db).Preload("PostType").Where("id IN ?", ids).Order("created_at desc").Find(&posts)
+	}
 	log.Print("POSTS: ", posts)
 	return posts, nil
 }
@@ -190,12 +198,12 @@ func (b *Blog) SearchPosts(query string) []Post {
 	escaped = strings.ReplaceAll(escaped, "%", "!%")
 	escaped = strings.ReplaceAll(escaped, "_", "!_")
 	q := "%" + escaped + "%"
-	(*b.db).Preload("Tags").Where("draft = ? AND (title LIKE ? ESCAPE '!' OR content LIKE ? ESCAPE '!')", false, q, q).Order("created_at desc").Find(&posts)
+	(*b.db).Preload("Tags").Preload("PostType").Where("draft = ? AND (title LIKE ? ESCAPE '!' OR content LIKE ? ESCAPE '!')", false, q, q).Order("created_at desc").Find(&posts)
 	return posts
 }
 
-// reInternalLink matches internal post URLs like /posts/2024/01/15/my-slug or /2024/01/15/my-slug
-var reInternalLink = regexp.MustCompile(`\]\(/(?:posts/)?(\d{4})/(\d{1,2})/(\d{1,2})/([^)\s]+)\)`)
+// reInternalLink matches internal post URLs like /posts/2024/01/15/my-slug, /notes/2024/01/15/my-slug, or /2024/01/15/my-slug
+var reInternalLink = regexp.MustCompile(`\]\(/(?:[a-z0-9-]+/)?(\d{4})/(\d{1,2})/(\d{1,2})/([^)\s]+)\)`)
 
 // ComputeBacklinks parses a post's content for internal links and upserts backlink records.
 func (b *Blog) ComputeBacklinks(post *Post) {
@@ -238,21 +246,33 @@ func (b *Blog) ComputeBacklinks(post *Post) {
 
 // GetBacklinks returns posts that link TO the given post.
 func (b *Blog) GetBacklinks(postID uint) []Post {
+	var backlinks []Backlink
+	(*b.db).Where("target_post_id = ?", postID).Find(&backlinks)
+	if len(backlinks) == 0 {
+		return nil
+	}
+	ids := make([]uint, len(backlinks))
+	for i, bl := range backlinks {
+		ids[i] = bl.SourcePostID
+	}
 	var posts []Post
-	(*b.db).Raw(`SELECT p.* FROM posts p
-		INNER JOIN backlinks bl ON bl.source_post_id = p.id
-		WHERE bl.target_post_id = ? AND p.deleted_at IS NULL
-		ORDER BY p.created_at DESC`, postID).Scan(&posts)
+	(*b.db).Preload("PostType").Where("id IN ? AND deleted_at IS NULL", ids).Order("created_at desc").Find(&posts)
 	return posts
 }
 
 // GetOutboundLinks returns posts that the given post links TO.
 func (b *Blog) GetOutboundLinks(postID uint) []Post {
+	var backlinks []Backlink
+	(*b.db).Where("source_post_id = ?", postID).Find(&backlinks)
+	if len(backlinks) == 0 {
+		return nil
+	}
+	ids := make([]uint, len(backlinks))
+	for i, bl := range backlinks {
+		ids[i] = bl.TargetPostID
+	}
 	var posts []Post
-	(*b.db).Raw(`SELECT p.* FROM posts p
-		INNER JOIN backlinks bl ON bl.target_post_id = p.id
-		WHERE bl.source_post_id = ? AND p.deleted_at IS NULL
-		ORDER BY p.created_at DESC`, postID).Scan(&posts)
+	(*b.db).Preload("PostType").Where("id IN ? AND deleted_at IS NULL", ids).Order("created_at desc").Find(&posts)
 	return posts
 }
 
@@ -328,15 +348,81 @@ func (b *Blog) GetPageBySlug(slug string) (*Page, error) {
 	return &page, nil
 }
 
+// GetPostTypes returns all post types
+func (b *Blog) GetPostTypes() []PostType {
+	var types []PostType
+	(*b.db).Order("name asc").Find(&types)
+	return types
+}
+
+// GetPostTypeBySlug returns a post type by its slug
+func (b *Blog) GetPostTypeBySlug(slug string) (*PostType, error) {
+	var pt PostType
+	if err := (*b.db).Where("slug = ?", slug).First(&pt).Error; err != nil {
+		return nil, errors.New("post type not found: " + slug)
+	}
+	return &pt, nil
+}
+
+// GetPostsByType returns posts filtered by post type
+func (b *Blog) GetPostsByType(postTypeID uint, drafts bool) []Post {
+	var posts []Post
+	if !drafts {
+		(*b.db).Preload("Tags").Preload("PostType").Where("post_type_id = ? AND draft = ?", postTypeID, false).Order("created_at desc").Find(&posts)
+	} else {
+		(*b.db).Preload("Tags").Preload("PostType").Where("post_type_id = ?", postTypeID).Order("created_at desc").Find(&posts)
+	}
+	return posts
+}
+
+// getPostByTypeAndParams finds a post by type slug and date/slug params
+func (b *Blog) getPostByTypeAndParams(typeSlug string, year int, month int, day int, slug string) (*Post, error) {
+	pt, err := b.GetPostTypeBySlug(typeSlug)
+	if err != nil {
+		return nil, err
+	}
+	var post Post
+	slug = url.QueryEscape(slug)
+	if err := (*b.db).Preload("Tags").Preload("PostType").
+		Where("post_type_id = ? AND created_at > ? AND slug LIKE ?", pt.ID, time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).
+		First(&post).Error; err != nil {
+		return nil, errors.New("No post at " + typeSlug + "/" + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/" + strconv.Itoa(day) + "/" + slug)
+	}
+	return &post, nil
+}
+
+// PostTypeListing renders the listing page for a post type
+func (b *Blog) PostTypeListing(c *gin.Context, pt *PostType) {
+	posts := b.GetPostsByType(pt.ID, false)
+	c.HTML(http.StatusOK, "post_type_listing.html", gin.H{
+		"logged_in":  b.auth.IsLoggedIn(c),
+		"is_admin":   b.auth.IsAdmin(c),
+		"post_type":  pt,
+		"posts":      posts,
+		"version":    b.Version,
+		"title":      pt.Name,
+		"recent":     b.GetLatest(),
+		"admin_page": false,
+		"settings":   b.GetSettings(),
+		"nav_pages":  b.GetNavPages(),
+	})
+}
+
 // DynamicPage renders the appropriate template for a page based on its PageType.
 func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 	navPages := b.GetNavPages()
 	switch page.PageType {
 	case PageTypeWriting:
+		var posts []Post
+		if page.PostTypeID != nil {
+			posts = b.GetPostsByType(*page.PostTypeID, false)
+		} else {
+			posts = b.GetPosts(false)
+		}
 		c.HTML(http.StatusOK, "page_writing.html", gin.H{
 			"logged_in":  b.auth.IsLoggedIn(c),
 			"is_admin":   b.auth.IsAdmin(c),
-			"posts":      b.GetPosts(false),
+			"posts":      posts,
 			"page":       page,
 			"version":    b.Version,
 			"title":      page.Title,
@@ -419,6 +505,73 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 	}
 }
 
+// renderAdminPost renders the admin edit view for a post, used by NoRoute for admin type-prefixed URLs
+func (b *Blog) renderAdminPost(c *gin.Context, post *Post) {
+	if !b.auth.IsAdmin(c) {
+		c.HTML(http.StatusUnauthorized, "error.html", gin.H{
+			"error":       "Unauthorized",
+			"description": "You are not authorized to view this page",
+			"version":     b.Version,
+			"title":       "Unauthorized",
+			"recent":      b.GetLatest(),
+			"admin_page":  true,
+			"settings":    b.GetSettings(),
+			"nav_pages":   b.GetNavPages(),
+		})
+		return
+	}
+	c.HTML(http.StatusOK, "post-admin.html", gin.H{
+		"logged_in":          b.auth.IsLoggedIn(c),
+		"is_admin":           b.auth.IsAdmin(c),
+		"post":               post,
+		"post_types":         b.GetPostTypes(),
+		"version":            b.Version,
+		"recent":             b.GetLatest(),
+		"admin_page":         true,
+		"settings":           b.GetSettings(),
+		"backlinks":          b.GetBacklinks(post.ID),
+		"outbound_links":     b.GetOutboundLinks(post.ID),
+		"external_backlinks": b.GetExternalBacklinks(post.ID),
+		"nav_pages":          b.GetNavPages(),
+	})
+}
+
+// renderPost renders a single post page, used by NoRoute handlers
+func (b *Blog) renderPost(c *gin.Context, post *Post) {
+	b.TrackReferer(c, post.ID)
+	if b.auth.IsAdmin(c) {
+		c.HTML(http.StatusOK, "post-admin.html", gin.H{
+			"logged_in":          b.auth.IsLoggedIn(c),
+			"is_admin":           b.auth.IsAdmin(c),
+			"post":               post,
+			"post_types":         b.GetPostTypes(),
+			"version":            b.Version,
+			"recent":             b.GetLatest(),
+			"admin_page":         false,
+			"settings":           b.GetSettings(),
+			"comments":           b.getCommentsByPostID(post.ID),
+			"comment_error":      c.Query("comment_error"),
+			"backlinks":          b.GetBacklinks(post.ID),
+			"outbound_links":     b.GetOutboundLinks(post.ID),
+			"external_backlinks": b.GetExternalBacklinks(post.ID),
+			"nav_pages":          b.GetNavPages(),
+		})
+	} else {
+		c.HTML(http.StatusOK, "post.html", gin.H{
+			"logged_in":     b.auth.IsLoggedIn(c),
+			"is_admin":      b.auth.IsAdmin(c),
+			"post":          post,
+			"version":       b.Version,
+			"recent":        b.GetLatest(),
+			"admin_page":    false,
+			"settings":      b.GetSettings(),
+			"comments":      b.getCommentsByPostID(post.ID),
+			"comment_error": c.Query("comment_error"),
+			"nav_pages":     b.GetNavPages(),
+		})
+	}
+}
+
 //////JSON API///////
 
 // ListPosts lists all blog posts
@@ -446,54 +599,64 @@ func (b *Blog) NoRoute(c *gin.Context) {
 
 	tokens := strings.Split(c.Request.URL.String(), "/")
 	// for some reason, first token is empty
+
+	// Try admin type-prefixed post URL: /admin/{type-slug}/{yyyy}/{mm}/{dd}/{post-slug}
+	if len(tokens) >= 7 && tokens[1] == "admin" {
+		typeSlug := tokens[2]
+		year, yerr := strconv.Atoi(tokens[3])
+		month, merr := strconv.Atoi(tokens[4])
+		day, derr := strconv.Atoi(tokens[5])
+		if yerr == nil && merr == nil && derr == nil {
+			post, err := b.getPostByTypeAndParams(typeSlug, year, month, day, tokens[6])
+			if err == nil && post != nil {
+				b.renderAdminPost(c, post)
+				return
+			}
+		}
+	}
+
+	// Try type-prefixed post URL: /{type-slug}/{yyyy}/{mm}/{dd}/{post-slug}
+	if len(tokens) >= 6 {
+		typeSlug := tokens[1]
+		year, yerr := strconv.Atoi(tokens[2])
+		month, merr := strconv.Atoi(tokens[3])
+		day, derr := strconv.Atoi(tokens[4])
+		if yerr == nil && merr == nil && derr == nil {
+			post, err := b.getPostByTypeAndParams(typeSlug, year, month, day, tokens[5])
+			if err == nil && post != nil {
+				b.renderPost(c, post)
+				return
+			}
+		}
+	}
+
+	// Backward compat: /{yyyy}/{mm}/{dd}/{slug} (any type)
 	if len(tokens) >= 5 {
 		year, _ := strconv.Atoi(tokens[1])
 		month, _ := strconv.Atoi(tokens[2])
 		day, _ := strconv.Atoi(tokens[3])
 		post, err := b.getPostByParams(year, month, day, tokens[4])
 		if err == nil && post != nil {
-			b.TrackReferer(c, post.ID)
-			if b.auth.IsAdmin(c) {
-				c.HTML(http.StatusOK, "post-admin.html", gin.H{
-					"logged_in":          b.auth.IsLoggedIn(c),
-					"is_admin":           b.auth.IsAdmin(c),
-					"post":               post,
-					"version":            b.Version,
-					"recent":             b.GetLatest(),
-					"admin_page":         false,
-					"settings":           b.GetSettings(),
-					"comments":           b.getCommentsByPostID(post.ID),
-					"comment_error":      c.Query("comment_error"),
-					"backlinks":          b.GetBacklinks(post.ID),
-					"outbound_links":     b.GetOutboundLinks(post.ID),
-					"external_backlinks": b.GetExternalBacklinks(post.ID),
-					"nav_pages":          b.GetNavPages(),
-				})
-			} else {
-				c.HTML(http.StatusOK, "post.html", gin.H{
-					"logged_in":     b.auth.IsLoggedIn(c),
-					"is_admin":      b.auth.IsAdmin(c),
-					"post":          post,
-					"version":       b.Version,
-					"recent":        b.GetLatest(),
-					"admin_page":    false,
-					"settings":      b.GetSettings(),
-					"comments":      b.getCommentsByPostID(post.ID),
-					"comment_error": c.Query("comment_error"),
-					"nav_pages":     b.GetNavPages(),
-				})
-			}
+			b.renderPost(c, post)
 			return
 		}
 	}
 
-	// Try to resolve as a dynamic page by slug
+	// Try to resolve as a dynamic page or post type listing by slug
 	path := strings.TrimPrefix(c.Request.URL.Path, "/")
 	path = strings.TrimSuffix(path, "/")
 	if path != "" && !strings.Contains(path, "/") {
+		// Check dynamic page first (pages have hero content, edit links, etc.)
 		page, err := b.GetPageBySlug(path)
 		if err == nil && page != nil {
 			b.DynamicPage(c, page)
+			return
+		}
+
+		// Then try post type listing
+		pt, err := b.GetPostTypeBySlug(path)
+		if err == nil && pt != nil {
+			b.PostTypeListing(c, pt)
 			return
 		}
 	}
@@ -575,6 +738,7 @@ func (b *Blog) Post(c *gin.Context) {
 			data["backlinks"] = b.GetBacklinks(post.ID)
 			data["outbound_links"] = b.GetOutboundLinks(post.ID)
 			data["external_backlinks"] = b.GetExternalBacklinks(post.ID)
+			data["post_types"] = b.GetPostTypes()
 		}
 		c.HTML(http.StatusOK, "post.html", data)
 		//if b.auth.IsAdmin(c) {
@@ -767,6 +931,12 @@ func (b *Blog) Sitemap(c *gin.Context) {
 		sm.Add(stm.URL{{"loc", page.PagePermalink()}, {"changefreq", "weekly"}, {"priority", 0.7}})
 	}
 
+	// Add post type listing URLs
+	postTypes := b.GetPostTypes()
+	for _, pt := range postTypes {
+		sm.Add(stm.URL{{"loc", pt.Permalink()}, {"changefreq", "weekly"}, {"priority", 0.7}})
+	}
+
 	posts := b.GetPosts(false)
 	for _, post := range posts {
 		if !post.Draft {
@@ -864,7 +1034,7 @@ func (b *Blog) GetPostsByIDs(ids []uint) map[uint]Post {
 		return result
 	}
 	var posts []Post
-	(*b.db).Where("id IN ?", ids).Find(&posts)
+	(*b.db).Preload("PostType").Where("id IN ?", ids).Find(&posts)
 	for _, p := range posts {
 		result[p.ID] = p
 	}

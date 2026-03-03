@@ -41,10 +41,15 @@ func (m *Auth) IsLoggedIn(c *gin.Context) bool {
 func TestBlogWorkflow(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
 	db.AutoMigrate(&auth.BlogUser{})
+	db.AutoMigrate(&blog.PostType{})
 	db.AutoMigrate(&blog.Post{})
 	db.AutoMigrate(&blog.Tag{})
 	db.AutoMigrate(&blog.Comment{})
 	db.AutoMigrate(&blog.Page{})
+
+	// Seed default post type
+	defaultType := blog.PostType{Name: "Post", Slug: "posts", Description: "Blog posts"}
+	db.Create(&defaultType)
 	a := &Auth{}
 	sch := scholar.New("profiles.json", "articles.json")
 	b := blog.New(db, a, "test", sch)
@@ -278,7 +283,7 @@ func TestBlogWorkflow(t *testing.T) {
 		t.Fatalf("Expected to get status %d for /about but instead got %d\n", http.StatusOK, w.Code)
 	}
 
-	// Dynamic page: /posts (writing) resolves via NoRoute
+	// Post type listing: /posts resolves via NoRoute as post type listing
 	a.On("IsAdmin", mock.Anything).Return(false).Once()
 	a.On("IsLoggedIn", mock.Anything).Return(false).Once()
 	req, _ = http.NewRequest("GET", "/posts", bytes.NewBuffer(jsonValue))
@@ -286,6 +291,16 @@ func TestBlogWorkflow(t *testing.T) {
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected to get status %d for /posts but instead got %d\n", http.StatusOK, w.Code)
+	}
+
+	// Type-prefixed URL: /posts/yyyy/mm/dd/slug resolves via NoRoute
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	a.On("IsLoggedIn", mock.Anything).Return(false).Once()
+	req, _ = http.NewRequest("GET", "/posts/"+strconv.Itoa(post.CreatedAt.Year())+"/"+strconv.Itoa(int(post.CreatedAt.Month()))+"/"+strconv.Itoa(post.CreatedAt.Day())+"/"+post.Slug, bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d for type-prefixed post URL but instead got %d\n", http.StatusOK, w.Code)
 	}
 
 	//search with matching query
@@ -425,7 +440,7 @@ func TestBlogWorkflow(t *testing.T) {
 
 func TestBacklinks(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
-	db.AutoMigrate(&auth.BlogUser{}, &blog.Post{}, &blog.Tag{}, &blog.Backlink{}, &blog.ExternalBacklink{})
+	db.AutoMigrate(&auth.BlogUser{}, &blog.PostType{}, &blog.Post{}, &blog.Tag{}, &blog.Backlink{}, &blog.ExternalBacklink{})
 	a := &Auth{}
 	sch := scholar.New("profiles.json", "articles.json")
 	b := blog.New(db, a, "test", sch)
@@ -492,7 +507,7 @@ func TestBacklinks(t *testing.T) {
 
 func TestGetNavPages(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
-	db.AutoMigrate(&blog.Page{}, &blog.Post{}, &blog.Setting{})
+	db.AutoMigrate(&blog.Page{}, &blog.PostType{}, &blog.Post{}, &blog.Setting{})
 	a := &Auth{}
 	sch := scholar.New("profiles.json", "articles.json")
 	b := blog.New(db, a, "test", sch)
@@ -518,7 +533,7 @@ func TestGetNavPages(t *testing.T) {
 
 func TestGetPageBySlug(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
-	db.AutoMigrate(&blog.Page{}, &blog.Post{}, &blog.Setting{})
+	db.AutoMigrate(&blog.Page{}, &blog.PostType{}, &blog.Post{}, &blog.Setting{})
 	a := &Auth{}
 	sch := scholar.New("profiles.json", "articles.json")
 	b := blog.New(db, a, "test", sch)
@@ -550,7 +565,7 @@ func TestGetPageBySlug(t *testing.T) {
 
 func TestExternalBacklinks(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
-	db.AutoMigrate(&auth.BlogUser{}, &blog.Post{}, &blog.Tag{}, &blog.Backlink{}, &blog.ExternalBacklink{})
+	db.AutoMigrate(&auth.BlogUser{}, &blog.PostType{}, &blog.Post{}, &blog.Tag{}, &blog.Backlink{}, &blog.ExternalBacklink{})
 	a := &Auth{}
 	sch := scholar.New("profiles.json", "articles.json")
 	b := blog.New(db, a, "test", sch)

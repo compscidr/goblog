@@ -21,6 +21,32 @@ func TestMigration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("migration failed: %v", err)
 	}
+
+	// Verify default post type was seeded
+	var ptCount int64
+	db.Raw("SELECT count(*) FROM post_types").Scan(&ptCount)
+	if ptCount != 1 {
+		t.Fatalf("expected 1 post type, got %d", ptCount)
+	}
+
+	var ptSlug string
+	db.Raw("SELECT slug FROM post_types LIMIT 1").Scan(&ptSlug)
+	if ptSlug != "posts" {
+		t.Fatalf("expected default post type slug 'posts', got '%s'", ptSlug)
+	}
+
+	// Verify Writing page has PostTypeID linked to the default post type
+	var pagePostTypeID *uint
+	db.Raw("SELECT post_type_id FROM pages WHERE slug = 'posts'").Scan(&pagePostTypeID)
+	if pagePostTypeID == nil {
+		t.Fatal("expected Writing page to have post_type_id set, got nil")
+	}
+
+	var ptID uint
+	db.Raw("SELECT id FROM post_types WHERE slug = 'posts'").Scan(&ptID)
+	if *pagePostTypeID != ptID {
+		t.Fatalf("expected Writing page post_type_id = %d, got %d", ptID, *pagePostTypeID)
+	}
 }
 
 // TestMigrationWithOldSchema reproduces the production issue where blog_users

@@ -76,8 +76,29 @@ func (a *Admin) CreatePost(c *gin.Context) {
 
 	//todo: make tags work - need to get the relations working
 	requestPost.Slug = safeSlug(requestPost.Title)
+
+	// Default to "posts" type if not specified
+	if requestPost.PostTypeID == 0 {
+		var defaultType blog.PostType
+		if err := (*a.db).Where("slug = ?", "posts").First(&defaultType).Error; err != nil {
+			c.JSON(http.StatusBadRequest, "Default post type not found")
+			return
+		}
+		requestPost.PostTypeID = defaultType.ID
+	}
+
+	// Validate that the PostType exists
+	var postType blog.PostType
+	if err := (*a.db).First(&postType, requestPost.PostTypeID).Error; err != nil {
+		c.JSON(http.StatusBadRequest, "Invalid post_type_id")
+		return
+	}
+
 	log.Print("CREATING POST: ", requestPost)
 	(*a.db).Create(&requestPost)
+
+	// Reload with PostType for JSON response
+	(*a.db).Preload("PostType").First(&requestPost, requestPost.ID)
 
 	a.b.ComputeBacklinks(&requestPost)
 
@@ -164,12 +185,19 @@ func (a *Admin) UpdatePost(c *gin.Context) {
 	existingPost.Tags = requestPost.Tags
 	existingPost.CreatedAt = requestPost.CreatedAt
 	existingPost.Draft = requestPost.Draft
+	existingPost.PostTypeID = requestPost.PostTypeID
 	(*a.db).Model(&existingPost).Where("id = ?", requestPost.ID).Updates(&existingPost)
 
 	//https://stackoverflow.com/questions/56653423/gorm-doesnt-update-boolean-field-to-false
 	if !requestPost.Draft {
 		(*a.db).Model(&existingPost).Select("draft").Update("draft", false)
 	}
+
+	// Explicitly update post_type_id since GORM's struct-based Updates may skip it
+	(*a.db).Model(&existingPost).Select("post_type_id").Update("post_type_id", requestPost.PostTypeID)
+
+	// Reload with PostType for JSON response
+	(*a.db).Preload("PostType").First(&existingPost, existingPost.ID)
 
 	a.b.ComputeBacklinks(&existingPost)
 
@@ -231,7 +259,7 @@ func (a *Admin) PublishPost(c *gin.Context) {
 	log.Println("Publishing post: ", id)
 
 	var post blog.Post
-	(*a.db).Where("id = ?", id).First(&post)
+	(*a.db).Preload("PostType").Where("id = ?", id).First(&post)
 	(*a.db).Model(&post).Select("draft").Update("draft", false)
 	c.JSON(http.StatusAccepted, post)
 }
@@ -240,7 +268,7 @@ func (a *Admin) DraftPost(c *gin.Context) {
 	id := c.Param("id")
 	log.Println("Drafting post: ", id)
 	var post blog.Post
-	(*a.db).Where("id = ?", id).First(&post)
+	(*a.db).Preload("PostType").Where("id = ?", id).First(&post)
 	(*a.db).Model(&post).Select("draft").Update("draft", true)
 	c.JSON(http.StatusAccepted, post)
 }
@@ -378,6 +406,7 @@ func (a *Admin) AdminDashboard(c *gin.Context) {
 func (a *Admin) AdminPosts(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin_all_posts.html", gin.H{
 		"posts":      a.b.GetPosts(true),
+		"post_types": a.b.GetPostTypes(),
 		"logged_in":  a.auth.IsLoggedIn(c),
 		"is_admin":   a.auth.IsAdmin(c),
 		"version":    a.version,
@@ -391,6 +420,7 @@ func (a *Admin) AdminPosts(c *gin.Context) {
 func (a *Admin) AdminNewPost(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin_new_post.html", gin.H{
 		"posts":      a.b.GetPosts(true),
+		"post_types": a.b.GetPostTypes(),
 		"logged_in":  a.auth.IsLoggedIn(c),
 		"is_admin":   a.auth.IsAdmin(c),
 		"version":    a.version,
@@ -494,6 +524,13 @@ func (a *Admin) CreatePage(c *gin.Context) {
 		return
 	}
 
+	// Check conflict with post type slugs
+	var existingType blog.PostType
+	if err := (*a.db).Where("slug = ?", page.Slug).First(&existingType).Error; err == nil {
+		c.JSON(http.StatusConflict, "A post type with slug '"+page.Slug+"' already exists")
+		return
+	}
+
 	(*a.db).Create(&page)
 	c.JSON(http.StatusCreated, page)
 }
@@ -550,6 +587,13 @@ func (a *Admin) UpdatePage(c *gin.Context) {
 		return
 	}
 
+	// Check conflict with post type slugs
+	var conflictType blog.PostType
+	if err := (*a.db).Where("slug = ?", requestPage.Slug).First(&conflictType).Error; err == nil && existingPage.Slug != requestPage.Slug {
+		c.JSON(http.StatusConflict, "A post type with slug '"+requestPage.Slug+"' already exists")
+		return
+	}
+
 	// Update fields
 	existingPage.Title = requestPage.Title
 	existingPage.Slug = requestPage.Slug
@@ -559,8 +603,11 @@ func (a *Admin) UpdatePage(c *gin.Context) {
 	existingPage.PageType = requestPage.PageType
 	existingPage.NavOrder = requestPage.NavOrder
 	existingPage.ScholarID = requestPage.ScholarID
+	existingPage.PostTypeID = requestPage.PostTypeID
 
 	(*a.db).Model(&existingPage).Updates(&existingPage)
+	// Handle GORM zero-value for nullable pointer
+	(*a.db).Model(&existingPage).Select("post_type_id").Update("post_type_id", requestPage.PostTypeID)
 
 	// Handle GORM zero-value booleans
 	(*a.db).Model(&existingPage).Select("show_in_nav").Update("show_in_nav", requestPage.ShowInNav)
@@ -650,6 +697,243 @@ func (a *Admin) AdminEditPage(c *gin.Context) {
 
 	c.HTML(http.StatusOK, "admin_edit_page.html", gin.H{
 		"page":       page,
+		"post_types": a.b.GetPostTypes(),
+		"logged_in":  a.auth.IsLoggedIn(c),
+		"is_admin":   a.auth.IsAdmin(c),
+		"version":    a.version,
+		"recent":     a.b.GetLatest(),
+		"admin_page": true,
+		"settings":   a.b.GetSettings(),
+		"nav_pages":  a.b.GetNavPages(),
+	})
+}
+
+// PostType CRUD
+
+// ListPostTypes returns all post types as JSON
+func (a *Admin) ListPostTypes(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+	c.JSON(http.StatusOK, a.b.GetPostTypes())
+}
+
+// CreatePostType creates a new post type
+func (a *Admin) CreatePostType(c *gin.Context) {
+	if !strings.HasPrefix(c.ContentType(), "application/json") {
+		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
+		return
+	}
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	var pt blog.PostType
+	if err := c.BindJSON(&pt); err != nil {
+		c.JSON(http.StatusBadRequest, "Malformed request")
+		return
+	}
+
+	if pt.Name == "" {
+		c.JSON(http.StatusBadRequest, "Missing Name")
+		return
+	}
+
+	pt.Slug = sanitizeSlug(pt.Slug)
+	if pt.Slug == "" {
+		c.JSON(http.StatusBadRequest, "Missing or invalid Slug")
+		return
+	}
+	if !reSlugValid.MatchString(pt.Slug) {
+		c.JSON(http.StatusBadRequest, "Slug contains invalid characters")
+		return
+	}
+	if isReservedSlug(pt.Slug) {
+		c.JSON(http.StatusBadRequest, "Slug '"+pt.Slug+"' is reserved")
+		return
+	}
+
+	// Check conflict with existing post type slugs
+	var existing blog.PostType
+	if err := (*a.db).Where("slug = ?", pt.Slug).First(&existing).Error; err == nil {
+		c.JSON(http.StatusConflict, "A post type with slug '"+pt.Slug+"' already exists")
+		return
+	}
+
+	// Check conflict with page slugs
+	var existingPage blog.Page
+	if err := (*a.db).Where("slug = ?", pt.Slug).First(&existingPage).Error; err == nil {
+		c.JSON(http.StatusConflict, "A page with slug '"+pt.Slug+"' already exists")
+		return
+	}
+
+	(*a.db).Create(&pt)
+	c.JSON(http.StatusCreated, pt)
+}
+
+// UpdatePostType updates an existing post type
+func (a *Admin) UpdatePostType(c *gin.Context) {
+	if !strings.HasPrefix(c.ContentType(), "application/json") {
+		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
+		return
+	}
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	var req blog.PostType
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, "Malformed request")
+		return
+	}
+	if req.ID == 0 {
+		c.JSON(http.StatusBadRequest, "Missing post type ID")
+		return
+	}
+
+	var existing blog.PostType
+	if err := (*a.db).Where("id = ?", req.ID).First(&existing).Error; err != nil {
+		c.JSON(http.StatusNotFound, "Post type not found")
+		return
+	}
+
+	if req.Name == "" {
+		c.JSON(http.StatusBadRequest, "Missing Name")
+		return
+	}
+
+	req.Slug = sanitizeSlug(req.Slug)
+	if req.Slug == "" {
+		c.JSON(http.StatusBadRequest, "Missing or invalid Slug")
+		return
+	}
+	if !reSlugValid.MatchString(req.Slug) {
+		c.JSON(http.StatusBadRequest, "Slug contains invalid characters")
+		return
+	}
+	if isReservedSlug(req.Slug) {
+		c.JSON(http.StatusBadRequest, "Slug '"+req.Slug+"' is reserved")
+		return
+	}
+
+	// Check slug uniqueness (excluding current)
+	var conflict blog.PostType
+	if err := (*a.db).Where("slug = ? AND id != ?", req.Slug, req.ID).First(&conflict).Error; err == nil {
+		c.JSON(http.StatusConflict, "A post type with slug '"+req.Slug+"' already exists")
+		return
+	}
+
+	// Check conflict with page slugs
+	var conflictPage blog.Page
+	if err := (*a.db).Where("slug = ?", req.Slug).First(&conflictPage).Error; err == nil && existing.Slug != req.Slug {
+		c.JSON(http.StatusConflict, "A page with slug '"+req.Slug+"' already exists")
+		return
+	}
+
+	existing.Name = req.Name
+	existing.Slug = req.Slug
+	existing.Description = req.Description
+	(*a.db).Save(&existing)
+	c.JSON(http.StatusAccepted, existing)
+}
+
+// DeletePostType deletes a post type if no posts reference it
+func (a *Admin) DeletePostType(c *gin.Context) {
+	if !strings.HasPrefix(c.ContentType(), "application/json") {
+		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
+		return
+	}
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	var req blog.PostType
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, "Malformed request")
+		return
+	}
+
+	if req.ID == 0 {
+		c.JSON(http.StatusBadRequest, "Missing post type ID")
+		return
+	}
+
+	var existing blog.PostType
+	if err := (*a.db).Where("id = ?", req.ID).First(&existing).Error; err != nil {
+		c.JSON(http.StatusNotFound, "Post type not found")
+		return
+	}
+
+	// Check if posts reference this type
+	var count int64
+	(*a.db).Model(&blog.Post{}).Where("post_type_id = ?", req.ID).Count(&count)
+	if count > 0 {
+		c.JSON(http.StatusBadRequest, fmt.Sprintf("Cannot delete: %d posts use this type", count))
+		return
+	}
+
+	(*a.db).Where("id = ?", req.ID).Delete(&blog.PostType{})
+	c.JSON(http.StatusOK, "")
+}
+
+// AdminPostTypes renders the admin post types listing
+func (a *Admin) AdminPostTypes(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+	c.HTML(http.StatusOK, "admin_post_types.html", gin.H{
+		"post_types": a.b.GetPostTypes(),
+		"logged_in":  a.auth.IsLoggedIn(c),
+		"is_admin":   a.auth.IsAdmin(c),
+		"version":    a.version,
+		"recent":     a.b.GetLatest(),
+		"admin_page": true,
+		"settings":   a.b.GetSettings(),
+		"nav_pages":  a.b.GetNavPages(),
+	})
+}
+
+// AdminEditPostType renders the form to edit a single post type
+func (a *Admin) AdminEditPostType(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.HTML(http.StatusBadRequest, "error.html", gin.H{
+			"error":       "Invalid post type ID",
+			"description": "Post type ID must be a number",
+			"version":     a.version,
+			"admin_page":  true,
+			"settings":    a.b.GetSettings(),
+			"nav_pages":   a.b.GetNavPages(),
+		})
+		return
+	}
+
+	var pt blog.PostType
+	if err := (*a.db).Where("id = ?", id).First(&pt).Error; err != nil {
+		c.HTML(http.StatusNotFound, "error.html", gin.H{
+			"error":       "Post Type Not Found",
+			"description": "No post type with ID " + idStr,
+			"version":     a.version,
+			"admin_page":  true,
+			"settings":    a.b.GetSettings(),
+			"nav_pages":   a.b.GetNavPages(),
+		})
+		return
+	}
+
+	c.HTML(http.StatusOK, "admin_edit_post_type.html", gin.H{
+		"post_type":  pt,
 		"logged_in":  a.auth.IsLoggedIn(c),
 		"is_admin":   a.auth.IsAdmin(c),
 		"version":    a.version,
@@ -684,6 +968,7 @@ func (a *Admin) Post(c *gin.Context) {
 			"logged_in":          a.auth.IsLoggedIn(c),
 			"is_admin":           a.auth.IsAdmin(c),
 			"post":               post,
+			"post_types":         a.b.GetPostTypes(),
 			"version":            a.b.Version,
 			"recent":             a.b.GetLatest(),
 			"admin_page":         true,

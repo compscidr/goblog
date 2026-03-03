@@ -356,6 +356,12 @@ func (g goblog) addRoutes() {
 	g.router.PATCH("/api/v1/pages", g._admin.UpdatePage)
 	g.router.DELETE("/api/v1/pages", g._admin.DeletePage)
 
+	// Post Type CRUD API
+	g.router.GET("/api/v1/post-types", g._admin.ListPostTypes)
+	g.router.POST("/api/v1/post-types", g._admin.CreatePostType)
+	g.router.PATCH("/api/v1/post-types", g._admin.UpdatePostType)
+	g.router.DELETE("/api/v1/post-types", g._admin.DeletePostType)
+
 	//all of this serves html full pages, but re-uses much of the logic of
 	//the json API. The json API is tested more easily. Also javascript can
 	//served in the html can be used to create and update posts by directly
@@ -380,6 +386,8 @@ func (g goblog) addRoutes() {
 	g.router.GET("/admin/settings", g._admin.AdminSettings)
 	g.router.GET("/admin/pages", g._admin.AdminPages)
 	g.router.GET("/admin/pages/:id", g._admin.AdminEditPage)
+	g.router.GET("/admin/post-types", g._admin.AdminPostTypes)
+	g.router.GET("/admin/post-types/:id", g._admin.AdminEditPostType)
 
 	g.router.NoRoute(g._blog.NoRoute)
 }

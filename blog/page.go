@@ -27,7 +27,8 @@ type Page struct {
 	ShowInNav bool       `json:"show_in_nav"`
 	NavOrder  int        `json:"nav_order"`
 	Enabled   bool       `json:"enabled"`
-	ScholarID string     `json:"scholar_id,omitempty"`
+	ScholarID  string `json:"scholar_id,omitempty"`
+	PostTypeID *uint  `json:"post_type_id,omitempty"`
 }
 
 // PagePermalink returns the URL path for this page

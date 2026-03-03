@@ -43,9 +43,14 @@ func (m *Auth) IsLoggedIn(c *gin.Context) bool {
 func TestCreatePost(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
 	db.AutoMigrate(&auth.BlogUser{})
+	db.AutoMigrate(&blog.PostType{})
 	db.AutoMigrate(&blog.Post{})
 	db.AutoMigrate(&blog.Comment{})
 	db.AutoMigrate(&blog.Page{})
+
+	// Seed default post type
+	defaultType := blog.PostType{Name: "Post", Slug: "posts", Description: "Blog posts"}
+	db.Create(&defaultType)
 	a := &Auth{}
 	sch := scholar.New("profiles.json", "articles.json")
 	b := blog.New(db, a, "test", sch)
@@ -66,6 +71,11 @@ func TestCreatePost(t *testing.T) {
 	router.PATCH("/api/v1/pages", ad.UpdatePage)
 	router.DELETE("/api/v1/pages", ad.DeletePage)
 
+	router.GET("/api/v1/post-types", ad.ListPostTypes)
+	router.POST("/api/v1/post-types", ad.CreatePostType)
+	router.PATCH("/api/v1/post-types", ad.UpdatePostType)
+	router.DELETE("/api/v1/post-types", ad.DeletePostType)
+
 	router.GET("/admin", ad.Admin)
 	router.GET("/admin/dashboard", ad.AdminDashboard)
 	router.GET("/admin/posts", ad.AdminPosts)
@@ -73,6 +83,8 @@ func TestCreatePost(t *testing.T) {
 	router.GET("/admin/settings", ad.AdminSettings)
 	router.GET("/admin/pages", ad.AdminPages)
 	router.GET("/admin/pages/:id", ad.AdminEditPage)
+	router.GET("/admin/post-types", ad.AdminPostTypes)
+	router.GET("/admin/post-types/:id", ad.AdminEditPostType)
 
 	//improper content-type
 	testPost := blog.Post{
@@ -444,5 +456,101 @@ func TestCreatePost(t *testing.T) {
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status %d for delete page but got %d", http.StatusOK, w.Code)
+	}
+
+	// --- Post Type CRUD tests ---
+
+	// Create post type: admin -> 201
+	newType := blog.PostType{Name: "Notes", Slug: "notes", Description: "Short notes"}
+	typeJSON, _ := json.Marshal(newType)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/v1/post-types", bytes.NewBuffer(typeJSON))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Expected status %d for create post type but got %d. Body: %s", http.StatusCreated, w.Code, w.Body.String())
+	}
+
+	var createdType blog.PostType
+	json.Unmarshal(w.Body.Bytes(), &createdType)
+
+	// Create post type with reserved slug -> 400
+	reservedType := blog.PostType{Name: "Admin", Slug: "admin"}
+	typeJSON, _ = json.Marshal(reservedType)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/v1/post-types", bytes.NewBuffer(typeJSON))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("Expected status %d for reserved slug but got %d", http.StatusBadRequest, w.Code)
+	}
+
+	// Create post type with duplicate slug -> 409
+	dupType := blog.PostType{Name: "Notes 2", Slug: "notes"}
+	typeJSON, _ = json.Marshal(dupType)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/v1/post-types", bytes.NewBuffer(typeJSON))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusConflict {
+		t.Fatalf("Expected status %d for duplicate slug but got %d", http.StatusConflict, w.Code)
+	}
+
+	// Update post type
+	createdType.Name = "Notes Updated"
+	typeJSON, _ = json.Marshal(createdType)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("PATCH", "/api/v1/post-types", bytes.NewBuffer(typeJSON))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusAccepted {
+		t.Fatalf("Expected status %d for update post type but got %d. Body: %s", http.StatusAccepted, w.Code, w.Body.String())
+	}
+
+	// List post types
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/v1/post-types", nil)
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status %d for list post types but got %d", http.StatusOK, w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "Notes Updated") {
+		t.Errorf("Expected list post types to contain updated name")
+	}
+
+	// Admin post types HTML
+	a.On("IsAdmin", mock.Anything).Return(true).Twice()
+	a.On("IsLoggedIn", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/admin/post-types", nil)
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status %d for admin post types but got %d", http.StatusOK, w.Code)
+	}
+
+	// Admin edit post type HTML
+	a.On("IsAdmin", mock.Anything).Return(true).Twice()
+	a.On("IsLoggedIn", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/admin/post-types/"+strconv.Itoa(int(createdType.ID)), nil)
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status %d for admin edit post type but got %d", http.StatusOK, w.Code)
+	}
+
+	// Delete post type
+	typeJSON, _ = json.Marshal(createdType)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/api/v1/post-types", bytes.NewBuffer(typeJSON))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status %d for delete post type but got %d", http.StatusOK, w.Code)
 	}
 }

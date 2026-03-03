@@ -26,10 +26,25 @@ func TestPreviewContent(t *testing.T) {
 
 func TestPermalink(t *testing.T) {
 	currentTime := time.Now()
+
+	// Post with default (empty) PostType should use "posts"
 	post := Post{
 		Slug: "test",
 	}
 	post.CreatedAt = currentTime
+	assert.Equal(t, "/posts"+currentTime.Format("/2006/01/02/")+post.Slug, post.Permalink())
 
-	assert.Equal(t, post.Permalink(), currentTime.Format("/posts/2006/01/02/")+post.Slug)
+	// Post with a custom PostType
+	post2 := Post{
+		Slug:     "my-note",
+		PostType: PostType{Slug: "notes"},
+	}
+	post2.CreatedAt = currentTime
+	assert.Equal(t, "/notes"+currentTime.Format("/2006/01/02/")+post2.Slug, post2.Permalink())
+
+	// Adminlink with default PostType
+	assert.Equal(t, "/admin/posts"+currentTime.Format("/2006/01/02/")+post.Slug, post.Adminlink())
+
+	// Adminlink with custom PostType
+	assert.Equal(t, "/admin/notes"+currentTime.Format("/2006/01/02/")+post2.Slug, post2.Adminlink())
 }
