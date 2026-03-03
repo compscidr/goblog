@@ -10,15 +10,17 @@ import (
 
 // Post defines blog posts
 type Post struct {
-	ID        uint      `gorm:"primaryKey"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time
-	DeletedAt *time.Time `sql:"index"`
-	Title     string     `json:"title"`
-	Slug      string     `json:"slug"`
-	Content   string     `sql:"type:text;" json:"content"`
-	Tags      []Tag      `gorm:"many2many:post_tags" json:"tags"`
-	Draft     bool       `json:"draft"`
+	ID         uint      `gorm:"primaryKey"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time
+	DeletedAt  *time.Time `sql:"index"`
+	Title      string     `json:"title"`
+	Slug       string     `json:"slug"`
+	Content    string     `sql:"type:text;" json:"content"`
+	Tags       []Tag      `gorm:"many2many:post_tags" json:"tags"`
+	Draft      bool       `json:"draft"`
+	PostTypeID uint       `json:"post_type_id"`
+	PostType   PostType   `json:"post_type" gorm:"foreignKey:PostTypeID"`
 }
 
 // Tag is used to collect Posts with similar topics
@@ -160,11 +162,19 @@ func (p Post) HTMLPreview(length int) template.HTML {
 
 // Permalink returns the link to the post relative to root
 func (p Post) Permalink() string {
-	return p.CreatedAt.Format("/posts/2006/01/02/") + p.Slug
+	typeSlug := "posts"
+	if p.PostType.Slug != "" {
+		typeSlug = p.PostType.Slug
+	}
+	return "/" + typeSlug + p.CreatedAt.Format("/2006/01/02/") + p.Slug
 }
 
 func (p Post) Adminlink() string {
-	return p.CreatedAt.Format("/admin/posts/2006/01/02/") + p.Slug
+	typeSlug := "posts"
+	if p.PostType.Slug != "" {
+		typeSlug = p.PostType.Slug
+	}
+	return "/admin/" + typeSlug + p.CreatedAt.Format("/2006/01/02/") + p.Slug
 }
 
 func (t Tag) Permalink() string {

@@ -194,6 +194,26 @@ func extractColumnName(field string) string {
 	return field
 }
 
+// seedDefaultPostType creates the default "Post" post type and assigns existing posts to it.
+func seedDefaultPostType(db *gorm.DB) {
+	var count int64
+	db.Model(&blog.PostType{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	log.Println("Seeding default post type")
+	defaultType := blog.PostType{
+		Name:        "Post",
+		Slug:        "posts",
+		Description: "Blog posts",
+	}
+	db.Create(&defaultType)
+
+	// Assign all existing posts with post_type_id = 0 to the default type
+	db.Model(&blog.Post{}).Where("post_type_id = 0 OR post_type_id IS NULL").Update("post_type_id", defaultType.ID)
+}
+
 // seedDefaultSettings inserts default settings if the settings table is empty.
 // This handles upgrades from older versions that didn't have a settings table.
 func seedDefaultSettings(db *gorm.DB) {
@@ -227,7 +247,7 @@ func seedDefaultSettings(db *gorm.DB) {
 	}
 }
 
-var reInternalLink = regexp.MustCompile(`\]\(/(?:posts/)?(\d{4})/(\d{1,2})/(\d{1,2})/([^)\s]+)\)`)
+var reInternalLink = regexp.MustCompile(`\]\(/(?:[a-z0-9-]+/)?(\d{4})/(\d{1,2})/(\d{1,2})/([^)\s]+)\)`)
 
 // seedBacklinks computes internal backlinks for all existing posts.
 // Only runs if the backlinks table is empty (first migration).
@@ -298,15 +318,17 @@ func Migrate(db *gorm.DB) error {
 		}
 	}
 
-	err := db.AutoMigrate(&auth.BlogUser{}, &blog.Post{}, &blog.Tag{}, &auth.AdminUser{}, &blog.Setting{}, &blog.Comment{}, &blog.Backlink{}, &blog.ExternalBacklink{}, &blog.Page{})
+	err := db.AutoMigrate(&auth.BlogUser{}, &blog.PostType{}, &blog.Post{}, &blog.Tag{}, &auth.AdminUser{}, &blog.Setting{}, &blog.Comment{}, &blog.Backlink{}, &blog.ExternalBacklink{}, &blog.Page{})
 	if err != nil {
 		log.Println("Error migrating tables: " + err.Error())
 		return err
 	}
 
+	seedDefaultPostType(db)
 	seedDefaultSettings(db)
 	seedBacklinks(db)
 	seedDefaultPages(db)
+	linkWritingPagesToPostType(db)
 
 	return nil
 }
@@ -387,3 +409,24 @@ I also enjoy driving, working on cars, video games, contributing to [open source
 		db.Create(&p)
 	}
 }
+
+// linkWritingPagesToPostType sets PostTypeID on Writing pages that have it NULL.
+// This handles existing databases where pages were created before post types existed.
+func linkWritingPagesToPostType(db *gorm.DB) {
+	var pages []blog.Page
+	if err := db.Where("page_type = ? AND post_type_id IS NULL", blog.PageTypeWriting).Find(&pages).Error; err != nil || len(pages) == 0 {
+		return
+	}
+	for _, page := range pages {
+		var pt blog.PostType
+		if err := db.Where("slug = ?", page.Slug).First(&pt).Error; err != nil {
+			// No matching post type for this page's slug, try the default "posts" type
+			if err := db.Where("slug = ?", "posts").First(&pt).Error; err != nil {
+				continue
+			}
+		}
+		log.Printf("Linking writing page %q to post type %q", page.Title, pt.Name)
+		db.Model(&page).Update("post_type_id", pt.ID)
+	}
+}
+

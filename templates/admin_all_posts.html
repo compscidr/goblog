@@ -46,22 +46,21 @@
             <a class="nav-link active" aria-current="page" href="/admin/posts">All Posts</a>
             <a class="nav-link" href="/admin/newpost">New Post</a>
             <a class="nav-link" href="/admin/pages">Pages</a>
+            <a class="nav-link" href="/admin/post-types">Post Types</a>
             <a class="nav-link" href="/admin/settings">Settings</a>
         </nav>
     </div>
     <h1>All Posts</h1>
-    <!-- <ul class="admin-posts"> -->
     <table>
         {{ range .posts }}
         <tr class="striped--light-gray">
-            <!-- <li> -->
             <td><a href="{{ .Permalink }}" title="{{ .Title }}">{{ .Title }}</a></td>
             <td>{{ .CreatedAt.Format "01/02/06" }}</td>
+            <td>{{ if .PostType.Name }}{{ .PostType.Name }}{{ end }}</td>
             <td>{{ range .Tags }}
                 <a href="{{ .Permalink }}" title="{{ .Name}}">#{{ .Name }}</a>
                 {{ end }}
             </td>
-            <!-- </li> -->
         </tr>
         {{ end }}
     </table>

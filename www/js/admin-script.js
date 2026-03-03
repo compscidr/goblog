@@ -92,6 +92,8 @@ function updatePost(id, publish) {
     var time = $("#created_at").val();
     var vtime = moment.utc(time)
 
+    var postTypeId = parseInt($("#post_type_id").val()) || 0;
+
     var post = {
         "id": id,
         "created_at": vtime,
@@ -100,6 +102,7 @@ function updatePost(id, publish) {
         "tags": tags,
         "slug": $("#slug").text(),
         "draft": !publish,
+        "post_type_id": postTypeId,
     }
     console.log("PATCH: " + JSON.stringify(post));
 
@@ -111,7 +114,8 @@ function updatePost(id, publish) {
         success: function(json) {
             var time = moment(json.created_at);
             var slug = json.slug;
-            window.location.href="/admin/posts/" + time.format("YYYY/MM/DD") + "/" + slug;
+            var typeSlug = json.post_type && json.post_type.slug ? json.post_type.slug : "posts";
+            window.location.href="/admin/" + typeSlug + "/" + time.format("YYYY/MM/DD") + "/" + slug;
         },
         data: JSON.stringify(post)
     });
@@ -126,12 +130,15 @@ function createPost(publish) {
     var time = $("#created_at").val();
     var vtime = moment.utc(time)
 
+    var postTypeId = parseInt($("#post_type_id").val()) || 0;
+
     var post = {
         "title": $("#title").val(),
         "created_at": vtime,
         "content": simplemde.value(),
         "tags": tags,
         "draft": !publish,
+        "post_type_id": postTypeId,
     }
     console.log("POST: " + JSON.stringify(post));
 
@@ -143,7 +150,8 @@ function createPost(publish) {
         success: function(json) {
             var time = moment(json.created_at);
             var slug = json.slug;
-            window.location.href="/posts/" + time.format("YYYY/MM/DD") + "/" + slug;
+            var typeSlug = json.post_type && json.post_type.slug ? json.post_type.slug : "posts";
+            window.location.href="/" + typeSlug + "/" + time.format("YYYY/MM/DD") + "/" + slug;
         },
         error: function(jqXHR, textStatus, errorThrown) {
             alert("ERROR: " + textStatus + " " + errorThrown);
@@ -159,7 +167,8 @@ function publishPost(id) {
         success: function(json) {
             var time = moment(json.created_at);
             var slug = json.slug;
-            window.location.href="/posts/" + time.format("YYYY/MM/DD") + "/" + slug;
+            var typeSlug = json.post_type && json.post_type.slug ? json.post_type.slug : "posts";
+            window.location.href="/" + typeSlug + "/" + time.format("YYYY/MM/DD") + "/" + slug;
         }
     })
 }
@@ -171,7 +180,8 @@ function draftPost(id) {
         success: function(json) {
             var time = moment(json.created_at);
             var slug = json.slug;
-            window.location.href="/posts/" + time.format("YYYY/MM/DD") + "/" + slug;
+            var typeSlug = json.post_type && json.post_type.slug ? json.post_type.slug : "posts";
+            window.location.href="/" + typeSlug + "/" + time.format("YYYY/MM/DD") + "/" + slug;
         }
     })
 }

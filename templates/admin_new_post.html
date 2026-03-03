@@ -8,6 +8,7 @@
             <a class="nav-link" href="/admin/posts">All Posts</a>
             <a class="nav-link active" aria-current="page" href="/admin/newpost">New Post</a>
             <a class="nav-link" href="/admin/pages">Pages</a>
+            <a class="nav-link" href="/admin/post-types">Post Types</a>
             <a class="nav-link" href="/admin/settings">Settings</a>
         </nav>
     </div>
@@ -17,6 +18,15 @@
     <div class="form-group">
         <label for="title">Title <span class="require">*</span></label>
         <input type="text" class="form-control" name="title" id="title"/>
+    </div>
+
+    <div class="form-group">
+        <label for="post_type_id">Post Type</label>
+        <select class="form-control" id="post_type_id">
+            {{ range .post_types }}
+            <option value="{{ .ID }}">{{ .Name }}</option>
+            {{ end }}
+        </select>
     </div>
 
     <div class="form-group">

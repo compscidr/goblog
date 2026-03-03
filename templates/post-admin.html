@@ -30,6 +30,14 @@
         {{ else }}
         <p class="form-control" id="tags" contenteditable="true" onfocusout="updatePost({{ .post.ID }}, true)">{{range $i, $e := .post.Tags}}{{if $i}}, {{end}}{{$e.Name}}{{end}}</p>
         {{ end }}
+        {{ if .post_types }}
+        <label for="post_type_id">Post Type</label>
+        <select class="form-control" id="post_type_id">
+          {{ range $.post_types }}
+          <option value="{{ .ID }}" {{ if eq .ID $.post.PostTypeID }}selected{{ end }}>{{ .Name }}</option>
+          {{ end }}
+        </select>
+        {{ end }}
         <div class="text-left">
           {{ if .post.Draft }}
           <textarea id="content" onfocusout="updatePost({{ .post.ID }}, false)" style="width: 100%; height: 50%;">{{ .post.Content }}</textarea>
