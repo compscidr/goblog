@@ -8,7 +8,7 @@
   <meta name="robots" content="index, follow" />
   <meta property="og:site_name" content="{{ .settings.site_title.Value }}">
   {{ if .post }}
-  <meta name="description" content="{{ .post.PreviewContent 155 }}">
+  <meta name="description" content="{{ .post.PlainTextPreview 155 }}">
   <meta property="og:title" content="{{ .settings.site_title.Value }}: {{ .post.Title }}">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://www.jasonernst.com{{ .post.Permalink }}">
