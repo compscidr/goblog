@@ -45,6 +45,7 @@ func TestCreatePost(t *testing.T) {
 	db.AutoMigrate(&auth.BlogUser{})
 	db.AutoMigrate(&blog.Post{})
 	db.AutoMigrate(&blog.Comment{})
+	db.AutoMigrate(&blog.Page{})
 	a := &Auth{}
 	sch := scholar.New("profiles.json", "articles.json")
 	b := blog.New(db, a, "test", sch)
@@ -60,11 +61,18 @@ func TestCreatePost(t *testing.T) {
 	router.DELETE("/api/v1/comments", ad.DeleteComment)
 	router.POST("/api/v1/upload", ad.UploadFile)
 
+	router.GET("/api/v1/pages", ad.ListPages)
+	router.POST("/api/v1/pages", ad.CreatePage)
+	router.PATCH("/api/v1/pages", ad.UpdatePage)
+	router.DELETE("/api/v1/pages", ad.DeletePage)
+
 	router.GET("/admin", ad.Admin)
 	router.GET("/admin/dashboard", ad.AdminDashboard)
 	router.GET("/admin/posts", ad.AdminPosts)
 	router.GET("/admin/newpost", ad.AdminNewPost)
 	router.GET("/admin/settings", ad.AdminSettings)
+	router.GET("/admin/pages", ad.AdminPages)
+	router.GET("/admin/pages/:id", ad.AdminEditPage)
 
 	//improper content-type
 	testPost := blog.Post{
@@ -329,5 +337,112 @@ func TestCreatePost(t *testing.T) {
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status %d for admin delete comment but got %d", http.StatusOK, w.Code)
+	}
+
+	// --- Page CRUD tests ---
+
+	// Create page: not admin -> 401
+	testPage := blog.Page{Title: "Portfolio", Slug: "portfolio", PageType: "custom", Enabled: true, ShowInNav: true, NavOrder: 5}
+	pageJSON, _ := json.Marshal(testPage)
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/v1/pages", bytes.NewBuffer(pageJSON))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("Expected status %d for non-admin create page but got %d", http.StatusUnauthorized, w.Code)
+	}
+
+	// Create page: admin -> 201
+	pageJSON, _ = json.Marshal(testPage)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/v1/pages", bytes.NewBuffer(pageJSON))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Expected status %d for create page but got %d. Body: %s", http.StatusCreated, w.Code, w.Body.String())
+	}
+
+	var createdPage blog.Page
+	json.Unmarshal(w.Body.Bytes(), &createdPage)
+
+	// Create page with reserved slug -> 400
+	reservedPage := blog.Page{Title: "Admin", Slug: "admin", PageType: "custom"}
+	pageJSON, _ = json.Marshal(reservedPage)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/v1/pages", bytes.NewBuffer(pageJSON))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("Expected status %d for reserved slug but got %d", http.StatusBadRequest, w.Code)
+	}
+
+	// Create page with duplicate slug -> 409
+	dupPage := blog.Page{Title: "Portfolio 2", Slug: "portfolio", PageType: "custom"}
+	pageJSON, _ = json.Marshal(dupPage)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/v1/pages", bytes.NewBuffer(pageJSON))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusConflict {
+		t.Fatalf("Expected status %d for duplicate slug but got %d", http.StatusConflict, w.Code)
+	}
+
+	// Update page
+	createdPage.Title = "Portfolio Updated"
+	pageJSON, _ = json.Marshal(createdPage)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("PATCH", "/api/v1/pages", bytes.NewBuffer(pageJSON))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusAccepted {
+		t.Fatalf("Expected status %d for update page but got %d. Body: %s", http.StatusAccepted, w.Code, w.Body.String())
+	}
+
+	// List pages
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/v1/pages", nil)
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status %d for list pages but got %d", http.StatusOK, w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "Portfolio Updated") {
+		t.Errorf("Expected list pages to contain updated title")
+	}
+
+	// Admin pages HTML
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	a.On("IsLoggedIn", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/admin/pages", nil)
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status %d for admin pages but got %d", http.StatusOK, w.Code)
+	}
+
+	// Admin edit page HTML
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	a.On("IsLoggedIn", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/admin/pages/"+strconv.Itoa(int(createdPage.ID)), nil)
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status %d for admin edit page but got %d", http.StatusOK, w.Code)
+	}
+
+	// Delete page
+	pageJSON, _ = json.Marshal(createdPage)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("DELETE", "/api/v1/pages", bytes.NewBuffer(pageJSON))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status %d for delete page but got %d", http.StatusOK, w.Code)
 	}
 }

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -348,6 +350,7 @@ func (a *Admin) Admin(c *gin.Context) {
 		"recent":     a.b.GetLatest(),
 		"admin_page": true,
 		"settings":   a.b.GetSettings(),
+		"nav_pages":  a.b.GetNavPages(),
 	})
 }
 
@@ -368,6 +371,7 @@ func (a *Admin) AdminDashboard(c *gin.Context) {
 		"settings":        a.b.GetSettings(),
 		"recent_comments": recentComments,
 		"comment_posts":   commentPosts,
+		"nav_pages":       a.b.GetNavPages(),
 	})
 }
 
@@ -380,6 +384,7 @@ func (a *Admin) AdminPosts(c *gin.Context) {
 		"recent":     a.b.GetLatest(),
 		"admin_page": true,
 		"settings":   a.b.GetSettings(),
+		"nav_pages":  a.b.GetNavPages(),
 	})
 }
 
@@ -392,6 +397,7 @@ func (a *Admin) AdminNewPost(c *gin.Context) {
 		"recent":     a.b.GetLatest(),
 		"admin_page": true,
 		"settings":   a.b.GetSettings(),
+		"nav_pages":  a.b.GetNavPages(),
 	})
 }
 
@@ -404,6 +410,239 @@ func (a *Admin) AdminSettings(c *gin.Context) {
 		"recent":     a.b.GetLatest(),
 		"admin_page": true,
 		"settings":   a.b.GetSettings(),
+		"nav_pages":  a.b.GetNavPages(),
+	})
+}
+
+// Page CRUD API handlers
+
+var reservedSlugs = map[string]bool{
+	"admin": true, "api": true, "login": true, "logout": true,
+	"wizard": true, "search": true, "tag": true, "tags": true,
+	"archives": true, "sitemap.xml": true, "comments": true,
+	"wp-content": true, "index.php": true,
+}
+
+var reSlugValid = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+
+func sanitizeSlug(slug string) string {
+	slug = strings.ToLower(strings.TrimSpace(slug))
+	slug = strings.ReplaceAll(slug, " ", "-")
+	slug = strings.ReplaceAll(slug, "/", "")
+	return slug
+}
+
+func isReservedSlug(slug string) bool {
+	return reservedSlugs[slug]
+}
+
+// ListPages returns all pages as JSON
+func (a *Admin) ListPages(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	var pages []blog.Page
+	(*a.db).Order("nav_order asc").Find(&pages)
+	c.JSON(http.StatusOK, pages)
+}
+
+// CreatePage creates a new page
+func (a *Admin) CreatePage(c *gin.Context) {
+	contentType := c.Request.Header.Get("content-type")
+	if contentType != "application/json" {
+		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
+		return
+	}
+
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	var page blog.Page
+	if err := c.BindJSON(&page); err != nil {
+		c.JSON(http.StatusBadRequest, "Malformed request")
+		return
+	}
+
+	if page.Title == "" {
+		c.JSON(http.StatusBadRequest, "Missing Title")
+		return
+	}
+
+	page.Slug = sanitizeSlug(page.Slug)
+	if page.Slug == "" {
+		c.JSON(http.StatusBadRequest, "Missing or invalid Slug")
+		return
+	}
+
+	if !reSlugValid.MatchString(page.Slug) {
+		c.JSON(http.StatusBadRequest, "Slug contains invalid characters")
+		return
+	}
+
+	if isReservedSlug(page.Slug) {
+		c.JSON(http.StatusBadRequest, "Slug '"+page.Slug+"' is reserved")
+		return
+	}
+
+	// Check uniqueness
+	var existing blog.Page
+	if err := (*a.db).Where("slug = ?", page.Slug).First(&existing).Error; err == nil {
+		c.JSON(http.StatusConflict, "A page with slug '"+page.Slug+"' already exists")
+		return
+	}
+
+	(*a.db).Create(&page)
+	c.JSON(http.StatusCreated, page)
+}
+
+// UpdatePage updates an existing page
+func (a *Admin) UpdatePage(c *gin.Context) {
+	contentType := c.Request.Header.Get("content-type")
+	if contentType != "application/json" {
+		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
+		return
+	}
+
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	var requestPage blog.Page
+	if err := c.BindJSON(&requestPage); err != nil {
+		c.JSON(http.StatusBadRequest, "Malformed request")
+		return
+	}
+
+	if requestPage.ID == 0 {
+		c.JSON(http.StatusBadRequest, "Missing page ID")
+		return
+	}
+
+	var existingPage blog.Page
+	if err := (*a.db).Where("id = ?", requestPage.ID).First(&existingPage).Error; err != nil {
+		c.JSON(http.StatusNotFound, "Page not found")
+		return
+	}
+
+	requestPage.Slug = sanitizeSlug(requestPage.Slug)
+	if requestPage.Slug == "" {
+		c.JSON(http.StatusBadRequest, "Missing or invalid Slug")
+		return
+	}
+
+	if isReservedSlug(requestPage.Slug) {
+		c.JSON(http.StatusBadRequest, "Slug '"+requestPage.Slug+"' is reserved")
+		return
+	}
+
+	// Check slug uniqueness (excluding current page)
+	var conflict blog.Page
+	if err := (*a.db).Where("slug = ? AND id != ?", requestPage.Slug, requestPage.ID).First(&conflict).Error; err == nil {
+		c.JSON(http.StatusConflict, "A page with slug '"+requestPage.Slug+"' already exists")
+		return
+	}
+
+	// Update fields
+	existingPage.Title = requestPage.Title
+	existingPage.Slug = requestPage.Slug
+	existingPage.Content = requestPage.Content
+	existingPage.HeroURL = requestPage.HeroURL
+	existingPage.HeroType = requestPage.HeroType
+	existingPage.PageType = requestPage.PageType
+	existingPage.NavOrder = requestPage.NavOrder
+	existingPage.ScholarID = requestPage.ScholarID
+
+	(*a.db).Model(&existingPage).Updates(&existingPage)
+
+	// Handle GORM zero-value booleans
+	(*a.db).Model(&existingPage).Select("show_in_nav").Update("show_in_nav", requestPage.ShowInNav)
+	(*a.db).Model(&existingPage).Select("enabled").Update("enabled", requestPage.Enabled)
+
+	c.JSON(http.StatusAccepted, existingPage)
+}
+
+// DeletePage deletes a page
+func (a *Admin) DeletePage(c *gin.Context) {
+	contentType := c.Request.Header.Get("content-type")
+	if contentType != "application/json" {
+		c.JSON(http.StatusUnsupportedMediaType, "Expecting application/json")
+		return
+	}
+
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	var requestPage blog.Page
+	if err := c.BindJSON(&requestPage); err != nil {
+		c.JSON(http.StatusBadRequest, "Malformed request")
+		return
+	}
+
+	(*a.db).Where("id = ?", requestPage.ID).Delete(&blog.Page{})
+	c.JSON(http.StatusOK, "")
+}
+
+// AdminPages renders the admin page listing
+func (a *Admin) AdminPages(c *gin.Context) {
+	var pages []blog.Page
+	(*a.db).Order("nav_order asc").Find(&pages)
+	c.HTML(http.StatusOK, "admin_pages.html", gin.H{
+		"pages":      pages,
+		"logged_in":  a.auth.IsLoggedIn(c),
+		"is_admin":   a.auth.IsAdmin(c),
+		"version":    a.version,
+		"recent":     a.b.GetLatest(),
+		"admin_page": true,
+		"settings":   a.b.GetSettings(),
+		"nav_pages":  a.b.GetNavPages(),
+	})
+}
+
+// AdminEditPage renders the form to edit a single page
+func (a *Admin) AdminEditPage(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.HTML(http.StatusBadRequest, "error.html", gin.H{
+			"error":       "Invalid page ID",
+			"description": "Page ID must be a number",
+			"version":     a.version,
+			"admin_page":  true,
+			"settings":    a.b.GetSettings(),
+			"nav_pages":   a.b.GetNavPages(),
+		})
+		return
+	}
+
+	var page blog.Page
+	if err := (*a.db).Where("id = ?", id).First(&page).Error; err != nil {
+		c.HTML(http.StatusNotFound, "error.html", gin.H{
+			"error":       "Page Not Found",
+			"description": "No page with ID " + idStr,
+			"version":     a.version,
+			"admin_page":  true,
+			"settings":    a.b.GetSettings(),
+			"nav_pages":   a.b.GetNavPages(),
+		})
+		return
+	}
+
+	c.HTML(http.StatusOK, "admin_edit_page.html", gin.H{
+		"page":       page,
+		"logged_in":  a.auth.IsLoggedIn(c),
+		"is_admin":   a.auth.IsAdmin(c),
+		"version":    a.version,
+		"recent":     a.b.GetLatest(),
+		"admin_page": true,
+		"settings":   a.b.GetSettings(),
+		"nav_pages":  a.b.GetNavPages(),
 	})
 }
 
@@ -424,6 +663,7 @@ func (a *Admin) Post(c *gin.Context) {
 			"recent":      a.b.GetLatest(),
 			"admin_page":  true,
 			"settings":    a.b.GetSettings(),
+			"nav_pages":   a.b.GetNavPages(),
 		})
 	} else {
 		c.HTML(http.StatusOK, "post-admin.html", gin.H{
@@ -437,6 +677,7 @@ func (a *Admin) Post(c *gin.Context) {
 			"backlinks":          a.b.GetBacklinks(post.ID),
 			"outbound_links":     a.b.GetOutboundLinks(post.ID),
 			"external_backlinks": a.b.GetExternalBacklinks(post.ID),
+			"nav_pages":          a.b.GetNavPages(),
 		})
 	}
 }

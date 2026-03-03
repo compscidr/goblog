@@ -44,6 +44,7 @@ func TestBlogWorkflow(t *testing.T) {
 	db.AutoMigrate(&blog.Post{})
 	db.AutoMigrate(&blog.Tag{})
 	db.AutoMigrate(&blog.Comment{})
+	db.AutoMigrate(&blog.Page{})
 	a := &Auth{}
 	sch := scholar.New("profiles.json", "articles.json")
 	b := blog.New(db, a, "test", sch)
@@ -62,13 +63,9 @@ func TestBlogWorkflow(t *testing.T) {
 	router.GET("/posts/:yyyy/:mm/:dd/:slug", b.Post)
 	router.POST("/comments", b.SubmitComment)
 	router.GET("/tag/*name", b.Tag)
-	router.GET("/posts", b.Posts)
 	router.GET("/tags", b.Tags)
 	router.GET("/", b.Home)
 	router.NoRoute(b.NoRoute)
-	router.GET("/presentations", b.Speaking)
-	router.GET("/projects", b.Projects)
-	router.GET("/about", b.About)
 
 	router.GET("/search", b.Search)
 	router.GET("/login", b.Login)
@@ -198,14 +195,13 @@ func TestBlogWorkflow(t *testing.T) {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
 	}
 
-	//get all posts
-	a.On("IsAdmin", mock.Anything).Return(false).Once()
-	req, _ = http.NewRequest("GET", "/posts", bytes.NewBuffer(jsonValue))
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
-		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
-	}
+	// Create pages so dynamic page resolution works
+	writingPage := blog.Page{Title: "Writing", Slug: "posts", PageType: blog.PageTypeWriting, ShowInNav: true, NavOrder: 1, Enabled: true}
+	researchPage := blog.Page{Title: "Research", Slug: "research", PageType: blog.PageTypeResearch, ShowInNav: true, NavOrder: 2, Enabled: true, ScholarID: "SbUmSEAAAAAJ"}
+	aboutPage := blog.Page{Title: "About", Slug: "about", PageType: blog.PageTypeAbout, ShowInNav: true, NavOrder: 3, Enabled: true, Content: "About page content"}
+	db.Create(&writingPage)
+	db.Create(&researchPage)
+	db.Create(&aboutPage)
 
 	//get home
 	a.On("IsAdmin", mock.Anything).Return(false).Once()
@@ -258,31 +254,24 @@ func TestBlogWorkflow(t *testing.T) {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusNotFound, w.Code)
 	}
 
-	//get projects
+	// Dynamic page: /about resolves via NoRoute
 	a.On("IsAdmin", mock.Anything).Return(false).Once()
-	req, _ = http.NewRequest("GET", "/projects", bytes.NewBuffer(jsonValue))
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
-		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
-	}
-
-	//get presentations
-	a.On("IsAdmin", mock.Anything).Return(false).Once()
-	req, _ = http.NewRequest("GET", "/presentations", bytes.NewBuffer(jsonValue))
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
-		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
-	}
-
-	//get about
-	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	a.On("IsLoggedIn", mock.Anything).Return(false).Once()
 	req, _ = http.NewRequest("GET", "/about", bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
-		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
+		t.Fatalf("Expected to get status %d for /about but instead got %d\n", http.StatusOK, w.Code)
+	}
+
+	// Dynamic page: /posts (writing) resolves via NoRoute
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	a.On("IsLoggedIn", mock.Anything).Return(false).Once()
+	req, _ = http.NewRequest("GET", "/posts", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d for /posts but instead got %d\n", http.StatusOK, w.Code)
 	}
 
 	//search with matching query
@@ -484,6 +473,64 @@ func TestBacklinks(t *testing.T) {
 	backlinks = b.GetBacklinks(postA.ID)
 	if len(backlinks) != 0 {
 		t.Errorf("Expected 0 backlinks after removing link, got %d", len(backlinks))
+	}
+}
+
+func TestGetNavPages(t *testing.T) {
+	db, _ := gorm.Open(sqlite.Open(":memory:"))
+	db.AutoMigrate(&blog.Page{}, &blog.Post{}, &blog.Setting{})
+	a := &Auth{}
+	sch := scholar.New("profiles.json", "articles.json")
+	b := blog.New(db, a, "test", sch)
+
+	// Create pages with various states
+	db.Create(&blog.Page{Title: "Writing", Slug: "posts", PageType: blog.PageTypeWriting, ShowInNav: true, NavOrder: 2, Enabled: true})
+	db.Create(&blog.Page{Title: "About", Slug: "about", PageType: blog.PageTypeAbout, ShowInNav: true, NavOrder: 1, Enabled: true})
+	db.Create(&blog.Page{Title: "Hidden", Slug: "hidden", PageType: blog.PageTypeCustom, ShowInNav: false, NavOrder: 3, Enabled: true})
+	db.Create(&blog.Page{Title: "Disabled", Slug: "disabled", PageType: blog.PageTypeCustom, ShowInNav: true, NavOrder: 4, Enabled: false})
+
+	pages := b.GetNavPages()
+	if len(pages) != 2 {
+		t.Fatalf("Expected 2 nav pages, got %d", len(pages))
+	}
+	// Should be ordered by nav_order: About (1), Writing (2)
+	if pages[0].Slug != "about" {
+		t.Errorf("Expected first nav page to be 'about', got '%s'", pages[0].Slug)
+	}
+	if pages[1].Slug != "posts" {
+		t.Errorf("Expected second nav page to be 'posts', got '%s'", pages[1].Slug)
+	}
+}
+
+func TestGetPageBySlug(t *testing.T) {
+	db, _ := gorm.Open(sqlite.Open(":memory:"))
+	db.AutoMigrate(&blog.Page{}, &blog.Post{}, &blog.Setting{})
+	a := &Auth{}
+	sch := scholar.New("profiles.json", "articles.json")
+	b := blog.New(db, a, "test", sch)
+
+	db.Create(&blog.Page{Title: "About", Slug: "about", PageType: blog.PageTypeAbout, Enabled: true})
+	db.Create(&blog.Page{Title: "Disabled", Slug: "disabled-page", PageType: blog.PageTypeCustom, Enabled: false})
+
+	// Enabled page found
+	page, err := b.GetPageBySlug("about")
+	if err != nil {
+		t.Fatalf("Expected to find page 'about', got error: %v", err)
+	}
+	if page.Title != "About" {
+		t.Errorf("Expected page title 'About', got '%s'", page.Title)
+	}
+
+	// Disabled page not found
+	_, err = b.GetPageBySlug("disabled-page")
+	if err == nil {
+		t.Error("Expected error for disabled page, got nil")
+	}
+
+	// Non-existent page not found
+	_, err = b.GetPageBySlug("nonexistent")
+	if err == nil {
+		t.Error("Expected error for non-existent page, got nil")
 	}
 }
 

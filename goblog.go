@@ -350,6 +350,12 @@ func (g goblog) addRoutes() {
 	g.router.GET("/api/v1/settings", g._admin.GetSettings)
 	g.router.POST("/api/v1/setting", g._admin.AddSetting)
 
+	// Page CRUD API
+	g.router.GET("/api/v1/pages", g._admin.ListPages)
+	g.router.POST("/api/v1/pages", g._admin.CreatePage)
+	g.router.PATCH("/api/v1/pages", g._admin.UpdatePage)
+	g.router.DELETE("/api/v1/pages", g._admin.DeletePage)
+
 	//all of this serves html full pages, but re-uses much of the logic of
 	//the json API. The json API is tested more easily. Also javascript can
 	//served in the html can be used to create and update posts by directly
@@ -362,15 +368,8 @@ func (g goblog) addRoutes() {
 	g.router.GET("/tag/*name", g._blog.Tag)
 	g.router.GET("/logout", g._blog.Logout)
 
-	//todo: register a template mapping to a "page type"
 	g.router.GET("/search", g._blog.Search)
-	g.router.GET("/posts", g._blog.Posts)
-	g.router.GET("/blog", g._blog.Posts)
 	g.router.GET("/tags", g._blog.Tags)
-	g.router.GET("/presentations", g._blog.Speaking)
-	g.router.GET("/research", g._blog.Research)
-	g.router.GET("/projects", g._blog.Projects)
-	g.router.GET("/about", g._blog.About)
 	g.router.GET("/sitemap.xml", g._blog.Sitemap)
 	g.router.GET("/archives", g._blog.Archives)
 	// lets old WordPress stuff stored at wp-content/uploads work
@@ -381,6 +380,8 @@ func (g goblog) addRoutes() {
 	g.router.GET("/admin/posts", g._admin.AdminPosts)
 	g.router.GET("/admin/newpost", g._admin.AdminNewPost)
 	g.router.GET("/admin/settings", g._admin.AdminSettings)
+	g.router.GET("/admin/pages", g._admin.AdminPages)
+	g.router.GET("/admin/pages/:id", g._admin.AdminEditPage)
 
 	g.router.NoRoute(g._blog.NoRoute)
 }

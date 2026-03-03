@@ -1,0 +1,27 @@
+{{ template "header.html" .}}
+
+  {{ if .page.HasHero }}
+  <div class="cover bg-left bg-center-l" style="background-image: url({{ .page.HeroURL }}); opacity: 0.8;">
+    &nbsp;
+  </div>
+  {{ end }}
+
+  <div class="container">
+    <h1>{{ .page.Title }}</h1>
+    {{ if .errors }}
+    <div class="alert alert-danger" role="alert">
+      {{ .errors }}
+    </div>
+    {{ end }}
+    {{range .articles}}
+      <div class="row research">
+        <div class="col-8">
+          <a href="{{.ScholarURL}}">{{.Title}}</a> <br/>
+          {{.Authors}} <br/>
+        </div>
+        <div class="col">{{.Year}}</div>
+      </div>
+    {{end}}
+  </div>
+
+{{ template "footer.html" .}}

@@ -297,6 +297,85 @@ func (b *Blog) TrackReferer(c *gin.Context, postID uint) {
 		})
 	}
 }
+// GetNavPages returns enabled pages that should show in the navigation, ordered by nav_order.
+func (b *Blog) GetNavPages() []Page {
+	var pages []Page
+	(*b.db).Where("enabled = ? AND show_in_nav = ?", true, true).Order("nav_order asc").Find(&pages)
+	return pages
+}
+
+// GetPageBySlug returns a page by its slug. Returns error if not found or disabled.
+func (b *Blog) GetPageBySlug(slug string) (*Page, error) {
+	var page Page
+	if err := (*b.db).Where("slug = ? AND enabled = ?", slug, true).First(&page).Error; err != nil {
+		return nil, errors.New("page not found: " + slug)
+	}
+	return &page, nil
+}
+
+// DynamicPage renders the appropriate template for a page based on its PageType.
+func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
+	navPages := b.GetNavPages()
+	switch page.PageType {
+	case PageTypeWriting:
+		c.HTML(http.StatusOK, "page_writing.html", gin.H{
+			"logged_in":  b.auth.IsLoggedIn(c),
+			"is_admin":   b.auth.IsAdmin(c),
+			"posts":      b.GetPosts(false),
+			"page":       page,
+			"version":    b.Version,
+			"title":      page.Title,
+			"recent":     b.GetLatest(),
+			"admin_page": false,
+			"settings":   b.GetSettings(),
+			"nav_pages":  navPages,
+		})
+	case PageTypeResearch:
+		articles, err := b.scholar.QueryProfileWithMemoryCache(page.ScholarID, 50)
+		if err == nil {
+			b.scholar.SaveCache("profiles.json", "articles.json")
+			c.HTML(http.StatusOK, "page_research.html", gin.H{
+				"logged_in":  b.auth.IsLoggedIn(c),
+				"is_admin":   b.auth.IsAdmin(c),
+				"page":       page,
+				"articles":   articles,
+				"version":    b.Version,
+				"title":      page.Title,
+				"recent":     b.GetLatest(),
+				"admin_page": false,
+				"settings":   b.GetSettings(),
+				"nav_pages":  navPages,
+			})
+		} else {
+			c.HTML(http.StatusOK, "page_research.html", gin.H{
+				"logged_in":  b.auth.IsLoggedIn(c),
+				"is_admin":   b.auth.IsAdmin(c),
+				"page":       page,
+				"articles":   make([]interface{}, 0),
+				"version":    b.Version,
+				"title":      page.Title,
+				"recent":     b.GetLatest(),
+				"admin_page": false,
+				"settings":   b.GetSettings(),
+				"errors":     err.Error(),
+				"nav_pages":  navPages,
+			})
+		}
+	default: // about, custom
+		c.HTML(http.StatusOK, "page_content.html", gin.H{
+			"logged_in":  b.auth.IsLoggedIn(c),
+			"is_admin":   b.auth.IsAdmin(c),
+			"page":       page,
+			"version":    b.Version,
+			"title":      page.Title,
+			"recent":     b.GetLatest(),
+			"admin_page": false,
+			"settings":   b.GetSettings(),
+			"nav_pages":  navPages,
+		})
+	}
+}
+
 //////JSON API///////
 
 // ListPosts lists all blog posts
@@ -345,6 +424,7 @@ func (b *Blog) NoRoute(c *gin.Context) {
 					"backlinks":          b.GetBacklinks(post.ID),
 					"outbound_links":     b.GetOutboundLinks(post.ID),
 					"external_backlinks": b.GetExternalBacklinks(post.ID),
+					"nav_pages":          b.GetNavPages(),
 				})
 			} else {
 				c.HTML(http.StatusOK, "post.html", gin.H{
@@ -357,15 +437,22 @@ func (b *Blog) NoRoute(c *gin.Context) {
 					"settings":      b.GetSettings(),
 					"comments":      b.getCommentsByPostID(post.ID),
 					"comment_error": c.Query("comment_error"),
+					"nav_pages":     b.GetNavPages(),
 				})
 			}
 			return
 		}
-	} else {
-		//log.Println("TOKEN LEN: " + strconv.Itoa(len(tokens)))
-		//for _, s := range tokens {
-		//	log.Println(s)
-		//}
+	}
+
+	// Try to resolve as a dynamic page by slug
+	path := strings.TrimPrefix(c.Request.URL.Path, "/")
+	path = strings.TrimSuffix(path, "/")
+	if path != "" && !strings.Contains(path, "/") {
+		page, err := b.GetPageBySlug(path)
+		if err == nil && page != nil {
+			b.DynamicPage(c, page)
+			return
+		}
 	}
 
 	c.HTML(http.StatusNotFound, "error.html", gin.H{
@@ -377,6 +464,7 @@ func (b *Blog) NoRoute(c *gin.Context) {
 		"recent":      b.GetLatest(),
 		"admin_page":  false,
 		"settings":    b.GetSettings(),
+		"nav_pages":   b.GetNavPages(),
 	})
 }
 
@@ -393,6 +481,7 @@ func (b *Blog) Home(c *gin.Context) {
 		"recent":     b.GetLatest(),
 		"admin_page": false,
 		"settings":   b.GetSettings(),
+		"nav_pages":  b.GetNavPages(),
 	})
 }
 
@@ -407,6 +496,7 @@ func (b *Blog) Posts(c *gin.Context) {
 		"recent":     b.GetLatest(),
 		"admin_page": false,
 		"settings":   b.GetSettings(),
+		"nav_pages":  b.GetNavPages(),
 	})
 }
 
@@ -422,6 +512,7 @@ func (b *Blog) Post(c *gin.Context) {
 			"recent":      b.GetLatest(),
 			"admin_page":  false,
 			"settings":    b.GetSettings(),
+			"nav_pages":   b.GetNavPages(),
 		})
 	} else {
 		b.TrackReferer(c, post.ID)
@@ -435,6 +526,7 @@ func (b *Blog) Post(c *gin.Context) {
 			"settings":      b.GetSettings(),
 			"comments":      b.getCommentsByPostID(post.ID),
 			"comment_error": c.Query("comment_error"),
+			"nav_pages":     b.GetNavPages(),
 		}
 		if b.auth.IsAdmin(c) {
 			data["backlinks"] = b.GetBacklinks(post.ID)
@@ -477,6 +569,7 @@ func (b *Blog) Search(c *gin.Context) {
 		"recent":     b.GetLatest(),
 		"admin_page": false,
 		"settings":   b.GetSettings(),
+		"nav_pages":  b.GetNavPages(),
 	})
 }
 
@@ -493,6 +586,7 @@ func (b *Blog) Tag(c *gin.Context) {
 			"recent":      b.GetLatest(),
 			"admin_page":  false,
 			"settings":    b.GetSettings(),
+			"nav_pages":   b.GetNavPages(),
 		})
 	} else {
 		c.HTML(http.StatusOK, "tag.html", gin.H{
@@ -505,6 +599,7 @@ func (b *Blog) Tag(c *gin.Context) {
 			"recent":     b.GetLatest(),
 			"admin_page": false,
 			"settings":   b.GetSettings(),
+			"nav_pages":  b.GetNavPages(),
 		})
 	}
 }
@@ -518,6 +613,7 @@ func (b *Blog) Tags(c *gin.Context) {
 		"recent":     b.GetLatest(),
 		"admin_page": false,
 		"settings":   b.GetSettings(),
+		"nav_pages":  b.GetNavPages(),
 	})
 }
 
@@ -531,6 +627,7 @@ func (b *Blog) Speaking(c *gin.Context) {
 		"recent":     b.GetLatest(),
 		"admin_page": false,
 		"settings":   b.GetSettings(),
+		"nav_pages":  b.GetNavPages(),
 	})
 }
 
@@ -548,6 +645,7 @@ func (b *Blog) Research(c *gin.Context) {
 			"articles":   articles,
 			"admin_page": false,
 			"settings":   b.GetSettings(),
+			"nav_pages":  b.GetNavPages(),
 		})
 	} else {
 		articles := make([]*scholar.Article, 0)
@@ -561,6 +659,7 @@ func (b *Blog) Research(c *gin.Context) {
 			"admin_page": false,
 			"settings":   b.GetSettings(),
 			"errors":     err.Error(),
+			"nav_pages":  b.GetNavPages(),
 		})
 	}
 }
@@ -575,6 +674,7 @@ func (b *Blog) Projects(c *gin.Context) {
 		"recent":     b.GetLatest(),
 		"admin_page": false,
 		"settings":   b.GetSettings(),
+		"nav_pages":  b.GetNavPages(),
 	})
 }
 
@@ -588,6 +688,7 @@ func (b *Blog) About(c *gin.Context) {
 		"recent":     b.GetLatest(),
 		"admin_page": false,
 		"settings":   b.GetSettings(),
+		"nav_pages":  b.GetNavPages(),
 	})
 }
 
@@ -603,6 +704,7 @@ func (b *Blog) Archives(c *gin.Context) {
 		"recent":      b.GetLatest(),
 		"admin_page":  false,
 		"settings":    b.GetSettings(),
+		"nav_pages":   b.GetNavPages(),
 	})
 }
 
@@ -612,12 +714,14 @@ func (b *Blog) Sitemap(c *gin.Context) {
 	sm.Create()
 
 	sm.Add(stm.URL{{"loc", "/"}, {"changefreq", "weekly"}, {"priority", 1.0}})
-	sm.Add(stm.URL{{"loc", "/posts"}, {"changefreq", "weekly"}, {"priority", 0.9}})
 	sm.Add(stm.URL{{"loc", "/archives"}, {"changefreq", "weekly"}, {"priority", 0.8}})
 	sm.Add(stm.URL{{"loc", "/tags"}, {"changefreq", "weekly"}, {"priority", 0.8}})
-	sm.Add(stm.URL{{"loc", "/tags"}, {"changefreq", "weekly"}, {"priority", 0.6}})
-	sm.Add(stm.URL{{"loc", "/research"}, {"changefreq", "yearly"}, {"priority", 0.2}})
-	sm.Add(stm.URL{{"loc", "/about"}, {"changefreq", "yearly"}, {"priority", 0.2}})
+
+	// Add enabled pages to sitemap
+	navPages := b.GetNavPages()
+	for _, page := range navPages {
+		sm.Add(stm.URL{{"loc", page.PagePermalink()}, {"changefreq", "weekly"}, {"priority", 0.7}})
+	}
 
 	posts := b.GetPosts(false)
 	for _, post := range posts {
@@ -651,6 +755,7 @@ func (b *Blog) Login(c *gin.Context) {
 				"recent":     b.GetLatest(),
 				"admin_page": false,
 				"settings":   b.GetSettings(),
+				"nav_pages":  b.GetNavPages(),
 			})
 			return
 		}
@@ -666,6 +771,7 @@ func (b *Blog) Login(c *gin.Context) {
 		"recent":     b.GetLatest(),
 		"admin_page": false,
 		"settings":   b.GetSettings(),
+		"nav_pages":  b.GetNavPages(),
 	})
 }
 
