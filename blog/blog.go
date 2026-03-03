@@ -137,7 +137,7 @@ func (b *Blog) getPostByParams(year int, month int, day int, slug string) (*Post
 func (b *Blog) getPostsByTag(c *gin.Context) ([]Post, error) {
 	var posts []Post
 	var tag Tag
-	name := c.Param("name")
+	name := strings.TrimPrefix(c.Param("name"), "/")
 	if err := (*b.db).Where("name = ?", name).First(&tag).Error; err != nil {
 		return nil, errors.New("No tag named " + name)
 	}
@@ -306,7 +306,7 @@ func (b *Blog) Post(c *gin.Context) {
 
 // Tag lists all posts with a given tag
 func (b *Blog) Tag(c *gin.Context) {
-	tag := c.Param("name")
+	tag := strings.TrimPrefix(c.Param("name"), "/")
 	posts, err := b.getPostsByTag(c)
 	if err != nil {
 		c.HTML(http.StatusNotFound, "error.html", gin.H{

@@ -13,7 +13,7 @@
         <p class="blog-post-meta text-left">Posted on {{ .post.CreatedAt.Format "Jan 02, 2006 15:04:05 UTC" }}. Last Edited on {{ .post.UpdatedAt.Format "Jan 02, 2006 15:04:05 UTC" }} [ <a href="#" onclick="return deletePost($post.ID)">Delete</a>] </p>
         <p class="tags text-left">
           {{range .post.Tags}}
-            <a href="/tag/{{.Name}}">#{{.Name}}</a>
+            <a href="{{ .Permalink }}">#{{.Name}}</a>
           {{end}}
         </p>
       </div>
