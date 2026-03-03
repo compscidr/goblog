@@ -8,7 +8,7 @@ import (
 
 // Post defines blog posts
 type Post struct {
-	ID        uint      `gorm:"primary_key"`
+	ID        uint      `gorm:"primaryKey"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time
 	DeletedAt *time.Time `sql:"index"`
@@ -21,7 +21,7 @@ type Post struct {
 
 // Tag is used to collect Posts with similar topics
 type Tag struct {
-	Name  string `gorm:"PRIMARY_KEY" json:"name"`
+	Name  string `gorm:"primaryKey" json:"name"`
 	Posts []Post `gorm:"many2many:post_tags"`
 }
 

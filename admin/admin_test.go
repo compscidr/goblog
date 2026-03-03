@@ -114,7 +114,7 @@ func TestCreatePost(t *testing.T) {
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	if !strings.Contains(w.Body.String(), testPost.Title) {
-		t.Errorf("Expected to see a post with title: " + testPost.Title + " but didn't")
+		t.Errorf("Expected to see a post with title: %s but didn't", testPost.Title)
 	}
 
 	//get specific post
@@ -129,7 +129,7 @@ func TestCreatePost(t *testing.T) {
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	if !strings.Contains(w.Body.String(), testPost.Title) {
-		t.Errorf("Expected to see a post with title: " + testPost.Title + " but didn't")
+		t.Errorf("Expected to see a post with title: %s but didn't", testPost.Title)
 	}
 
 	//update post
