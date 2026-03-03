@@ -3,6 +3,7 @@ package blog
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	scholar "github.com/compscidr/scholar"
 	"goblog/auth"
 	"log"
@@ -178,6 +179,124 @@ func (b *Blog) SearchPosts(query string) []Post {
 	return posts
 }
 
+// reInternalLink matches internal post URLs like /posts/2024/01/15/my-slug or /2024/01/15/my-slug
+var reInternalLink = regexp.MustCompile(`\]\(/(?:posts/)?(\d{4})/(\d{1,2})/(\d{1,2})/([^)\s]+)\)`)
+
+// ComputeBacklinks parses a post's content for internal links and upserts backlink records.
+func (b *Blog) ComputeBacklinks(post *Post) {
+	// Clear existing backlinks for this source post
+	(*b.db).Where("source_post_id = ?", post.ID).Delete(&Backlink{})
+
+	matches := reInternalLink.FindAllStringSubmatch(post.Content, -1)
+	seen := make(map[uint]bool)
+	for _, match := range matches {
+		year, err := strconv.Atoi(match[1])
+		if err != nil {
+			continue
+		}
+		month, err := strconv.Atoi(match[2])
+		if err != nil {
+			continue
+		}
+		day, err := strconv.Atoi(match[3])
+		if err != nil {
+			continue
+		}
+		slug := match[4]
+
+		// Use exact slug match and bounded date range
+		var target Post
+		startOfDay := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+		endOfDay := startOfDay.Add(24 * time.Hour)
+		if err := (*b.db).Preload("Tags").
+			Where("slug = ? AND created_at >= ? AND created_at < ?", slug, startOfDay, endOfDay).
+			First(&target).Error; err != nil {
+			continue
+		}
+		if target.ID == post.ID || seen[target.ID] {
+			continue
+		}
+		seen[target.ID] = true
+		(*b.db).Create(&Backlink{SourcePostID: post.ID, TargetPostID: target.ID})
+	}
+}
+
+// GetBacklinks returns posts that link TO the given post.
+func (b *Blog) GetBacklinks(postID uint) []Post {
+	var posts []Post
+	(*b.db).Raw(`SELECT p.* FROM posts p
+		INNER JOIN backlinks bl ON bl.source_post_id = p.id
+		WHERE bl.target_post_id = ? AND p.deleted_at IS NULL
+		ORDER BY p.created_at DESC`, postID).Scan(&posts)
+	return posts
+}
+
+// GetOutboundLinks returns posts that the given post links TO.
+func (b *Blog) GetOutboundLinks(postID uint) []Post {
+	var posts []Post
+	(*b.db).Raw(`SELECT p.* FROM posts p
+		INNER JOIN backlinks bl ON bl.target_post_id = p.id
+		WHERE bl.source_post_id = ? AND p.deleted_at IS NULL
+		ORDER BY p.created_at DESC`, postID).Scan(&posts)
+	return posts
+}
+
+// GetExternalBacklinks returns external referers for a given post.
+func (b *Blog) GetExternalBacklinks(postID uint) []ExternalBacklink {
+	var backlinks []ExternalBacklink
+	(*b.db).Where("post_id = ?", postID).Order("hit_count desc").Find(&backlinks)
+	return backlinks
+}
+
+// TrackReferer records external referers for a post.
+func (b *Blog) TrackReferer(c *gin.Context, postID uint) {
+	referer := c.Request.Referer()
+	if referer == "" {
+		return
+	}
+
+	parsed, err := url.Parse(referer)
+	if err != nil {
+		return
+	}
+
+	// Skip self-referrals (compare hostnames without ports)
+	reqHost := c.Request.Host
+	if i := strings.LastIndex(reqHost, ":"); i != -1 {
+		reqHost = reqHost[:i]
+	}
+	if strings.EqualFold(parsed.Hostname(), reqHost) {
+		return
+	}
+
+	// Skip non-HTTP(S) schemes
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return
+	}
+
+	now := time.Now()
+	var existing ExternalBacklink
+	result := (*b.db).Where("post_id = ? AND referer = ?", postID, referer).First(&existing)
+	if result.Error != nil {
+		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			log.Printf("Error querying external backlinks: %v", result.Error)
+			return
+		}
+		// New referer
+		(*b.db).Create(&ExternalBacklink{
+			PostID:    postID,
+			Referer:   referer,
+			FirstSeen: now,
+			LastSeen:  now,
+			HitCount:  1,
+		})
+	} else {
+		(*b.db).Model(&existing).Updates(map[string]interface{}{
+			"last_seen": now,
+			"hit_count": gorm.Expr("hit_count + ?", 1),
+		})
+	}
+}
 //////JSON API///////
 
 // ListPosts lists all blog posts
@@ -211,17 +330,21 @@ func (b *Blog) NoRoute(c *gin.Context) {
 		day, _ := strconv.Atoi(tokens[3])
 		post, err := b.getPostByParams(year, month, day, tokens[4])
 		if err == nil && post != nil {
+			b.TrackReferer(c, post.ID)
 			if b.auth.IsAdmin(c) {
 				c.HTML(http.StatusOK, "post-admin.html", gin.H{
-					"logged_in":     b.auth.IsLoggedIn(c),
-					"is_admin":      b.auth.IsAdmin(c),
-					"post":          post,
-					"version":       b.Version,
-					"recent":        b.GetLatest(),
-					"admin_page":    false,
-					"settings":      b.GetSettings(),
-					"comments":      b.getCommentsByPostID(post.ID),
-					"comment_error": c.Query("comment_error"),
+					"logged_in":          b.auth.IsLoggedIn(c),
+					"is_admin":           b.auth.IsAdmin(c),
+					"post":               post,
+					"version":            b.Version,
+					"recent":             b.GetLatest(),
+					"admin_page":         false,
+					"settings":           b.GetSettings(),
+					"comments":           b.getCommentsByPostID(post.ID),
+					"comment_error":      c.Query("comment_error"),
+					"backlinks":          b.GetBacklinks(post.ID),
+					"outbound_links":     b.GetOutboundLinks(post.ID),
+					"external_backlinks": b.GetExternalBacklinks(post.ID),
 				})
 			} else {
 				c.HTML(http.StatusOK, "post.html", gin.H{
@@ -301,7 +424,8 @@ func (b *Blog) Post(c *gin.Context) {
 			"settings":    b.GetSettings(),
 		})
 	} else {
-		c.HTML(http.StatusOK, "post.html", gin.H{
+		b.TrackReferer(c, post.ID)
+		data := gin.H{
 			"logged_in":     b.auth.IsLoggedIn(c),
 			"is_admin":      b.auth.IsAdmin(c),
 			"post":          post,
@@ -311,7 +435,13 @@ func (b *Blog) Post(c *gin.Context) {
 			"settings":      b.GetSettings(),
 			"comments":      b.getCommentsByPostID(post.ID),
 			"comment_error": c.Query("comment_error"),
-		})
+		}
+		if b.auth.IsAdmin(c) {
+			data["backlinks"] = b.GetBacklinks(post.ID)
+			data["outbound_links"] = b.GetOutboundLinks(post.ID)
+			data["external_backlinks"] = b.GetExternalBacklinks(post.ID)
+		}
+		c.HTML(http.StatusOK, "post.html", data)
 		//if b.auth.IsAdmin(c) {
 		//	c.HTML(http.StatusOK, "post-admin.html", gin.H{
 		//		"logged_in": b.auth.IsLoggedIn(c),

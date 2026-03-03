@@ -5,7 +5,10 @@ import (
 	"goblog/blog"
 	"gorm.io/gorm"
 	"log"
+	"regexp"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // fixBlogUsersTable migrates the blog_users table from the old schema
@@ -224,6 +227,64 @@ func seedDefaultSettings(db *gorm.DB) {
 	}
 }
 
+var reInternalLink = regexp.MustCompile(`\]\(/(?:posts/)?(\d{4})/(\d{1,2})/(\d{1,2})/([^)\s]+)\)`)
+
+// seedBacklinks computes internal backlinks for all existing posts.
+// Only runs if the backlinks table is empty (first migration).
+func seedBacklinks(db *gorm.DB) {
+	var count int64
+	db.Model(&blog.Backlink{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	var posts []blog.Post
+	db.Find(&posts)
+	if len(posts) == 0 {
+		return
+	}
+
+	log.Println("Computing backlinks for all existing posts")
+	for _, post := range posts {
+		matches := reInternalLink.FindAllStringSubmatch(post.Content, -1)
+		seen := make(map[uint]bool)
+		for _, match := range matches {
+			year, err := strconv.Atoi(match[1])
+			if err != nil {
+				log.Printf("seedBacklinks: invalid year %q in post %d: %v", match[1], post.ID, err)
+				continue
+			}
+			month, err := strconv.Atoi(match[2])
+			if err != nil {
+				log.Printf("seedBacklinks: invalid month %q in post %d: %v", match[2], post.ID, err)
+				continue
+			}
+			day, err := strconv.Atoi(match[3])
+			if err != nil {
+				log.Printf("seedBacklinks: invalid day %q in post %d: %v", match[3], post.ID, err)
+				continue
+			}
+			slug := match[4]
+
+			// Use exact slug match and bounded date range
+			var target blog.Post
+			startOfDay := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+			endOfDay := startOfDay.Add(24 * time.Hour)
+			if err := db.Where("slug = ? AND created_at >= ? AND created_at < ?", slug, startOfDay, endOfDay).
+				First(&target).Error; err != nil {
+				continue
+			}
+			if target.ID == post.ID || seen[target.ID] {
+				continue
+			}
+			seen[target.ID] = true
+			if err := db.Create(&blog.Backlink{SourcePostID: post.ID, TargetPostID: target.ID}).Error; err != nil {
+				log.Printf("seedBacklinks: error creating backlink from post %d to %d: %v", post.ID, target.ID, err)
+			}
+		}
+	}
+}
+
 func Migrate(db *gorm.DB) error {
 	// Fix blog_users table: convert old varchar(255) id to integer autoincrement
 	if err := fixBlogUsersTable(db); err != nil {
@@ -237,13 +298,14 @@ func Migrate(db *gorm.DB) error {
 		}
 	}
 
-	err := db.AutoMigrate(&auth.BlogUser{}, &blog.Post{}, &blog.Tag{}, &auth.AdminUser{}, &blog.Setting{}, &blog.Comment{})
+	err := db.AutoMigrate(&auth.BlogUser{}, &blog.Post{}, &blog.Tag{}, &auth.AdminUser{}, &blog.Setting{}, &blog.Comment{}, &blog.Backlink{}, &blog.ExternalBacklink{})
 	if err != nil {
 		log.Println("Error migrating tables: " + err.Error())
 		return err
 	}
 
 	seedDefaultSettings(db)
+	seedBacklinks(db)
 
 	return nil
 }

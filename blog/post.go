@@ -27,6 +27,39 @@ type Tag struct {
 	Posts []Post `gorm:"many2many:post_tags"`
 }
 
+// Backlink tracks which posts link to other posts internally
+type Backlink struct {
+	SourcePostID uint `gorm:"primaryKey;index"`
+	TargetPostID uint `gorm:"primaryKey;index"`
+}
+
+// ExternalBacklink tracks external sites linking to blog posts via HTTP Referer
+type ExternalBacklink struct {
+	ID        uint      `gorm:"primaryKey"`
+	PostID    uint      `gorm:"uniqueIndex:idx_post_referer" json:"post_id"`
+	Referer   string    `gorm:"uniqueIndex:idx_post_referer;type:text" json:"referer"`
+	FirstSeen time.Time `json:"first_seen"`
+	LastSeen  time.Time `json:"last_seen"`
+	HitCount  int       `json:"hit_count"`
+}
+
+// ExternalLinks extracts external URLs from the post's markdown content
+func (p Post) ExternalLinks() []string {
+	matches := reLinksWithURL.FindAllStringSubmatch(p.Content, -1)
+	var links []string
+	seen := make(map[string]bool)
+	for _, match := range matches {
+		href := match[2]
+		if strings.HasPrefix(href, "http://") || strings.HasPrefix(href, "https://") {
+			if !seen[href] {
+				seen[href] = true
+				links = append(links, href)
+			}
+		}
+	}
+	return links
+}
+
 // PreviewContent gets a shortened version of the content for showing a preview
 // https://stackoverflow.com/questions/23466497/how-to-truncate-a-string-in-a-golang-template
 func (p Post) PreviewContent(length int) string {

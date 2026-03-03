@@ -419,3 +419,163 @@ func TestBlogWorkflow(t *testing.T) {
 		t.Errorf("Expected redirect with rate_limit error but got: %s", location)
 	}
 }
+
+func TestBacklinks(t *testing.T) {
+	db, _ := gorm.Open(sqlite.Open(":memory:"))
+	db.AutoMigrate(&auth.BlogUser{}, &blog.Post{}, &blog.Tag{}, &blog.Backlink{}, &blog.ExternalBacklink{})
+	a := &Auth{}
+	sch := scholar.New("profiles.json", "articles.json")
+	b := blog.New(db, a, "test", sch)
+
+	// Create two posts. Post B will link to Post A.
+	postA := blog.Post{
+		Title:   "Post A",
+		Content: "This is Post A content",
+		Slug:    "post-a",
+	}
+	db.Create(&postA)
+
+	// Post B links to Post A using a markdown link
+	postB := blog.Post{
+		Title:   "Post B",
+		Content: "Check out [Post A](/posts/" + postA.CreatedAt.Format("2006/1/2") + "/post-a) for more info",
+		Slug:    "post-b",
+	}
+	db.Create(&postB)
+
+	// Compute backlinks for Post B
+	b.ComputeBacklinks(&postB)
+
+	// Post A should have Post B as a backlink
+	backlinks := b.GetBacklinks(postA.ID)
+	if len(backlinks) != 1 {
+		t.Fatalf("Expected 1 backlink for Post A, got %d", len(backlinks))
+	}
+	if backlinks[0].ID != postB.ID {
+		t.Errorf("Expected backlink from Post B (ID %d), got ID %d", postB.ID, backlinks[0].ID)
+	}
+
+	// Post B should have Post A as an outbound link
+	outbound := b.GetOutboundLinks(postB.ID)
+	if len(outbound) != 1 {
+		t.Fatalf("Expected 1 outbound link for Post B, got %d", len(outbound))
+	}
+	if outbound[0].ID != postA.ID {
+		t.Errorf("Expected outbound link to Post A (ID %d), got ID %d", postA.ID, outbound[0].ID)
+	}
+
+	// Post A should have no outbound links
+	outboundA := b.GetOutboundLinks(postA.ID)
+	if len(outboundA) != 0 {
+		t.Errorf("Expected 0 outbound links for Post A, got %d", len(outboundA))
+	}
+
+	// Post B should have no backlinks
+	backlinksB := b.GetBacklinks(postB.ID)
+	if len(backlinksB) != 0 {
+		t.Errorf("Expected 0 backlinks for Post B, got %d", len(backlinksB))
+	}
+
+	// Update Post B to remove the link, backlinks should be cleared
+	postB.Content = "Updated content with no links"
+	db.Save(&postB)
+	b.ComputeBacklinks(&postB)
+
+	backlinks = b.GetBacklinks(postA.ID)
+	if len(backlinks) != 0 {
+		t.Errorf("Expected 0 backlinks after removing link, got %d", len(backlinks))
+	}
+}
+
+func TestExternalBacklinks(t *testing.T) {
+	db, _ := gorm.Open(sqlite.Open(":memory:"))
+	db.AutoMigrate(&auth.BlogUser{}, &blog.Post{}, &blog.Tag{}, &blog.Backlink{}, &blog.ExternalBacklink{})
+	a := &Auth{}
+	sch := scholar.New("profiles.json", "articles.json")
+	b := blog.New(db, a, "test", sch)
+
+	post := blog.Post{
+		Title:   "Test Post",
+		Content: "Some content",
+		Slug:    "test-post",
+	}
+	db.Create(&post)
+
+	router := gin.Default()
+	store := cookie.NewStore([]byte("changelater"))
+	router.Use(sessions.Sessions("test", store))
+
+	// Test external referer is tracked
+	router.GET("/track", func(c *gin.Context) {
+		b.TrackReferer(c, post.ID)
+		c.String(http.StatusOK, "ok")
+	})
+
+	// Request with external referer
+	req, _ := http.NewRequest("GET", "/track", nil)
+	req.Header.Set("Referer", "https://example.com/some-page")
+	req.Host = "myblog.com"
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	backlinks := b.GetExternalBacklinks(post.ID)
+	if len(backlinks) != 1 {
+		t.Fatalf("Expected 1 external backlink, got %d", len(backlinks))
+	}
+	if backlinks[0].Referer != "https://example.com/some-page" {
+		t.Errorf("Expected referer 'https://example.com/some-page', got '%s'", backlinks[0].Referer)
+	}
+	if backlinks[0].HitCount != 1 {
+		t.Errorf("Expected hit count 1, got %d", backlinks[0].HitCount)
+	}
+
+	// Second request from same referer should increment hit count
+	req, _ = http.NewRequest("GET", "/track", nil)
+	req.Header.Set("Referer", "https://example.com/some-page")
+	req.Host = "myblog.com"
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	backlinks = b.GetExternalBacklinks(post.ID)
+	if len(backlinks) != 1 {
+		t.Fatalf("Expected 1 external backlink after second hit, got %d", len(backlinks))
+	}
+	if backlinks[0].HitCount != 2 {
+		t.Errorf("Expected hit count 2 after second hit, got %d", backlinks[0].HitCount)
+	}
+
+	// Self-referral should be skipped
+	req, _ = http.NewRequest("GET", "/track", nil)
+	req.Header.Set("Referer", "https://myblog.com/other-page")
+	req.Host = "myblog.com"
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	backlinks = b.GetExternalBacklinks(post.ID)
+	if len(backlinks) != 1 {
+		t.Errorf("Expected self-referral to be skipped, got %d backlinks", len(backlinks))
+	}
+
+	// Self-referral with port mismatch should still be skipped
+	req, _ = http.NewRequest("GET", "/track", nil)
+	req.Header.Set("Referer", "https://myblog.com:443/other-page")
+	req.Host = "myblog.com:8080"
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	backlinks = b.GetExternalBacklinks(post.ID)
+	if len(backlinks) != 1 {
+		t.Errorf("Expected self-referral with different port to be skipped, got %d backlinks", len(backlinks))
+	}
+
+	// Empty referer should be skipped
+	req, _ = http.NewRequest("GET", "/track", nil)
+	req.Host = "myblog.com"
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	backlinks = b.GetExternalBacklinks(post.ID)
+	if len(backlinks) != 1 {
+		t.Errorf("Expected empty referer to be skipped, got %d backlinks", len(backlinks))
+	}
+}
