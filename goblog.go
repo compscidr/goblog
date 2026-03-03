@@ -359,7 +359,7 @@ func (g goblog) addRoutes() {
 	// lets posts work with our without the word posts in front
 	g.router.GET("/:yyyy/:mm/:dd/:slug", g._blog.Post)
 	g.router.GET("/admin/posts/:yyyy/:mm/:dd/:slug", g._admin.Post)
-	g.router.GET("/tag/:name", g._blog.Tag)
+	g.router.GET("/tag/*name", g._blog.Tag)
 	g.router.GET("/logout", g._blog.Logout)
 
 	//todo: register a template mapping to a "page type"
