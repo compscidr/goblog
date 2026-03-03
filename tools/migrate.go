@@ -366,6 +366,22 @@ I also enjoy driving, working on cars, video games, contributing to [open source
 			NavOrder:  3,
 			Enabled:   true,
 		},
+		{
+			Title:     "Tags",
+			Slug:      "tags",
+			PageType:  blog.PageTypeTags,
+			ShowInNav: false,
+			NavOrder:  4,
+			Enabled:   true,
+		},
+		{
+			Title:     "Archives",
+			Slug:      "archives",
+			PageType:  blog.PageTypeArchives,
+			ShowInNav: false,
+			NavOrder:  5,
+			Enabled:   true,
+		},
 	}
 	for _, p := range defaults {
 		db.Create(&p)

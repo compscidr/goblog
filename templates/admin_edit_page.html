@@ -35,6 +35,8 @@
                 <option value="research" {{ if eq .page.PageType "research" }}selected{{ end }}>Research (Google Scholar)</option>
                 <option value="about" {{ if eq .page.PageType "about" }}selected{{ end }}>About (markdown content)</option>
                 <option value="custom" {{ if eq .page.PageType "custom" }}selected{{ end }}>Custom (markdown content)</option>
+                <option value="tags" {{ if eq .page.PageType "tags" }}selected{{ end }}>Tags (tag listing)</option>
+                <option value="archives" {{ if eq .page.PageType "archives" }}selected{{ end }}>Archives (posts by date)</option>
             </select>
         </div>
 
@@ -57,7 +59,7 @@
             <input type="text" class="form-control" id="scholar_id" value="{{ .page.ScholarID }}">
         </div>
 
-        <div class="mb-3" id="content-section" style="{{ if or (eq .page.PageType "writing") (eq .page.PageType "research") }}display:none;{{ end }}">
+        <div class="mb-3" id="content-section" style="{{ if or (eq .page.PageType "writing") (eq .page.PageType "research") (eq .page.PageType "tags") (eq .page.PageType "archives") }}display:none;{{ end }}">
             <label for="content" class="form-label">Content (Markdown)</label>
             <textarea rows="15" class="form-control" id="content">{{ .page.Content }}</textarea>
         </div>
@@ -91,7 +93,7 @@
 document.getElementById('page_type').addEventListener('change', function() {
     var type = this.value;
     document.getElementById('scholar-section').style.display = (type === 'research') ? '' : 'none';
-    document.getElementById('content-section').style.display = (type === 'writing' || type === 'research') ? 'none' : '';
+    document.getElementById('content-section').style.display = (type === 'writing' || type === 'research' || type === 'tags' || type === 'archives') ? 'none' : '';
 });
 
 function savePage() {

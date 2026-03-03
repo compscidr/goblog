@@ -361,6 +361,33 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 				"nav_pages":  navPages,
 			})
 		}
+	case PageTypeTags:
+		c.HTML(http.StatusOK, "page_tags.html", gin.H{
+			"logged_in":  b.auth.IsLoggedIn(c),
+			"is_admin":   b.auth.IsAdmin(c),
+			"tags":       b.getTags(),
+			"page":       page,
+			"version":    b.Version,
+			"title":      page.Title,
+			"recent":     b.GetLatest(),
+			"admin_page": false,
+			"settings":   b.GetSettings(),
+			"nav_pages":  navPages,
+		})
+	case PageTypeArchives:
+		c.HTML(http.StatusOK, "page_archives.html", gin.H{
+			"logged_in":   b.auth.IsLoggedIn(c),
+			"is_admin":    b.auth.IsAdmin(c),
+			"byYear":      b.getArchivesByYear(),
+			"byYearMonth": b.getArchivesByYearMonth(),
+			"page":        page,
+			"version":     b.Version,
+			"title":       page.Title,
+			"recent":      b.GetLatest(),
+			"admin_page":  false,
+			"settings":    b.GetSettings(),
+			"nav_pages":   navPages,
+		})
 	default: // about, custom
 		c.HTML(http.StatusOK, "page_content.html", gin.H{
 			"logged_in":  b.auth.IsLoggedIn(c),

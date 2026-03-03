@@ -63,7 +63,6 @@ func TestBlogWorkflow(t *testing.T) {
 	router.GET("/posts/:yyyy/:mm/:dd/:slug", b.Post)
 	router.POST("/comments", b.SubmitComment)
 	router.GET("/tag/*name", b.Tag)
-	router.GET("/tags", b.Tags)
 	router.GET("/", b.Home)
 	router.NoRoute(b.NoRoute)
 
@@ -186,22 +185,37 @@ func TestBlogWorkflow(t *testing.T) {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusNotFound, w.Code)
 	}
 
-	//get all tags
-	a.On("IsAdmin", mock.Anything).Return(false).Once()
-	req, _ = http.NewRequest("GET", "/tags", bytes.NewBuffer(jsonValue))
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
-		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusOK, w.Code)
-	}
-
 	// Create pages so dynamic page resolution works
 	writingPage := blog.Page{Title: "Writing", Slug: "posts", PageType: blog.PageTypeWriting, ShowInNav: true, NavOrder: 1, Enabled: true}
 	researchPage := blog.Page{Title: "Research", Slug: "research", PageType: blog.PageTypeResearch, ShowInNav: true, NavOrder: 2, Enabled: true, ScholarID: "SbUmSEAAAAAJ"}
 	aboutPage := blog.Page{Title: "About", Slug: "about", PageType: blog.PageTypeAbout, ShowInNav: true, NavOrder: 3, Enabled: true, Content: "About page content"}
+	tagsPage := blog.Page{Title: "Tags", Slug: "tags", PageType: blog.PageTypeTags, ShowInNav: false, NavOrder: 4, Enabled: true}
+	archivesPage := blog.Page{Title: "Archives", Slug: "archives", PageType: blog.PageTypeArchives, ShowInNav: false, NavOrder: 5, Enabled: true}
 	db.Create(&writingPage)
 	db.Create(&researchPage)
 	db.Create(&aboutPage)
+	db.Create(&tagsPage)
+	db.Create(&archivesPage)
+
+	// Dynamic page: /tags resolves via NoRoute
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	a.On("IsLoggedIn", mock.Anything).Return(false).Once()
+	req, _ = http.NewRequest("GET", "/tags", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d for /tags but instead got %d\n", http.StatusOK, w.Code)
+	}
+
+	// Dynamic page: /archives resolves via NoRoute
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	a.On("IsLoggedIn", mock.Anything).Return(false).Once()
+	req, _ = http.NewRequest("GET", "/archives", bytes.NewBuffer(jsonValue))
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected to get status %d for /archives but instead got %d\n", http.StatusOK, w.Code)
+	}
 
 	//get home
 	a.On("IsAdmin", mock.Anything).Return(false).Once()
@@ -221,8 +235,8 @@ func TestBlogWorkflow(t *testing.T) {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusNotFound, w.Code)
 	}
 
-	//html post as normal user
-	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	//html post as normal user (Post handler calls IsAdmin twice: once for template data, once for conditional)
+	a.On("IsAdmin", mock.Anything).Return(false).Twice()
 	req, _ = http.NewRequest("GET", "/posts/"+strconv.Itoa(post.CreatedAt.Year())+"/"+strconv.Itoa(int(post.CreatedAt.Month()))+"/"+strconv.Itoa(post.CreatedAt.Day())+"/"+post.Slug, bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -233,8 +247,8 @@ func TestBlogWorkflow(t *testing.T) {
 		t.Errorf("Expected to see a post with title: %s but didn't", testPost.Title)
 	}
 
-	//html post as admin - TODO: fix this test, it doesn't seem to recognize the IsAdmin true mock
-	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	//html post as admin (Post handler calls IsAdmin twice)
+	a.On("IsAdmin", mock.Anything).Return(true).Twice()
 	req, _ = http.NewRequest("GET", "/posts/"+strconv.Itoa(post.CreatedAt.Year())+"/"+strconv.Itoa(int(post.CreatedAt.Month()))+"/"+strconv.Itoa(post.CreatedAt.Day())+"/"+post.Slug, bytes.NewBuffer(jsonValue))
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)

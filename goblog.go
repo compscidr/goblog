@@ -369,9 +369,7 @@ func (g goblog) addRoutes() {
 	g.router.GET("/logout", g._blog.Logout)
 
 	g.router.GET("/search", g._blog.Search)
-	g.router.GET("/tags", g._blog.Tags)
 	g.router.GET("/sitemap.xml", g._blog.Sitemap)
-	g.router.GET("/archives", g._blog.Archives)
 	// lets old WordPress stuff stored at wp-content/uploads work
 	g.router.Use(static.Serve("/wp-content", static.LocalFile("www", false)))
 

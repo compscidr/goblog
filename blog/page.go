@@ -8,6 +8,8 @@ const (
 	PageTypeResearch = "research"
 	PageTypeAbout    = "about"
 	PageTypeCustom   = "custom"
+	PageTypeTags     = "tags"
+	PageTypeArchives = "archives"
 )
 
 // Page represents a configurable site page (nav items, content pages, etc.)
