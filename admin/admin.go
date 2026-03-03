@@ -77,6 +77,8 @@ func (a *Admin) CreatePost(c *gin.Context) {
 	log.Print("CREATING POST: ", requestPost)
 	(*a.db).Create(&requestPost)
 
+	a.b.ComputeBacklinks(&requestPost)
+
 	log.Println("POST CREATED: ", requestPost)
 	c.JSON(http.StatusCreated, requestPost)
 }
@@ -166,6 +168,8 @@ func (a *Admin) UpdatePost(c *gin.Context) {
 	if !requestPost.Draft {
 		(*a.db).Model(&existingPost).Select("draft").Update("draft", false)
 	}
+
+	a.b.ComputeBacklinks(&existingPost)
 
 	log.Println("POST UPDATED: ", existingPost)
 	c.JSON(http.StatusAccepted, existingPost)
@@ -423,13 +427,16 @@ func (a *Admin) Post(c *gin.Context) {
 		})
 	} else {
 		c.HTML(http.StatusOK, "post-admin.html", gin.H{
-			"logged_in":  a.auth.IsAdmin(c),
-			"is_admin":   a.auth.IsLoggedIn(c),
-			"post":       post,
-			"version":    a.b.Version,
-			"recent":     a.b.GetLatest(),
-			"admin_page": true,
-			"settings":   a.b.GetSettings(),
+			"logged_in":          a.auth.IsLoggedIn(c),
+			"is_admin":           a.auth.IsAdmin(c),
+			"post":               post,
+			"version":            a.b.Version,
+			"recent":             a.b.GetLatest(),
+			"admin_page":         true,
+			"settings":           a.b.GetSettings(),
+			"backlinks":          a.b.GetBacklinks(post.ID),
+			"outbound_links":     a.b.GetOutboundLinks(post.ID),
+			"external_backlinks": a.b.GetExternalBacklinks(post.ID),
 		})
 	}
 }

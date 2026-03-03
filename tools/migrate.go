@@ -5,7 +5,10 @@ import (
 	"goblog/blog"
 	"gorm.io/gorm"
 	"log"
+	"regexp"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // fixBlogUsersTable migrates the blog_users table from the old schema
@@ -224,6 +227,48 @@ func seedDefaultSettings(db *gorm.DB) {
 	}
 }
 
+var reInternalLink = regexp.MustCompile(`\]\(/(?:posts/)?(\d{4})/(\d{1,2})/(\d{1,2})/([^)\s]+)\)`)
+
+// seedBacklinks computes internal backlinks for all existing posts.
+// Only runs if the backlinks table is empty (first migration).
+func seedBacklinks(db *gorm.DB) {
+	var count int64
+	db.Model(&blog.Backlink{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	var posts []blog.Post
+	db.Find(&posts)
+	if len(posts) == 0 {
+		return
+	}
+
+	log.Println("Computing backlinks for all existing posts")
+	for _, post := range posts {
+		matches := reInternalLink.FindAllStringSubmatch(post.Content, -1)
+		seen := make(map[uint]bool)
+		for _, match := range matches {
+			year, _ := strconv.Atoi(match[1])
+			month, _ := strconv.Atoi(match[2])
+			day, _ := strconv.Atoi(match[3])
+			slug := match[4]
+
+			var target blog.Post
+			if err := db.Where("created_at > ? AND slug LIKE ?",
+				time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), slug).
+				First(&target).Error; err != nil {
+				continue
+			}
+			if target.ID == post.ID || seen[target.ID] {
+				continue
+			}
+			seen[target.ID] = true
+			db.Create(&blog.Backlink{SourcePostID: post.ID, TargetPostID: target.ID})
+		}
+	}
+}
+
 func Migrate(db *gorm.DB) error {
 	// Fix blog_users table: convert old varchar(255) id to integer autoincrement
 	if err := fixBlogUsersTable(db); err != nil {
@@ -237,13 +282,14 @@ func Migrate(db *gorm.DB) error {
 		}
 	}
 
-	err := db.AutoMigrate(&auth.BlogUser{}, &blog.Post{}, &blog.Tag{}, &auth.AdminUser{}, &blog.Setting{}, &blog.Comment{})
+	err := db.AutoMigrate(&auth.BlogUser{}, &blog.Post{}, &blog.Tag{}, &auth.AdminUser{}, &blog.Setting{}, &blog.Comment{}, &blog.Backlink{}, &blog.ExternalBacklink{})
 	if err != nil {
 		log.Println("Error migrating tables: " + err.Error())
 		return err
 	}
 
 	seedDefaultSettings(db)
+	seedBacklinks(db)
 
 	return nil
 }
