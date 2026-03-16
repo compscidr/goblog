@@ -92,6 +92,18 @@ func (b *Blog) getTags() []Tag {
 	return tags
 }
 
+// getTopTags returns the most-used tags sorted by post count descending, limited to n.
+func (b *Blog) getTopTags(n int) []Tag {
+	tags := b.getTags()
+	sort.Slice(tags, func(i, j int) bool {
+		return len(tags[i].Posts) > len(tags[j].Posts)
+	})
+	if len(tags) > n {
+		tags = tags[:n]
+	}
+	return tags
+}
+
 func (b *Blog) getArchivesByYear() ([]string, map[string][]Post) {
 	archive := make(map[string][]Post)
 	posts := b.GetPosts(false)
@@ -705,7 +717,7 @@ func (b *Blog) Home(c *gin.Context) {
 		"title":        title,
 		"recent":       b.GetLatest(),
 		"recent_posts": b.GetPosts(false),
-		"tags":         b.getTags(),
+		"tags":         b.getTopTags(20),
 		"admin_page":   false,
 		"settings":     settings,
 		"nav_pages":    b.GetNavPages(),
