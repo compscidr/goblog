@@ -172,7 +172,7 @@ func TestBlogWorkflow(t *testing.T) {
 
 	//get tag
 	router.SetFuncMap(template.FuncMap{
-		"safeHTML": func(s string) template.HTML { return template.HTML(s) },
+		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
 	})
 	router.LoadHTMLGlob("../templates/*")
 	a.On("IsAdmin", mock.Anything).Return(false).Once()

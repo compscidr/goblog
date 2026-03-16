@@ -73,9 +73,9 @@
   {{ end }}
 
   <link rel="stylesheet" href="/css/goblog.css"/>
-  {{ if .settings.custom_header_code.Value }}
-  {{ .settings.custom_header_code.Value | safeHTML }}
-  {{ end }}
+  {{ with index .settings "custom_header_code" }}{{ if .Value }}
+  {{ .Value | rawHTML }}
+  {{ end }}{{ end }}
 </head>
 <body>
   <div id="header" class="text-center">

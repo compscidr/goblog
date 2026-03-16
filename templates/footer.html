@@ -51,7 +51,7 @@
 {{ if or .admin_page .post }}
   <script>hljs.highlightAll();</script>
 {{ end }}
-{{ if .settings.custom_footer_code.Value }}
-  {{ .settings.custom_footer_code.Value | safeHTML }}
-{{ end }}
+{{ with index .settings "custom_footer_code" }}{{ if .Value }}
+  {{ .Value | rawHTML }}
+{{ end }}{{ end }}
 </body>

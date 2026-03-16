@@ -304,7 +304,7 @@ func main() {
 	//so that people can pass in their own template folder instead of the default
 	//https://github.com/gin-gonic/gin/issues/464
 	router.SetFuncMap(template.FuncMap{
-		"safeHTML": func(s string) template.HTML { return template.HTML(s) },
+		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
 	})
 	router.LoadHTMLGlob("templates/*.html")
 	router.GET("/", goblog.rootHandler)

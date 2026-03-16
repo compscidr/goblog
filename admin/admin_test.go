@@ -317,7 +317,7 @@ func TestCreatePost(t *testing.T) {
 
 	//get admin
 	router.SetFuncMap(template.FuncMap{
-		"safeHTML": func(s string) template.HTML { return template.HTML(s) },
+		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
 	})
 	router.LoadHTMLGlob("../templates/*")
 	a.On("IsAdmin", mock.Anything).Return(true).Once()
