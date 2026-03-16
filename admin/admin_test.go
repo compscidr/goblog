@@ -188,7 +188,9 @@ func TestCreatePost(t *testing.T) {
 		t.Fatalf("Expected status %d but got %d\n", http.StatusAccepted, w.Code)
 	}
 	var updatedPost blog.Post
-	json.Unmarshal(w.Body.Bytes(), &updatedPost)
+	if err := json.Unmarshal(w.Body.Bytes(), &updatedPost); err != nil {
+		t.Fatalf("Failed to unmarshal updated post response: %v", err)
+	}
 	// reload with tags
 	db.Preload("Tags").First(&updatedPost, post.ID)
 	if len(updatedPost.Tags) != 2 {
