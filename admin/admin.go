@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -23,16 +24,36 @@ var UploadsFolder = "uploads/"
 
 // Admin handles admin requests
 type Admin struct {
-	db      **gorm.DB // needs a double pointer to be able to update the db
-	auth    auth.IAuth
-	b       *blog.Blog
-	version string
+	db            **gorm.DB // needs a double pointer to be able to update the db
+	auth          auth.IAuth
+	b             *blog.Blog
+	version       string
+	OnThemeChange func(theme string) // callback to reload templates when theme changes
 }
 
 // New constructs an Admin API
 func New(db *gorm.DB, auth auth.IAuth, b *blog.Blog, version string) Admin {
-	api := Admin{&db, auth, b, version}
+	api := Admin{db: &db, auth: auth, b: b, version: version}
 	return api
+}
+
+// ListThemes returns the names of all available themes by scanning the themes/ directory.
+func ListThemes() []string {
+	entries, err := os.ReadDir("themes")
+	if err != nil {
+		log.Println("Warning: could not read themes directory:", err)
+		return []string{"default"}
+	}
+	var themes []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			themes = append(themes, entry.Name())
+		}
+	}
+	if len(themes) == 0 {
+		themes = []string{"default"}
+	}
+	return themes
 }
 
 func (a *Admin) UpdateDb(db *gorm.DB) {
@@ -456,13 +477,23 @@ func (a *Admin) UpdateSettings(c *gin.Context) {
 		return
 	}
 
+	var newTheme string
 	for _, setting := range requestSettings {
 		if setting.Key == "" {
 			c.JSON(http.StatusBadRequest, "Missing Key Name for Setting")
 			return
 		}
 		(*a.db).Save(&setting)
+		if setting.Key == "theme" {
+			newTheme = setting.Value
+		}
 	}
+
+	// Hot-reload templates if theme changed
+	if newTheme != "" && a.OnThemeChange != nil {
+		a.OnThemeChange(newTheme)
+	}
+
 	c.JSON(http.StatusAccepted, requestSettings)
 }
 
@@ -590,6 +621,7 @@ func (a *Admin) AdminSettings(c *gin.Context) {
 		"admin_page": true,
 		"settings":   a.b.GetSettings(),
 		"nav_pages":  a.b.GetNavPages(),
+		"themes":     ListThemes(),
 	})
 }
 

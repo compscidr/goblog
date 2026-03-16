@@ -301,18 +301,37 @@ func main() {
 	log.Println("Session key: ", sessionKey)
 	log.Println("Hostname: ", hostname)
 	// Load templates from the active theme directory, falling back to "default"
-	theme := "default"
+	activeTheme := "default"
 	settings := _blog.GetSettings()
 	if t, ok := settings["theme"]; ok && t.Value != "" {
-		theme = t.Value
+		activeTheme = t.Value
 	}
-	themePath := "themes/" + theme + "/"
-	log.Println("Using theme: " + theme)
 
-	router.SetFuncMap(template.FuncMap{
+	funcMap := template.FuncMap{
 		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
+	}
+	router.SetFuncMap(funcMap)
+
+	loadTheme := func(theme string) {
+		themePath := "themes/" + theme + "/"
+		log.Println("Loading theme: " + theme)
+		tmpl := template.Must(template.New("").Funcs(funcMap).ParseGlob(themePath + "templates/*.html"))
+		router.SetHTMLTemplate(tmpl)
+		activeTheme = theme
+	}
+	loadTheme(activeTheme)
+
+	// Wire up hot-reload callback so theme changes take effect without restart
+	_admin.OnThemeChange = func(theme string) {
+		loadTheme(theme)
+	}
+
+	// Serve theme static files dynamically based on active theme
+	router.GET("/theme/*filepath", func(c *gin.Context) {
+		fp := c.Param("filepath")
+		c.File("themes/" + activeTheme + "/static" + fp)
 	})
-	router.LoadHTMLGlob(themePath + "templates/*.html")
+
 	router.GET("/", goblog.rootHandler)
 	router.GET("/login", goblog.loginHandler)
 	router.GET("/wizard", goblog._wizard.SaveToken)
@@ -320,8 +339,7 @@ func main() {
 	router.POST("/test_db", testDB)
 	router.POST("/api/v1/upload", goblog._admin.UploadFile)
 	router.PATCH("/api/v1/settings", goblog._admin.UpdateSettings)
-	// Serve theme static files at /theme/ and general static files at /
-	router.Use(static.Serve("/theme/", static.LocalFile(themePath+"static", false)))
+	//if we use true here - it will override the home route and just show files
 	router.Use(static.Serve("/", static.LocalFile("www", false)))
 	if err != nil {
 		log.Println("Couldn't get the hostname")
