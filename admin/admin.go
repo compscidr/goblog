@@ -224,13 +224,18 @@ func (a *Admin) UpdatePost(c *gin.Context) {
 		return
 	}
 
-	// Reload with PostType and Tags for JSON response
-	(*a.db).Preload("PostType").Preload("Tags").First(&existingPost, existingPost.ID)
+	// Reload into a fresh struct to avoid GORM appending to existing slices
+	var updatedPost blog.Post
+	if err := (*a.db).Preload("PostType").Preload("Tags").First(&updatedPost, existingPost.ID).Error; err != nil {
+		log.Println("ERROR RELOADING POST: ", err)
+		c.JSON(http.StatusInternalServerError, "Failed to reload post after update")
+		return
+	}
 
-	a.b.ComputeBacklinks(&existingPost)
+	a.b.ComputeBacklinks(&updatedPost)
 
-	log.Println("POST UPDATED: ", existingPost)
-	c.JSON(http.StatusAccepted, existingPost)
+	log.Println("POST UPDATED: ", updatedPost)
+	c.JSON(http.StatusAccepted, updatedPost)
 }
 
 // DeletePost deletes a post from the database

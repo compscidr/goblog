@@ -5,6 +5,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -110,5 +111,64 @@ func TestMigrationWithOldSchema(t *testing.T) {
 	db.Raw("SELECT count(*) FROM tags").Scan(&tagCount)
 	if tagCount != 2 {
 		t.Fatalf("expected 2 tags, got %d", tagCount)
+	}
+}
+
+// TestMigrationFixesTagsWithoutPrimaryKey reproduces the production issue where
+// the tags table was created without a PRIMARY KEY, allowing duplicate rows.
+func TestMigrationFixesTagsWithoutPrimaryKey(t *testing.T) {
+	os.Remove("test_tags_no_pk.db")
+	db, err := gorm.Open(sqlite.Open("test_tags_no_pk.db"), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
+	if err != nil {
+		t.Fatalf("failed to open sqlite db: %v", err)
+	}
+	t.Cleanup(func() { os.Remove("test_tags_no_pk.db") })
+
+	// Create tags table WITHOUT primary key (as seen on staging)
+	if err := db.Exec(`CREATE TABLE "tags" ("name" varchar(255))`).Error; err != nil {
+		t.Fatalf("failed to create legacy tags table: %v", err)
+	}
+
+	// Insert duplicates (as seen in production: 14 "android" rows, etc.)
+	for i := 0; i < 5; i++ {
+		db.Exec(`INSERT INTO tags (name) VALUES ('android')`)
+	}
+	for i := 0; i < 3; i++ {
+		db.Exec(`INSERT INTO tags (name) VALUES ('golang')`)
+	}
+	db.Exec(`INSERT INTO tags (name) VALUES ('sqlite')`)
+
+	// Verify duplicates exist before migration
+	var beforeCount int64
+	db.Raw("SELECT count(*) FROM tags").Scan(&beforeCount)
+	if beforeCount != 9 {
+		t.Fatalf("expected 9 tag rows before migration, got %d", beforeCount)
+	}
+
+	err = tools.Migrate(db)
+	if err != nil {
+		t.Fatalf("migration failed: %v", err)
+	}
+
+	// Verify duplicates were removed
+	var afterCount int64
+	db.Raw("SELECT count(*) FROM tags").Scan(&afterCount)
+	if afterCount != 3 {
+		t.Fatalf("expected 3 unique tags after migration, got %d", afterCount)
+	}
+
+	// Verify PRIMARY KEY was added
+	var createSQL string
+	db.Raw("SELECT sql FROM sqlite_master WHERE type = 'table' AND tbl_name = 'tags'").Scan(&createSQL)
+	if !strings.Contains(strings.ToUpper(createSQL), "PRIMARY KEY") {
+		t.Fatalf("expected tags table to have PRIMARY KEY, got: %s", createSQL)
+	}
+
+	// Verify inserting a duplicate now fails
+	result := db.Exec(`INSERT INTO tags (name) VALUES ('android')`)
+	if result.Error == nil {
+		t.Fatal("expected duplicate insert to fail after PRIMARY KEY added")
 	}
 }
