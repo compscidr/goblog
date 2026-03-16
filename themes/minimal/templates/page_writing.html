@@ -1,43 +1,24 @@
 {{ template "header.html" .}}
 
-  {{ if .page.HasHero }}
-  {{ if .page.IsVideo }}
-  <div style="background-color: black; padding-top: 35%; height: 0px; position: relative; overflow: hidden; width: 100%;">
-    <div>
-      <video loop autoplay muted>
-        <source src="{{ .page.HeroURL }}" type="video/mp4">
-      </video>
-    </div>
-  </div>
-  {{ else }}
-  <div class="cover bg-left bg-center-l" style="background-image: url({{ .page.HeroURL }}); opacity: 0.8;">
-    &nbsp;
-  </div>
-  {{ end }}
-  {{ end }}
+  <div class="container" style="max-width: 720px; padding-top: 40px;">
 
-  <div class="container">
-
-    <h1 class="text-left">{{ .page.Title }}</h1>
+    <h1 style="font-weight: 600; margin-bottom: 30px;">{{ .page.Title }}</h1>
     {{ if .is_admin }}
-    <p class="text-left"><a href="/admin/pages/{{ .page.ID }}">Edit this page</a></p>
+    <p><a href="/admin/pages/{{ .page.ID }}" style="color: #2563eb; font-size: 13px;">Edit this page</a></p>
     {{ end }}
 
     {{ range .posts }}
-    <div class="row">
-      <div class="container left">
-          <h3 class="text-left"><a href="{{ .Permalink }}" title="{{ .Title }}">{{ .Title }}</a></h3>
-          <p class="blog-post-meta text-left">{{ .CreatedAt.Format "Jan 02, 2006 15:04:05 UTC" }}
-              {{ range .Tags }}
-                <a href="{{ .Permalink }}" title="{{ .Name}}">#{{ .Name }}</a>
-              {{ end }}
-          </p>
-          <p class="text-justify">
-            {{ .HTMLPreview 200 }}
-          </p>
-
-      </div>
-    </div>
+    <article style="margin-bottom: 35px; padding-bottom: 35px; border-bottom: 1px solid #e5e7eb;">
+      <h2 style="margin-bottom: 5px;"><a href="{{ .Permalink }}" title="{{ .Title }}" style="color: #1a1a1a; text-decoration: none;">{{ .Title }}</a></h2>
+      <p style="color: #888; font-size: 13px; margin-bottom: 10px;">{{ .CreatedAt.Format "January 2, 2006" }}
+        {{ range .Tags }}
+          <a href="{{ .Permalink }}" title="{{ .Name}}" style="color: #2563eb;">#{{ .Name }}</a>
+        {{ end }}
+      </p>
+      <p style="color: #444; line-height: 1.6;">
+        {{ .HTMLPreview 200 }}
+      </p>
+    </article>
     {{ end }}
   </div>
 

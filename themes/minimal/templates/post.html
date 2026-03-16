@@ -2,31 +2,27 @@
   {{ if .is_admin }}
   <script src="/js/admin-script.js"></script>
   {{ end }}
-  <div class="spacer">&nbsp;</div>
 
-  <div class="container">
-    <div class="row">
-      <div class="container left">
-        <h2 class="text-left"><a href="{{ .post.Permalink }}">{{ .post.Title }}</a></h2>
-        <p class="blog-post-meta text-left">Posted on {{ .post.CreatedAt.Format "Jan 02, 2006 15:04:05 UTC" }}. Last Edited on {{ .post.UpdatedAt.Format "Jan 02, 2006 15:04:05 UTC" }} </p>
-        <p class="tags text-left">
-          {{range .post.Tags}}
-            <a href="{{ .Permalink }}">#{{.Name}}</a>
-          {{end}}
-        </p>
-        {{ if .is_admin }}
-        <p class="text-left"><a href="{{ .post.Adminlink }}">Edit this post</a>
-          {{ if .post.Draft }}
-          <a href="" onClick="publishPost({{ .post.ID }})">Publish this post</a>
-          {{ else }}
-          <a href="" onClick="draftPost({{ .post.ID }})">Back to draft</a>
-          {{ end }}
-        </p>
+  <div class="container" style="max-width: 720px; padding-top: 40px;">
+    <article>
+      <h1 style="font-weight: 600; margin-bottom: 8px;">{{ .post.Title }}</h1>
+      <p style="color: #888; font-size: 13px; margin-bottom: 5px;">{{ .post.CreatedAt.Format "January 2, 2006" }}
+        {{range .post.Tags}}
+          <a href="{{ .Permalink }}" style="color: #2563eb;">#{{.Name}}</a>
+        {{end}}
+      </p>
+      {{ if .is_admin }}
+      <p style="font-size: 13px;"><a href="{{ .post.Adminlink }}" style="color: #2563eb;">Edit</a>
+        {{ if .post.Draft }}
+        | <a href="" onClick="publishPost({{ .post.ID }})" style="color: #2563eb;">Publish</a>
+        {{ else }}
+        | <a href="" onClick="draftPost({{ .post.ID }})" style="color: #2563eb;">Draft</a>
         {{ end }}
-        <div class="spacer">&nbsp;</div>
-        <div id="html" class="text-left"></div>
-      </div>
-    </div>
+      </p>
+      {{ end }}
+      <hr style="border-color: #e5e7eb; margin: 20px 0;">
+      <div id="html" class="text-left" style="line-height: 1.7;"></div>
+    </article>
 
     {{ if .is_admin }}
     <div class="row">

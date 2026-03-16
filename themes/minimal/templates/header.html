@@ -78,26 +78,25 @@
   {{ end }}{{ end }}
 </head>
 <body>
-  <div id="header" class="text-center">
-    <div class="container">
-      <a href="/" class="logo" title="Home: {{ .settings.site_title.Value }}">{{ .settings.site_logo_letters.Value }}</a>
-    </div>
-    <div class="menu clearfix" id="navigation">
-      <a href="/" title="Home: {{ .settings.site_title.Value }}">Home</a>
-      {{ range .nav_pages }}
-      <a href="/{{ .Slug }}" title="{{ .Title }}">{{ .Title }}</a>
-      {{ end }}
-      {{ if .is_admin }}
-        <a href="/admin" title="Admin">Admin</a>
-      {{ end }}
-      {{ if .logged_in }}
-        <a href="/logout" title="Logout">Logout</a>
-      {{ else }}
-        <a href="/login" title="Login">Login</a>
-      {{ end }}
-      <form action="/search" method="GET" class="nav-search">
-        <input type="text" name="q" placeholder="Search..." class="nav-search-input" aria-label="Search site" />
-      </form>
+  <div id="header" style="border-bottom: 2px solid #2563eb; padding: 15px 0;">
+    <div class="container d-flex justify-content-between align-items-center">
+      <a href="/" style="font-size: 22px; font-weight: 600; color: #2563eb; text-decoration: none;" title="Home: {{ .settings.site_title.Value }}">{{ .settings.site_title.Value }}</a>
+      <nav id="navigation" style="display: flex; align-items: center; gap: 20px;">
+        {{ range .nav_pages }}
+        <a href="/{{ .Slug }}" title="{{ .Title }}" style="color: #555; text-decoration: none; font-size: 14px;">{{ .Title }}</a>
+        {{ end }}
+        {{ if .is_admin }}
+          <a href="/admin" title="Admin" style="color: #555; text-decoration: none; font-size: 14px;">Admin</a>
+        {{ end }}
+        {{ if .logged_in }}
+          <a href="/logout" title="Logout" style="color: #555; text-decoration: none; font-size: 14px;">Logout</a>
+        {{ else }}
+          <a href="/login" title="Login" style="color: #555; text-decoration: none; font-size: 14px;">Login</a>
+        {{ end }}
+        <form action="/search" method="GET" style="margin: 0;">
+          <input type="text" name="q" placeholder="Search..." class="nav-search-input" aria-label="Search site" />
+        </form>
+      </nav>
     </div>
   </div>
   <div class="wrapper">
