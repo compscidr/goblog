@@ -7,6 +7,7 @@ import (
 	"goblog/admin"
 	"goblog/auth"
 	"goblog/blog"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -358,6 +359,9 @@ func TestCreatePost(t *testing.T) {
 	}
 
 	//get admin
+	router.SetFuncMap(template.FuncMap{
+		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
+	})
 	router.LoadHTMLGlob("../templates/*")
 	a.On("IsAdmin", mock.Anything).Return(true).Once()
 	a.On("IsLoggedIn", mock.Anything).Return(true).Once()

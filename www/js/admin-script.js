@@ -6,7 +6,7 @@ function updateSettings(redirect) {
     // iterate over all input fields in the form and create a json object with the key, value, and type
     $("#settings-form :input").each(function() {
         var key = this.name;
-        var type = this.type;
+        var type = this.tagName === "TEXTAREA" ? "textarea" : this.type;
         var value = this.value
 
         if (type === "file") {

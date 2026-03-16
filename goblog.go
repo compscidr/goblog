@@ -14,6 +14,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -302,6 +303,9 @@ func main() {
 	//todo - make the template folder configurable by command line arg
 	//so that people can pass in their own template folder instead of the default
 	//https://github.com/gin-gonic/gin/issues/464
+	router.SetFuncMap(template.FuncMap{
+		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
+	})
 	router.LoadHTMLGlob("templates/*.html")
 	router.GET("/", goblog.rootHandler)
 	router.GET("/login", goblog.loginHandler)

@@ -73,13 +73,9 @@
   {{ end }}
 
   <link rel="stylesheet" href="/css/goblog.css"/>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-HVJXM9C6QH"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-HVJXM9C6QH');
-  </script>
+  {{ with index .settings "custom_header_code" }}{{ if .Value }}
+  {{ .Value | rawHTML }}
+  {{ end }}{{ end }}
 </head>
 <body>
   <div id="header" class="text-center">

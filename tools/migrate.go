@@ -219,16 +219,10 @@ func seedDefaultPostType(db *gorm.DB) {
 	}
 }
 
-// seedDefaultSettings inserts default settings if the settings table is empty.
-// This handles upgrades from older versions that didn't have a settings table.
+// seedDefaultSettings ensures all default settings exist.
+// Uses FirstOrCreate so that new settings are added on upgrade without
+// overwriting existing values.
 func seedDefaultSettings(db *gorm.DB) {
-	var count int64
-	db.Raw("SELECT count(*) FROM settings").Scan(&count)
-	if count > 0 {
-		return
-	}
-
-	log.Println("Seeding default settings")
 	defaults := []blog.Setting{
 		{Key: "site_title", Type: "text", Value: "Jason Ernst"},
 		{Key: "site_subtitle", Type: "text", Value: "Software Engineer"},
@@ -246,9 +240,11 @@ func seedDefaultSettings(db *gorm.DB) {
 		{Key: "spotify_url", Type: "text", Value: "https://open.spotify.com/user/csgrad"},
 		{Key: "xbox_url", Type: "text", Value: "https://account.xbox.com/en-us/profile?gamertag=Compscidr"},
 		{Key: "steam_url", Type: "text", Value: "https://steamcommunity.com/id/compscidr"},
+		{Key: "custom_header_code", Type: "textarea", Value: ""},
+		{Key: "custom_footer_code", Type: "textarea", Value: ""},
 	}
 	for _, s := range defaults {
-		db.Create(&s)
+		db.Where("key = ?", s.Key).FirstOrCreate(&s)
 	}
 }
 

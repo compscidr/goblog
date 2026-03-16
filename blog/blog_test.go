@@ -7,6 +7,7 @@ import (
 	"goblog/admin"
 	"goblog/auth"
 	"goblog/blog"
+	"html/template"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -170,6 +171,9 @@ func TestBlogWorkflow(t *testing.T) {
 	//html tests
 
 	//get tag
+	router.SetFuncMap(template.FuncMap{
+		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
+	})
 	router.LoadHTMLGlob("../templates/*")
 	a.On("IsAdmin", mock.Anything).Return(false).Once()
 	a.On("IsLoggedIn", mock.Anything).Return(false)
