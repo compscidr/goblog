@@ -174,30 +174,43 @@ func (a *Admin) UpdatePost(c *gin.Context) {
 		return
 	}
 
-	//clear old associations
-	(*a.db).Model(&existingPost).Association("Tags").Clear()
-
 	log.Println("UPDATING DRAFT AS: ", requestPost.Draft)
 
 	existingPost.Title = requestPost.Title
 	existingPost.Content = requestPost.Content
 	existingPost.Slug = requestPost.Slug
-	existingPost.Tags = requestPost.Tags
 	existingPost.CreatedAt = requestPost.CreatedAt
 	existingPost.Draft = requestPost.Draft
 	existingPost.PostTypeID = requestPost.PostTypeID
-	(*a.db).Model(&existingPost).Where("id = ?", requestPost.ID).Updates(&existingPost)
 
-	//https://stackoverflow.com/questions/56653423/gorm-doesnt-update-boolean-field-to-false
-	if !requestPost.Draft {
-		(*a.db).Model(&existingPost).Select("draft").Update("draft", false)
+	txErr := (*a.db).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&existingPost).Where("id = ?", requestPost.ID).Updates(&existingPost).Error; err != nil {
+			return err
+		}
+		// Replace tag associations atomically to avoid duplication
+		if err := tx.Model(&existingPost).Association("Tags").Replace(requestPost.Tags); err != nil {
+			return err
+		}
+		//https://stackoverflow.com/questions/56653423/gorm-doesnt-update-boolean-field-to-false
+		if !requestPost.Draft {
+			if err := tx.Model(&existingPost).Select("draft").Update("draft", false).Error; err != nil {
+				return err
+			}
+		}
+		// Explicitly update post_type_id since GORM's struct-based Updates may skip it
+		if err := tx.Model(&existingPost).Select("post_type_id").Update("post_type_id", requestPost.PostTypeID).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+	if txErr != nil {
+		log.Println("ERROR UPDATING POST: ", txErr)
+		c.JSON(http.StatusInternalServerError, "Failed to update post")
+		return
 	}
 
-	// Explicitly update post_type_id since GORM's struct-based Updates may skip it
-	(*a.db).Model(&existingPost).Select("post_type_id").Update("post_type_id", requestPost.PostTypeID)
-
-	// Reload with PostType for JSON response
-	(*a.db).Preload("PostType").First(&existingPost, existingPost.ID)
+	// Reload with PostType and Tags for JSON response
+	(*a.db).Preload("PostType").Preload("Tags").First(&existingPost, existingPost.ID)
 
 	a.b.ComputeBacklinks(&existingPost)
 
