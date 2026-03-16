@@ -2,6 +2,8 @@ package blog
 
 import "time"
 
+// PostRevision stores a snapshot of a post's content before each edit,
+// allowing users to view previous versions and roll back to them.
 type PostRevision struct {
 	ID         uint      `gorm:"primaryKey" json:"id"`
 	CreatedAt  time.Time `json:"created_at"`

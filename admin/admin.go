@@ -174,17 +174,23 @@ func (a *Admin) UpdatePost(c *gin.Context) {
 		return
 	}
 
-	// Save revision of the current state before updating
-	revision := blog.PostRevision{
-		PostID:     existingPost.ID,
-		Title:      existingPost.Title,
-		Slug:       existingPost.Slug,
-		Content:    existingPost.Content,
-		Draft:      existingPost.Draft,
-		PostTypeID: existingPost.PostTypeID,
-	}
-	if err := (*a.db).Create(&revision).Error; err != nil {
-		log.Println("Warning: failed to save revision: ", err)
+	// Save revision of the current state before updating, but only if something changed
+	if existingPost.Title != requestPost.Title ||
+		existingPost.Slug != safeSlug(requestPost.Slug) ||
+		existingPost.Content != requestPost.Content ||
+		existingPost.Draft != requestPost.Draft ||
+		existingPost.PostTypeID != requestPost.PostTypeID {
+		revision := blog.PostRevision{
+			PostID:     existingPost.ID,
+			Title:      existingPost.Title,
+			Slug:       existingPost.Slug,
+			Content:    existingPost.Content,
+			Draft:      existingPost.Draft,
+			PostTypeID: existingPost.PostTypeID,
+		}
+		if err := (*a.db).Create(&revision).Error; err != nil {
+			log.Println("Warning: failed to save revision: ", err)
+		}
 	}
 
 	log.Println("UPDATING DRAFT AS: ", requestPost.Draft)
@@ -311,24 +317,36 @@ func (a *Admin) RollbackRevision(c *gin.Context) {
 		return
 	}
 
-	// Save current state as a revision before rolling back
-	currentRevision := blog.PostRevision{
-		PostID:     existingPost.ID,
-		Title:      existingPost.Title,
-		Slug:       existingPost.Slug,
-		Content:    existingPost.Content,
-		Draft:      existingPost.Draft,
-		PostTypeID: existingPost.PostTypeID,
-	}
-	(*a.db).Create(&currentRevision)
+	txErr := (*a.db).Transaction(func(tx *gorm.DB) error {
+		// Save current state as a revision before rolling back
+		currentRevision := blog.PostRevision{
+			PostID:     existingPost.ID,
+			Title:      existingPost.Title,
+			Slug:       existingPost.Slug,
+			Content:    existingPost.Content,
+			Draft:      existingPost.Draft,
+			PostTypeID: existingPost.PostTypeID,
+		}
+		if err := tx.Create(&currentRevision).Error; err != nil {
+			return err
+		}
 
-	// Apply the revision
-	existingPost.Title = revision.Title
-	existingPost.Slug = revision.Slug
-	existingPost.Content = revision.Content
-	existingPost.Draft = revision.Draft
-	existingPost.PostTypeID = revision.PostTypeID
-	(*a.db).Save(&existingPost)
+		// Apply the revision
+		existingPost.Title = revision.Title
+		existingPost.Slug = revision.Slug
+		existingPost.Content = revision.Content
+		existingPost.Draft = revision.Draft
+		existingPost.PostTypeID = revision.PostTypeID
+		if err := tx.Save(&existingPost).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+	if txErr != nil {
+		log.Println("ERROR ROLLING BACK POST: ", txErr)
+		c.JSON(http.StatusInternalServerError, "Failed to rollback post")
+		return
+	}
 
 	// Reload with associations
 	var updatedPost blog.Post
