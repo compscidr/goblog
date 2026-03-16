@@ -73,6 +73,42 @@ func fixBlogUsersTable(db *gorm.DB) error {
 	})
 }
 
+// fixTagsTable checks if the tags table is missing a PRIMARY KEY on the name
+// column (created by an older GORM version) and rebuilds it with deduplication.
+func fixTagsTable(db *gorm.DB) error {
+	var createSQL string
+	row := db.Raw("SELECT sql FROM sqlite_master WHERE type = 'table' AND tbl_name = 'tags' AND name = 'tags'").Row()
+	if row == nil {
+		return nil
+	}
+	if err := row.Scan(&createSQL); err != nil {
+		return nil // table doesn't exist yet
+	}
+
+	// Only fix if the table is missing PRIMARY KEY
+	if strings.Contains(strings.ToUpper(createSQL), "PRIMARY KEY") {
+		return nil
+	}
+
+	log.Println("Fixing tags table: deduplicating and adding PRIMARY KEY")
+
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec(`CREATE TABLE tags_new ("name" varchar(255) PRIMARY KEY)`).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec(`INSERT OR IGNORE INTO tags_new (name) SELECT DISTINCT name FROM tags`).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec(`DROP TABLE tags`).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec(`ALTER TABLE tags_new RENAME TO tags`).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
 // fixTableLevelPrimaryKey checks if a table's DDL has a table-level PRIMARY KEY
 // constraint and no inline PRIMARY KEY. If so, it recreates the table without
 // the table-level constraint so GORM's AutoMigrate can safely add the inline one.
@@ -310,6 +346,11 @@ func Migrate(db *gorm.DB) error {
 	// Fix blog_users table: convert old varchar(255) id to integer autoincrement
 	if err := fixBlogUsersTable(db); err != nil {
 		log.Printf("Warning: could not fix blog_users table: %v", err)
+	}
+
+	// Fix tags table: deduplicate and add missing primary key
+	if err := fixTagsTable(db); err != nil {
+		log.Printf("Warning: could not fix tags table: %v", err)
 	}
 
 	// Fix other tables that may have table-level PRIMARY KEY constraints
