@@ -49,6 +49,7 @@ func TestCreatePost(t *testing.T) {
 	db.AutoMigrate(&blog.Tag{})
 	db.AutoMigrate(&blog.Comment{})
 	db.AutoMigrate(&blog.Page{})
+	db.AutoMigrate(&blog.PostRevision{})
 
 	// Seed default post type
 	defaultType := blog.PostType{Name: "Post", Slug: "posts", Description: "Blog posts"}
@@ -65,6 +66,8 @@ func TestCreatePost(t *testing.T) {
 	router.GET("/api/v1/posts", b.ListPosts)
 	router.PATCH("/api/v1/posts", ad.UpdatePost)
 	router.DELETE("/api/v1/posts", ad.DeletePost)
+	router.GET("/api/v1/revisions/:id", ad.ListRevisions)
+	router.POST("/api/v1/revisions/:id/rollback/:revisionId", ad.RollbackRevision)
 	router.DELETE("/api/v1/comments", ad.DeleteComment)
 	router.POST("/api/v1/upload", ad.UploadFile)
 
@@ -212,6 +215,68 @@ func TestCreatePost(t *testing.T) {
 	db.Preload("Tags").First(&updatedPost, post.ID)
 	if len(updatedPost.Tags) != 2 {
 		t.Fatalf("Expected 2 tags after second save (no duplication), got %d", len(updatedPost.Tags))
+	}
+
+	// --- Revision history tests ---
+
+	// List revisions — should have revisions from the updates above
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/v1/revisions/"+strconv.Itoa(int(post.ID)), nil)
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status %d for list revisions but got %d", http.StatusOK, w.Code)
+	}
+	var revisions []blog.PostRevision
+	if err := json.Unmarshal(w.Body.Bytes(), &revisions); err != nil {
+		t.Fatalf("Failed to unmarshal revisions: %v", err)
+	}
+	if len(revisions) == 0 {
+		t.Fatal("Expected at least one revision after updates")
+	}
+	firstRevision := revisions[len(revisions)-1] // oldest revision
+
+	// List revisions — not admin → 401
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/v1/revisions/"+strconv.Itoa(int(post.ID)), nil)
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("Expected status %d for non-admin list revisions but got %d", http.StatusUnauthorized, w.Code)
+	}
+
+	// Rollback to first revision
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/v1/revisions/"+strconv.Itoa(int(post.ID))+"/rollback/"+strconv.Itoa(int(firstRevision.ID)), nil)
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusAccepted {
+		t.Fatalf("Expected status %d for rollback but got %d", http.StatusAccepted, w.Code)
+	}
+	var rolledBack blog.Post
+	if err := json.Unmarshal(w.Body.Bytes(), &rolledBack); err != nil {
+		t.Fatalf("Failed to unmarshal rollback response: %v", err)
+	}
+	if rolledBack.Title != firstRevision.Title {
+		t.Fatalf("Expected title %q after rollback, got %q", firstRevision.Title, rolledBack.Title)
+	}
+
+	// Rollback — not admin → 401
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/v1/revisions/"+strconv.Itoa(int(post.ID))+"/rollback/"+strconv.Itoa(int(firstRevision.ID)), nil)
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("Expected status %d for non-admin rollback but got %d", http.StatusUnauthorized, w.Code)
+	}
+
+	// Rollback — bad revision ID → 404
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/v1/revisions/"+strconv.Itoa(int(post.ID))+"/rollback/99999", nil)
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("Expected status %d for bad revision rollback but got %d", http.StatusNotFound, w.Code)
 	}
 
 	//update post, bad type

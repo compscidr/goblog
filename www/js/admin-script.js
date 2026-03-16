@@ -206,3 +206,21 @@ function deletePost(id) {
     });
     return false;
 }
+
+function rollbackRevision(postId, revisionId) {
+    if (!confirm("Restore this revision? The current version will be saved as a new revision.")) {
+        return false;
+    }
+    $.ajax({
+        url: "/api/v1/revisions/" + postId + "/rollback/" + revisionId,
+        type: "post",
+        contentType: "application/json",
+        success: function(json) {
+            window.location.reload();
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            alert("ERROR: " + textStatus + " " + errorThrown);
+        }
+    });
+    return false;
+}
