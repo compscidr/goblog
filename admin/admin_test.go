@@ -66,8 +66,8 @@ func TestCreatePost(t *testing.T) {
 	router.GET("/api/v1/posts", b.ListPosts)
 	router.PATCH("/api/v1/posts", ad.UpdatePost)
 	router.DELETE("/api/v1/posts", ad.DeletePost)
-	router.GET("/api/v1/posts/:id/revisions", ad.ListRevisions)
-	router.POST("/api/v1/posts/:id/revisions/:revisionId/rollback", ad.RollbackRevision)
+	router.GET("/api/v1/revisions/:id", ad.ListRevisions)
+	router.POST("/api/v1/revisions/:id/rollback/:revisionId", ad.RollbackRevision)
 	router.DELETE("/api/v1/comments", ad.DeleteComment)
 	router.POST("/api/v1/upload", ad.UploadFile)
 
@@ -222,7 +222,7 @@ func TestCreatePost(t *testing.T) {
 	// List revisions — should have revisions from the updates above
 	a.On("IsAdmin", mock.Anything).Return(true).Once()
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/api/v1/posts/"+strconv.Itoa(int(post.ID))+"/revisions", nil)
+	req, _ = http.NewRequest("GET", "/api/v1/revisions/"+strconv.Itoa(int(post.ID)), nil)
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status %d for list revisions but got %d", http.StatusOK, w.Code)
@@ -239,7 +239,7 @@ func TestCreatePost(t *testing.T) {
 	// List revisions — not admin → 401
 	a.On("IsAdmin", mock.Anything).Return(false).Once()
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/api/v1/posts/"+strconv.Itoa(int(post.ID))+"/revisions", nil)
+	req, _ = http.NewRequest("GET", "/api/v1/revisions/"+strconv.Itoa(int(post.ID)), nil)
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("Expected status %d for non-admin list revisions but got %d", http.StatusUnauthorized, w.Code)
@@ -248,7 +248,7 @@ func TestCreatePost(t *testing.T) {
 	// Rollback to first revision
 	a.On("IsAdmin", mock.Anything).Return(true).Once()
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("POST", "/api/v1/posts/"+strconv.Itoa(int(post.ID))+"/revisions/"+strconv.Itoa(int(firstRevision.ID))+"/rollback", nil)
+	req, _ = http.NewRequest("POST", "/api/v1/revisions/"+strconv.Itoa(int(post.ID))+"/rollback/"+strconv.Itoa(int(firstRevision.ID)), nil)
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusAccepted {
 		t.Fatalf("Expected status %d for rollback but got %d", http.StatusAccepted, w.Code)
@@ -264,7 +264,7 @@ func TestCreatePost(t *testing.T) {
 	// Rollback — not admin → 401
 	a.On("IsAdmin", mock.Anything).Return(false).Once()
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("POST", "/api/v1/posts/"+strconv.Itoa(int(post.ID))+"/revisions/"+strconv.Itoa(int(firstRevision.ID))+"/rollback", nil)
+	req, _ = http.NewRequest("POST", "/api/v1/revisions/"+strconv.Itoa(int(post.ID))+"/rollback/"+strconv.Itoa(int(firstRevision.ID)), nil)
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("Expected status %d for non-admin rollback but got %d", http.StatusUnauthorized, w.Code)
@@ -273,7 +273,7 @@ func TestCreatePost(t *testing.T) {
 	// Rollback — bad revision ID → 404
 	a.On("IsAdmin", mock.Anything).Return(true).Once()
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("POST", "/api/v1/posts/"+strconv.Itoa(int(post.ID))+"/revisions/99999/rollback", nil)
+	req, _ = http.NewRequest("POST", "/api/v1/revisions/"+strconv.Itoa(int(post.ID))+"/rollback/99999", nil)
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("Expected status %d for bad revision rollback but got %d", http.StatusNotFound, w.Code)

@@ -224,7 +224,7 @@
     });
 
     // Load revision history
-    $.get("/api/v1/posts/{{ .post.ID }}/revisions", function(revisions) {
+    $.get("/api/v1/revisions/{{ .post.ID }}", function(revisions) {
         if (!revisions || revisions.length === 0) {
             $("#revisions-list").html("<p>None</p>");
             return;

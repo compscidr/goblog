@@ -212,7 +212,7 @@ function rollbackRevision(postId, revisionId) {
         return false;
     }
     $.ajax({
-        url: "/api/v1/posts/" + postId + "/revisions/" + revisionId + "/rollback",
+        url: "/api/v1/revisions/" + postId + "/rollback/" + revisionId,
         type: "post",
         contentType: "application/json",
         success: function(json) {
