@@ -185,7 +185,7 @@
           </div>
           <div class="form-group">
             <label for="comment-name">Name *</label>
-            <input type="text" class="form-control" id="comment-name" name="name" required maxlength="100">
+            <input type="text" class="form-control" id="comment-name" name="name" required maxlength="100"{{ if .is_admin }} value="{{ .settings.site_title.Value }}"{{ end }}>
           </div>
           <div class="form-group">
             <label for="comment-email">Email (not displayed)</label>

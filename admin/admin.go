@@ -499,6 +499,10 @@ func (a *Admin) GetSettings(c *gin.Context) {
 
 // Admin is the admin dashboard of the website
 func (a *Admin) Admin(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
 	c.HTML(http.StatusOK, "admin.html", gin.H{
 		"posts":      a.b.GetPosts(true),
 		"logged_in":  a.auth.IsLoggedIn(c),
@@ -512,6 +516,10 @@ func (a *Admin) Admin(c *gin.Context) {
 }
 
 func (a *Admin) AdminDashboard(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
 	recentComments := a.b.GetRecentComments(10)
 	var postIDs []uint
 	for _, comment := range recentComments {
@@ -533,6 +541,10 @@ func (a *Admin) AdminDashboard(c *gin.Context) {
 }
 
 func (a *Admin) AdminPosts(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
 	c.HTML(http.StatusOK, "admin_all_posts.html", gin.H{
 		"posts":      a.b.GetPosts(true),
 		"post_types": a.b.GetPostTypes(),
@@ -547,6 +559,10 @@ func (a *Admin) AdminPosts(c *gin.Context) {
 }
 
 func (a *Admin) AdminNewPost(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
 	c.HTML(http.StatusOK, "admin_new_post.html", gin.H{
 		"posts":      a.b.GetPosts(true),
 		"post_types": a.b.GetPostTypes(),
@@ -561,6 +577,10 @@ func (a *Admin) AdminNewPost(c *gin.Context) {
 }
 
 func (a *Admin) AdminSettings(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
 	c.HTML(http.StatusOK, "admin_settings.html", gin.H{
 		"posts":      a.b.GetPosts(true),
 		"logged_in":  a.auth.IsLoggedIn(c),
