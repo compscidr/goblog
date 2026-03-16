@@ -176,7 +176,7 @@ func (a *Admin) UpdatePost(c *gin.Context) {
 
 	// Save revision of the current state before updating, but only if something changed
 	if existingPost.Title != requestPost.Title ||
-		existingPost.Slug != safeSlug(requestPost.Slug) ||
+		existingPost.Slug != requestPost.Slug ||
 		existingPost.Content != requestPost.Content ||
 		existingPost.Draft != requestPost.Draft ||
 		existingPost.PostTypeID != requestPost.PostTypeID {
