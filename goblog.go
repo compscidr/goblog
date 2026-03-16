@@ -285,6 +285,7 @@ func main() {
 
 	// setup the minimal router at the start to support both the wizard and the main server once the wizard is done
 	router := gin.Default()
+	router.SetTrustedProxies(nil)
 
 	goblog := goblog{
 		_wizard:    &_wizard,
