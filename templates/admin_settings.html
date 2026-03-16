@@ -19,6 +19,8 @@
         <label for="{{ .Key }}" class="form-label">{{ .Key }}</label>
             {{ if eq .Type "file" }}
             <input type="{{ .Type }}" id="{{ .Key }}" name="{{ .Key }}" class="form-control" oninput="uploadFile(this)" required>
+            {{ else if eq .Type "textarea" }}
+            <textarea id="{{ .Key }}" name="{{ .Key }}" class="form-control" rows="5">{{ .Value }}</textarea>
             {{ else }}
             <input type="{{ .Type }}" id="{{ .Key }}" name="{{ .Key }}" value="{{ .Value }}" class="form-control" required>
             {{ end }}

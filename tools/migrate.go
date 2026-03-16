@@ -246,6 +246,8 @@ func seedDefaultSettings(db *gorm.DB) {
 		{Key: "spotify_url", Type: "text", Value: "https://open.spotify.com/user/csgrad"},
 		{Key: "xbox_url", Type: "text", Value: "https://account.xbox.com/en-us/profile?gamertag=Compscidr"},
 		{Key: "steam_url", Type: "text", Value: "https://steamcommunity.com/id/compscidr"},
+		{Key: "custom_header_code", Type: "textarea", Value: ""},
+		{Key: "custom_footer_code", Type: "textarea", Value: ""},
 	}
 	for _, s := range defaults {
 		db.Create(&s)
