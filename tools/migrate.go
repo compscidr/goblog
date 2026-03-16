@@ -1,6 +1,8 @@
 package tools
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"goblog/auth"
 	"goblog/blog"
@@ -83,7 +85,7 @@ func fixTagsTable(db *gorm.DB) error {
 		return nil // table doesn't exist yet
 	}
 	if err := row.Scan(&createSQL); err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil // table doesn't exist yet
 		}
 		return fmt.Errorf("failed to read tags table schema: %w", err)
