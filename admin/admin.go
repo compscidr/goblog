@@ -174,6 +174,19 @@ func (a *Admin) UpdatePost(c *gin.Context) {
 		return
 	}
 
+	// Save revision of the current state before updating
+	revision := blog.PostRevision{
+		PostID:     existingPost.ID,
+		Title:      existingPost.Title,
+		Slug:       existingPost.Slug,
+		Content:    existingPost.Content,
+		Draft:      existingPost.Draft,
+		PostTypeID: existingPost.PostTypeID,
+	}
+	if err := (*a.db).Create(&revision).Error; err != nil {
+		log.Println("Warning: failed to save revision: ", err)
+	}
+
 	log.Println("UPDATING DRAFT AS: ", requestPost.Draft)
 
 	existingPost.Title = requestPost.Title
@@ -261,6 +274,71 @@ func (a *Admin) DeletePost(c *gin.Context) {
 	(*a.db).Where("id = ?", requestPost.ID).Delete(&blog.Post{})
 
 	c.JSON(http.StatusOK, "")
+}
+
+// ListRevisions returns the revision history for a post
+func (a *Admin) ListRevisions(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	id := c.Param("id")
+	var revisions []blog.PostRevision
+	(*a.db).Where("post_id = ?", id).Order("created_at desc").Find(&revisions)
+	c.JSON(http.StatusOK, revisions)
+}
+
+// RollbackRevision restores a post to a previous revision
+func (a *Admin) RollbackRevision(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	postID := c.Param("id")
+	revisionID := c.Param("revisionId")
+
+	var revision blog.PostRevision
+	if err := (*a.db).Where("id = ? AND post_id = ?", revisionID, postID).First(&revision).Error; err != nil {
+		c.JSON(http.StatusNotFound, "Revision not found")
+		return
+	}
+
+	var existingPost blog.Post
+	if err := (*a.db).Where("id = ?", postID).First(&existingPost).Error; err != nil {
+		c.JSON(http.StatusNotFound, "Post not found")
+		return
+	}
+
+	// Save current state as a revision before rolling back
+	currentRevision := blog.PostRevision{
+		PostID:     existingPost.ID,
+		Title:      existingPost.Title,
+		Slug:       existingPost.Slug,
+		Content:    existingPost.Content,
+		Draft:      existingPost.Draft,
+		PostTypeID: existingPost.PostTypeID,
+	}
+	(*a.db).Create(&currentRevision)
+
+	// Apply the revision
+	existingPost.Title = revision.Title
+	existingPost.Slug = revision.Slug
+	existingPost.Content = revision.Content
+	existingPost.Draft = revision.Draft
+	existingPost.PostTypeID = revision.PostTypeID
+	(*a.db).Save(&existingPost)
+
+	// Reload with associations
+	var updatedPost blog.Post
+	if err := (*a.db).Preload("PostType").Preload("Tags").First(&updatedPost, existingPost.ID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, "Failed to reload post after rollback")
+		return
+	}
+	a.b.ComputeBacklinks(&updatedPost)
+
+	c.JSON(http.StatusAccepted, updatedPost)
 }
 
 // DeleteComment deletes a comment from the database

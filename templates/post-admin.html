@@ -174,6 +174,16 @@
       </div>
     </div>
 
+    <div class="row">
+      <div class="container left">
+        <h3>Revision History</h3>
+        <p class="text-muted">Previous versions of this post</p>
+        <div id="revisions-list">
+          <p>Loading...</p>
+        </div>
+      </div>
+    </div>
+
   </div> <!-- /container -->
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js" integrity="sha512-LhccdVNGe2QMEfI3x4DVV3ckMRe36TfydKss6mJpdHjNFiV07dFpS2xzeZedptKZrwxfICJpez09iNioiSZ3hA==" crossorigin="anonymous"></script>
@@ -211,6 +221,22 @@
 
     $(function () {
       $('#datetimepicker1').datetimepicker({timeZone: "UTC"});
+    });
+
+    // Load revision history
+    $.get("/api/v1/posts/{{ .post.ID }}/revisions", function(revisions) {
+        if (!revisions || revisions.length === 0) {
+            $("#revisions-list").html("<p>None</p>");
+            return;
+        }
+        var html = '<table class="table table-sm"><thead><tr><th>Date</th><th>Title</th><th>Action</th></tr></thead><tbody>';
+        revisions.forEach(function(rev) {
+            var date = moment(rev.created_at).format("MMM DD, YYYY HH:mm");
+            html += '<tr><td>' + date + '</td><td>' + DOMPurify.sanitize(rev.title) + '</td>';
+            html += '<td><a href="#" onclick="return rollbackRevision({{ $.post.ID }}, ' + rev.id + ')">Restore</a></td></tr>';
+        });
+        html += '</tbody></table>';
+        $("#revisions-list").html(html);
     });
   </script>
 
