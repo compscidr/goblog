@@ -1,0 +1,13 @@
+{{ template "header.html" .}}
+  <div style="padding: 60px 0;">
+    <div class="container" style="max-width: 640px;">
+      <div class="text-center">
+        <a href="/posts" title="Read posts by {{ .settings.site_title.Value }}"><img src="{{ .settings.landing_page_image.Value }}" class="rounded-circle img-responsive" style="max-width:150px;" alt="{{ .settings.site_title.Value }}"/></a>
+        <h1 style="margin-top: 20px; font-weight: 600;">{{ .settings.site_title.Value }}</h1>
+        <p style="font-size: 18px; color: #666;">{{ .settings.site_subtitle.Value }}</p>
+        <p style="font-size: 14px; color: #999;">{{ .settings.site_tags.Value }}</p>
+      </div>
+    </div>
+  </div>
+
+{{ template "footer.html" .}}

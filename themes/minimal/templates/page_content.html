@@ -1,0 +1,35 @@
+{{ template "header.html" .}}
+
+  {{ if .page.HasHero }}
+  {{ if .page.IsVideo }}
+  <div style="background-color: black; padding-top: 35%; height: 0px; position: relative; overflow: hidden; width: 100%;">
+    <div>
+      <video loop autoplay muted>
+        <source src="{{ .page.HeroURL }}" type="video/mp4">
+      </video>
+    </div>
+  </div>
+  {{ else }}
+  <div class="cover bg-left bg-center-l" style="background-image: url({{ .page.HeroURL }}); opacity: 0.8;">
+    &nbsp;
+  </div>
+  {{ end }}
+  {{ end }}
+
+  <div class="container">
+    <h1>{{ .page.Title }}</h1>
+    {{ if .is_admin }}
+    <p class="text-left"><a href="/admin/pages/{{ .page.ID }}">Edit this page</a></p>
+    {{ end }}
+    <div id="page-content"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js" integrity="sha512-LhccdVNGe2QMEfI3x4DVV3ckMRe36TfydKss6mJpdHjNFiV07dFpS2xzeZedptKZrwxfICJpez09iNioiSZ3hA==" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js" integrity="sha512-78KH17QLT5e55GJqP76vutp1D2iAoy06WcYBXB6iBCsmO6wWzx0Qdg8EDpm8mKXv68BcvHOyeeP4wxAL0twJGQ==" crossorigin="anonymous"></script>
+  <script>
+    var converter = new showdown.Converter({tables: true});
+    var content = {{ .page.Content }};
+    document.getElementById('page-content').innerHTML = DOMPurify.sanitize(converter.makeHtml(content));
+  </script>
+
+{{ template "footer.html" .}}

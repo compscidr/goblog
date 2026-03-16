@@ -1,0 +1,47 @@
+{{ template "header.html" .}}
+
+  {{ if .page.HasHero }}
+  {{ if .page.IsVideo }}
+  <div style="background-color: black; padding-top: 35%; height: 0px; position: relative; overflow: hidden; width: 100%;">
+    <div>
+      <video loop autoplay muted>
+        <source src="{{ .page.HeroURL }}" type="video/mp4">
+      </video>
+    </div>
+  </div>
+  {{ else }}
+  <div class="cover bg-left bg-center-l" style="background-image: url({{ .page.HeroURL }}); opacity: 0.8;">
+    &nbsp;
+  </div>
+  {{ end }}
+  {{ end }}
+
+<div class="container">
+    <h1 class="text-left">{{ .page.Title }}</h1>
+    {{ if .is_admin }}
+    <p class="text-left"><a href="/admin/pages/{{ .page.ID }}">Edit this page</a></p>
+    {{ end }}
+
+    <h2>By Year</h2>
+    {{ $byYear := .byYear }}
+    {{ range .yearKeys }}
+        <h3>{{ . }} </h3>
+        <ul>
+        {{ range index $byYear . }}
+            <li><a href="{{ .Permalink }}" title="{{ .Title }}">{{ .Title }}</a></li>
+        {{ end }}
+        </ul>
+    {{ end }}
+    <h2>By Month</h2>
+    {{ $byYearMonth := .byYearMonth }}
+    {{ range .yearMonthKeys }}
+    <h3>{{ . }} </h3>
+    <ul>
+        {{ range index $byYearMonth . }}
+        <li><a href="{{ .Permalink }}" title="{{ .Title }}">{{ .Title }}</a></li>
+        {{ end }}
+    </ul>
+    {{ end }}
+</div>
+
+{{ template "footer.html" .}}
