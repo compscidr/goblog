@@ -693,15 +693,22 @@ func (b *Blog) NoRoute(c *gin.Context) {
 // need to modify this function
 func (b *Blog) Home(c *gin.Context) {
 	b.checkValidDb(c)
+	settings := b.GetSettings()
+	title := "Home"
+	if subtitle, ok := settings["site_subtitle"]; ok && subtitle.Value != "" {
+		title = subtitle.Value
+	}
 	c.HTML(http.StatusOK, "home.html", gin.H{
-		"logged_in":  b.auth.IsLoggedIn(c),
-		"is_admin":   b.auth.IsAdmin(c),
-		"version":    b.Version,
-		"title":      "Software Engineer",
-		"recent":     b.GetLatest(),
-		"admin_page": false,
-		"settings":   b.GetSettings(),
-		"nav_pages":  b.GetNavPages(),
+		"logged_in":    b.auth.IsLoggedIn(c),
+		"is_admin":     b.auth.IsAdmin(c),
+		"version":      b.Version,
+		"title":        title,
+		"recent":       b.GetLatest(),
+		"recent_posts": b.GetPosts(false),
+		"tags":         b.getTags(),
+		"admin_page":   false,
+		"settings":     settings,
+		"nav_pages":    b.GetNavPages(),
 	})
 }
 

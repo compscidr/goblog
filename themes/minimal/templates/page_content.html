@@ -1,22 +1,6 @@
 {{ template "header.html" .}}
 
-  {{ if .page.HasHero }}
-  {{ if .page.IsVideo }}
-  <div style="background-color: black; padding-top: 35%; height: 0px; position: relative; overflow: hidden; width: 100%;">
-    <div>
-      <video loop autoplay muted>
-        <source src="{{ .page.HeroURL }}" type="video/mp4">
-      </video>
-    </div>
-  </div>
-  {{ else }}
-  <div class="cover bg-left bg-center-l" style="background-image: url({{ .page.HeroURL }}); opacity: 0.8;">
-    &nbsp;
-  </div>
-  {{ end }}
-  {{ end }}
-
-  <div class="container">
+  <div class="container" style="max-width: 720px;">
     <h1>{{ .page.Title }}</h1>
     {{ if .is_admin }}
     <p class="text-left"><a href="/admin/pages/{{ .page.ID }}">Edit this page</a></p>
