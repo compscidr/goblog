@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"fmt"
 	"goblog/auth"
 	"goblog/blog"
 	"gorm.io/gorm"
@@ -79,10 +80,13 @@ func fixTagsTable(db *gorm.DB) error {
 	var createSQL string
 	row := db.Raw("SELECT sql FROM sqlite_master WHERE type = 'table' AND tbl_name = 'tags' AND name = 'tags'").Row()
 	if row == nil {
-		return nil
+		return nil // table doesn't exist yet
 	}
 	if err := row.Scan(&createSQL); err != nil {
-		return nil // table doesn't exist yet
+		if err.Error() == "sql: no rows in result set" {
+			return nil // table doesn't exist yet
+		}
+		return fmt.Errorf("failed to read tags table schema: %w", err)
 	}
 
 	// Only fix if the table is missing PRIMARY KEY

@@ -226,7 +226,11 @@ func (a *Admin) UpdatePost(c *gin.Context) {
 
 	// Reload into a fresh struct to avoid GORM appending to existing slices
 	var updatedPost blog.Post
-	(*a.db).Preload("PostType").Preload("Tags").First(&updatedPost, existingPost.ID)
+	if err := (*a.db).Preload("PostType").Preload("Tags").First(&updatedPost, existingPost.ID).Error; err != nil {
+		log.Println("ERROR RELOADING POST: ", err)
+		c.JSON(http.StatusInternalServerError, "Failed to reload post after update")
+		return
+	}
 
 	a.b.ComputeBacklinks(&updatedPost)
 
