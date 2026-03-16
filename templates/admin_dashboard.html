@@ -60,6 +60,7 @@
         <tr>
           <th>Date</th>
           <th>Name</th>
+          <th>Email</th>
           <th>Comment</th>
           <th>Post</th>
           <th></th>
@@ -70,6 +71,7 @@
         <tr id="comment-row-{{ .ID }}">
           <td style="white-space:nowrap;">{{ .CreatedAt.Format "Jan 02, 2006 15:04" }}</td>
           <td>{{ .Name }}</td>
+          <td>{{ .Email }}</td>
           <td>{{ if gt (len .Content) 80 }}{{ slice .Content 0 80 }}...{{ else }}{{ .Content }}{{ end }}</td>
           <td>
             {{ $post := index $.comment_posts .PostID }}
