@@ -183,12 +183,22 @@ func (a *Admin) UpdatePost(c *gin.Context) {
 	existingPost.Draft = requestPost.Draft
 	existingPost.PostTypeID = requestPost.PostTypeID
 
+	// Filter empty tag names and ensure each tag exists in the DB
+	var validTags []blog.Tag
+	for _, tag := range requestPost.Tags {
+		if tag.Name != "" {
+			var t blog.Tag
+			(*a.db).Where("name = ?", tag.Name).FirstOrCreate(&t, blog.Tag{Name: tag.Name})
+			validTags = append(validTags, t)
+		}
+	}
+
 	txErr := (*a.db).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Model(&existingPost).Where("id = ?", requestPost.ID).Updates(&existingPost).Error; err != nil {
 			return err
 		}
 		// Replace tag associations atomically to avoid duplication
-		if err := tx.Model(&existingPost).Association("Tags").Replace(requestPost.Tags); err != nil {
+		if err := tx.Model(&existingPost).Association("Tags").Replace(validTags); err != nil {
 			return err
 		}
 		//https://stackoverflow.com/questions/56653423/gorm-doesnt-update-boolean-field-to-false
