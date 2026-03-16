@@ -45,6 +45,7 @@ func TestCreatePost(t *testing.T) {
 	db.AutoMigrate(&auth.BlogUser{})
 	db.AutoMigrate(&blog.PostType{})
 	db.AutoMigrate(&blog.Post{})
+	db.AutoMigrate(&blog.Tag{})
 	db.AutoMigrate(&blog.Comment{})
 	db.AutoMigrate(&blog.Page{})
 
@@ -168,6 +169,46 @@ func TestCreatePost(t *testing.T) {
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusAccepted {
 		t.Fatalf("Expected to get status %d but instead got %d\n", http.StatusAccepted, w.Code)
+	}
+
+	// update post with tags, then save again — tags should not double
+	testPost = blog.Post{
+		Title:   "Test title with tags",
+		Content: "Content with tags",
+		Tags:    []blog.Tag{{Name: "go"}, {Name: "web"}},
+	}
+	testPost.ID = post.ID
+	jsonValue, _ = json.Marshal(testPost)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("PATCH", "/api/v1/posts", bytes.NewBuffer(jsonValue))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusAccepted {
+		t.Fatalf("Expected status %d but got %d\n", http.StatusAccepted, w.Code)
+	}
+	var updatedPost blog.Post
+	json.Unmarshal(w.Body.Bytes(), &updatedPost)
+	// reload with tags
+	db.Preload("Tags").First(&updatedPost, post.ID)
+	if len(updatedPost.Tags) != 2 {
+		t.Fatalf("Expected 2 tags after first save, got %d", len(updatedPost.Tags))
+	}
+
+	// save again with same tags — should still be 2, not 4
+	testPost.Tags = []blog.Tag{{Name: "go"}, {Name: "web"}}
+	jsonValue, _ = json.Marshal(testPost)
+	a.On("IsAdmin", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("PATCH", "/api/v1/posts", bytes.NewBuffer(jsonValue))
+	req.Header.Add("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusAccepted {
+		t.Fatalf("Expected status %d but got %d\n", http.StatusAccepted, w.Code)
+	}
+	db.Preload("Tags").First(&updatedPost, post.ID)
+	if len(updatedPost.Tags) != 2 {
+		t.Fatalf("Expected 2 tags after second save (no duplication), got %d", len(updatedPost.Tags))
 	}
 
 	//update post, bad type
