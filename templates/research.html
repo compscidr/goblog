@@ -7,7 +7,7 @@
   <div class="container">
     <h1>Research and Publications</h1>
     {{ if .errors }}
-    <div class="alert alert-danger" role="alert">
+    <div class="alert {{ if .warning }}alert-warning{{ else }}alert-danger{{ end }}" role="alert">
       {{ .errors }}
     </div>
     {{ end }}

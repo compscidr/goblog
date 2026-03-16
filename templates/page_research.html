@@ -12,7 +12,7 @@
     <p class="text-left"><a href="/admin/pages/{{ .page.ID }}">Edit this page</a></p>
     {{ end }}
     {{ if .errors }}
-    <div class="alert alert-danger" role="alert">
+    <div class="alert {{ if .warning }}alert-warning{{ else }}alert-danger{{ end }}" role="alert">
       {{ .errors }}
     </div>
     {{ end }}

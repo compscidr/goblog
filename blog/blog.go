@@ -25,6 +25,13 @@ import (
 	"github.com/ikeikeikeike/go-sitemap-generator/v2/stm"
 )
 
+// scholarCache stores the last successful scholar query result so we can
+// fall back to it when Google Scholar throttles us.
+type scholarCache struct {
+	articles  []*scholar.Article
+	fetchedAt time.Time
+}
+
 // Blog API handles non-admin functions of the blog like listing posts, tags
 // comments, etc.
 type Blog struct {
@@ -32,6 +39,8 @@ type Blog struct {
 	auth           auth.IAuth
 	Version        string
 	scholar        *scholar.Scholar
+	scholarCache   map[string]*scholarCache
+	scholarMu      sync.Mutex
 	commentLimiter map[string]time.Time
 	limiterMu      sync.Mutex
 }
@@ -43,9 +52,39 @@ func New(db *gorm.DB, auth auth.IAuth, version string, scholar *scholar.Scholar)
 		auth:           auth,
 		Version:        version,
 		scholar:        scholar,
+		scholarCache:   make(map[string]*scholarCache),
 		commentLimiter: make(map[string]time.Time),
 	}
 	return api
+}
+
+// queryScholar queries Google Scholar with fallback to cached results on error.
+// Returns articles, an optional warning message (non-empty when serving stale data), and an error
+// only if there is no cached data to fall back to.
+func (b *Blog) queryScholar(scholarID string, limit int) ([]*scholar.Article, string, error) {
+	articles, err := b.scholar.QueryProfileWithMemoryCache(scholarID, limit)
+	if err == nil {
+		sortArticlesByDateDesc(articles)
+		b.scholar.SaveCache("profiles.json", "articles.json")
+		b.scholarMu.Lock()
+		b.scholarCache[scholarID] = &scholarCache{articles: articles, fetchedAt: time.Now()}
+		b.scholarMu.Unlock()
+		return articles, "", nil
+	}
+
+	// Query failed — try to serve stale cached data
+	log.Printf("Scholar query failed for %s: %v — checking cache", scholarID, err)
+	b.scholarMu.Lock()
+	cached := b.scholarCache[scholarID]
+	b.scholarMu.Unlock()
+
+	if cached != nil && len(cached.articles) > 0 {
+		age := time.Since(cached.fetchedAt).Truncate(time.Minute)
+		warning := fmt.Sprintf("Showing cached results (last updated %s ago). Live data temporarily unavailable.", age)
+		return cached.articles, warning, nil
+	}
+
+	return nil, "", err
 }
 
 func (b *Blog) UpdateDb(db *gorm.DB) {
@@ -432,37 +471,29 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 			"nav_pages":  navPages,
 		})
 	case PageTypeResearch:
-		articles, err := b.scholar.QueryProfileWithMemoryCache(page.ScholarID, 50)
-		if err == nil {
-			sortArticlesByDateDesc(articles)
-			b.scholar.SaveCache("profiles.json", "articles.json")
-			c.HTML(http.StatusOK, "page_research.html", gin.H{
-				"logged_in":  b.auth.IsLoggedIn(c),
-				"is_admin":   b.auth.IsAdmin(c),
-				"page":       page,
-				"articles":   articles,
-				"version":    b.Version,
-				"title":      page.Title,
-				"recent":     b.GetLatest(),
-				"admin_page": false,
-				"settings":   b.GetSettings(),
-				"nav_pages":  navPages,
-			})
-		} else {
-			c.HTML(http.StatusOK, "page_research.html", gin.H{
-				"logged_in":  b.auth.IsLoggedIn(c),
-				"is_admin":   b.auth.IsAdmin(c),
-				"page":       page,
-				"articles":   make([]interface{}, 0),
-				"version":    b.Version,
-				"title":      page.Title,
-				"recent":     b.GetLatest(),
-				"admin_page": false,
-				"settings":   b.GetSettings(),
-				"errors":     err.Error(),
-				"nav_pages":  navPages,
-			})
+		articles, warning, err := b.queryScholar(page.ScholarID, 50)
+		data := gin.H{
+			"logged_in":  b.auth.IsLoggedIn(c),
+			"is_admin":   b.auth.IsAdmin(c),
+			"page":       page,
+			"version":    b.Version,
+			"title":      page.Title,
+			"recent":     b.GetLatest(),
+			"admin_page": false,
+			"settings":   b.GetSettings(),
+			"nav_pages":  navPages,
 		}
+		if err != nil {
+			data["articles"] = make([]interface{}, 0)
+			data["errors"] = err.Error()
+		} else {
+			data["articles"] = articles
+			if warning != "" {
+				data["errors"] = warning
+				data["warning"] = true
+			}
+		}
+		c.HTML(http.StatusOK, "page_research.html", data)
 	case PageTypeTags:
 		c.HTML(http.StatusOK, "page_tags.html", gin.H{
 			"logged_in":  b.auth.IsLoggedIn(c),
@@ -838,38 +869,30 @@ func (b *Blog) Speaking(c *gin.Context) {
 	})
 }
 
-// Speaking is the index page for research publications
+// Research is the index page for research publications
 func (b *Blog) Research(c *gin.Context) {
-	articles, err := b.scholar.QueryProfileWithMemoryCache("SbUmSEAAAAAJ", 50)
-	if err == nil {
-		sortArticlesByDateDesc(articles)
-		b.scholar.SaveCache("profiles.json", "articles.json")
-		c.HTML(http.StatusOK, "research.html", gin.H{
-			"logged_in":  b.auth.IsLoggedIn(c),
-			"is_admin":   b.auth.IsAdmin(c),
-			"version":    b.Version,
-			"title":      "Research Publications",
-			"recent":     b.GetLatest(),
-			"articles":   articles,
-			"admin_page": false,
-			"settings":   b.GetSettings(),
-			"nav_pages":  b.GetNavPages(),
-		})
-	} else {
-		articles := make([]*scholar.Article, 0)
-		c.HTML(http.StatusOK, "research.html", gin.H{
-			"logged_in":  b.auth.IsLoggedIn(c),
-			"is_admin":   b.auth.IsAdmin(c),
-			"version":    b.Version,
-			"title":      "Research Publications",
-			"recent":     b.GetLatest(),
-			"articles":   articles,
-			"admin_page": false,
-			"settings":   b.GetSettings(),
-			"errors":     err.Error(),
-			"nav_pages":  b.GetNavPages(),
-		})
+	articles, warning, err := b.queryScholar("SbUmSEAAAAAJ", 50)
+	data := gin.H{
+		"logged_in":  b.auth.IsLoggedIn(c),
+		"is_admin":   b.auth.IsAdmin(c),
+		"version":    b.Version,
+		"title":      "Research Publications",
+		"recent":     b.GetLatest(),
+		"admin_page": false,
+		"settings":   b.GetSettings(),
+		"nav_pages":  b.GetNavPages(),
 	}
+	if err != nil {
+		data["articles"] = make([]*scholar.Article, 0)
+		data["errors"] = err.Error()
+	} else {
+		data["articles"] = articles
+		if warning != "" {
+			data["errors"] = warning
+			data["warning"] = true
+		}
+	}
+	c.HTML(http.StatusOK, "research.html", data)
 }
 
 // Projects is the index page for projects / code
