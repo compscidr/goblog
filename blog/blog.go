@@ -92,7 +92,7 @@ func (b *Blog) getTags() []Tag {
 	return tags
 }
 
-func (b *Blog) getArchivesByYear() map[string][]Post {
+func (b *Blog) getArchivesByYear() ([]string, map[string][]Post) {
 	archive := make(map[string][]Post)
 	posts := b.GetPosts(false)
 	for _, post := range posts {
@@ -102,22 +102,32 @@ func (b *Blog) getArchivesByYear() map[string][]Post {
 		}
 		archive[year] = append(archive[year], post)
 	}
-	return archive
+	keys := make([]string, 0, len(archive))
+	for k := range archive {
+		keys = append(keys, k)
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(keys)))
+	return keys, archive
 }
 
-func (b *Blog) getArchivesByYearMonth() map[string][]Post {
+func (b *Blog) getArchivesByYearMonth() ([]string, map[string][]Post) {
 	archive := make(map[string][]Post)
 	posts := b.GetPosts(false)
 	for _, post := range posts {
 		year := strconv.Itoa(post.CreatedAt.Year())
-		month := strconv.Itoa(int(post.CreatedAt.Month()))
+		month := fmt.Sprintf("%02d", int(post.CreatedAt.Month()))
 		yearMonth := year + "/" + month
 		if _, ok := archive[yearMonth]; !ok {
 			archive[yearMonth] = make([]Post, 0)
 		}
 		archive[yearMonth] = append(archive[yearMonth], post)
 	}
-	return archive
+	keys := make([]string, 0, len(archive))
+	for k := range archive {
+		keys = append(keys, k)
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(keys)))
+	return keys, archive
 }
 
 func (b *Blog) GetPostObject(c *gin.Context) (*Post, error) {
@@ -477,11 +487,15 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 			"nav_pages":  navPages,
 		})
 	case PageTypeArchives:
+		yearKeys, byYear := b.getArchivesByYear()
+		monthKeys, byYearMonth := b.getArchivesByYearMonth()
 		c.HTML(http.StatusOK, "page_archives.html", gin.H{
-			"logged_in":   b.auth.IsLoggedIn(c),
-			"is_admin":    b.auth.IsAdmin(c),
-			"byYear":      b.getArchivesByYear(),
-			"byYearMonth": b.getArchivesByYearMonth(),
+			"logged_in":      b.auth.IsLoggedIn(c),
+			"is_admin":       b.auth.IsAdmin(c),
+			"yearKeys":       yearKeys,
+			"byYear":         byYear,
+			"yearMonthKeys":  monthKeys,
+			"byYearMonth":    byYearMonth,
 			"page":        page,
 			"version":     b.Version,
 			"title":       page.Title,
@@ -902,17 +916,21 @@ func (b *Blog) About(c *gin.Context) {
 
 // Archives shows the posts by year, month, etc.
 func (b *Blog) Archives(c *gin.Context) {
+	yearKeys, byYear := b.getArchivesByYear()
+	monthKeys, byYearMonth := b.getArchivesByYearMonth()
 	c.HTML(http.StatusOK, "archives.html", gin.H{
-		"logged_in":   b.auth.IsLoggedIn(c),
-		"is_admin":    b.auth.IsAdmin(c),
-		"version":     b.Version,
-		"title":       "Blog Archives",
-		"byYear":      b.getArchivesByYear(),
-		"byYearMonth": b.getArchivesByYearMonth(),
-		"recent":      b.GetLatest(),
-		"admin_page":  false,
-		"settings":    b.GetSettings(),
-		"nav_pages":   b.GetNavPages(),
+		"logged_in":     b.auth.IsLoggedIn(c),
+		"is_admin":      b.auth.IsAdmin(c),
+		"version":       b.Version,
+		"title":         "Blog Archives",
+		"yearKeys":      yearKeys,
+		"byYear":        byYear,
+		"yearMonthKeys": monthKeys,
+		"byYearMonth":   byYearMonth,
+		"recent":        b.GetLatest(),
+		"admin_page":    false,
+		"settings":      b.GetSettings(),
+		"nav_pages":     b.GetNavPages(),
 	})
 }
 
