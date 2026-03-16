@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -216,6 +217,14 @@ func TestBlogWorkflow(t *testing.T) {
 		t.Fatalf("Expected to get status %d for /tags but instead got %d\n", http.StatusOK, w.Code)
 	}
 
+	// Create posts in different years/months so we can verify archive sort order
+	oldPost := blog.Post{Title: "Old Post", Content: "old", Slug: "old-post", PostTypeID: defaultType.ID}
+	oldPost.CreatedAt = time.Date(2023, 3, 15, 0, 0, 0, 0, time.UTC)
+	db.Create(&oldPost)
+	newPost := blog.Post{Title: "New Post", Content: "new", Slug: "new-post", PostTypeID: defaultType.ID}
+	newPost.CreatedAt = time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC)
+	db.Create(&newPost)
+
 	// Dynamic page: /archives resolves via NoRoute
 	a.On("IsAdmin", mock.Anything).Return(false).Once()
 	a.On("IsLoggedIn", mock.Anything).Return(false).Once()
@@ -224,6 +233,23 @@ func TestBlogWorkflow(t *testing.T) {
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected to get status %d for /archives but instead got %d\n", http.StatusOK, w.Code)
+	}
+	// Verify archives are sorted newest first
+	body := w.Body.String()
+	idx2025 := strings.Index(body, "2025")
+	idx2023 := strings.Index(body, "2023")
+	if idx2025 < 0 || idx2023 < 0 {
+		t.Fatal("Expected archives page to contain both 2025 and 2023")
+	}
+	if idx2025 > idx2023 {
+		t.Fatal("Expected 2025 to appear before 2023 in archives (newest first)")
+	}
+	// Verify months are zero-padded
+	if !strings.Contains(body, "2023/03") {
+		t.Fatal("Expected zero-padded month 2023/03 in archives")
+	}
+	if !strings.Contains(body, "2025/11") {
+		t.Fatal("Expected 2025/11 in archives")
 	}
 
 	//get home
