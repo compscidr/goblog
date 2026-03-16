@@ -300,13 +300,19 @@ func main() {
 	router.Use(sessions.Sessions(hostname, store))
 	log.Println("Session key: ", sessionKey)
 	log.Println("Hostname: ", hostname)
-	//todo - make the template folder configurable by command line arg
-	//so that people can pass in their own template folder instead of the default
-	//https://github.com/gin-gonic/gin/issues/464
+	// Load templates from the active theme directory, falling back to "default"
+	theme := "default"
+	settings := _blog.GetSettings()
+	if t, ok := settings["theme"]; ok && t.Value != "" {
+		theme = t.Value
+	}
+	themePath := "themes/" + theme + "/"
+	log.Println("Using theme: " + theme)
+
 	router.SetFuncMap(template.FuncMap{
 		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
 	})
-	router.LoadHTMLGlob("templates/*.html")
+	router.LoadHTMLGlob(themePath + "templates/*.html")
 	router.GET("/", goblog.rootHandler)
 	router.GET("/login", goblog.loginHandler)
 	router.GET("/wizard", goblog._wizard.SaveToken)
@@ -314,7 +320,8 @@ func main() {
 	router.POST("/test_db", testDB)
 	router.POST("/api/v1/upload", goblog._admin.UploadFile)
 	router.PATCH("/api/v1/settings", goblog._admin.UpdateSettings)
-	//if we use true here - it will override the home route and just show files
+	// Serve theme static files at /theme/ and general static files at /
+	router.Use(static.Serve("/theme/", static.LocalFile(themePath+"static", false)))
 	router.Use(static.Serve("/", static.LocalFile("www", false)))
 	if err != nil {
 		log.Println("Couldn't get the hostname")

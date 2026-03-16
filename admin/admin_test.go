@@ -427,7 +427,7 @@ func TestCreatePost(t *testing.T) {
 	router.SetFuncMap(template.FuncMap{
 		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
 	})
-	router.LoadHTMLGlob("../templates/*")
+	router.LoadHTMLGlob("../themes/default/templates/*")
 	a.On("IsAdmin", mock.Anything).Return(true).Twice()
 	a.On("IsLoggedIn", mock.Anything).Return(true).Once()
 	req, _ = http.NewRequest("GET", "/admin", bytes.NewBuffer(jsonValue))

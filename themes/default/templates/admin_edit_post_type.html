@@ -1,15 +1,6 @@
 {{ template "header.html" .}}
 <div class="container">
-    <div class="nav-scroller bg-body shadow-sm">
-        <nav class="nav nav-underline" aria-label="Secondary navigation">
-            <a class="nav-link" href="/admin/dashboard">Dashboard</a>
-            <a class="nav-link" href="/admin/posts">All Posts</a>
-            <a class="nav-link" href="/admin/newpost">New Post</a>
-            <a class="nav-link" href="/admin/pages">Pages</a>
-            <a class="nav-link active" aria-current="page" href="/admin/post-types">Post Types</a>
-            <a class="nav-link" href="/admin/settings">Settings</a>
-        </nav>
-    </div>
+    {{ template "admin_nav.html" . }}
     <h1>Edit Post Type: {{ .post_type.Name }}</h1>
 
     <div id="ajax-error" class="alert alert-danger" role="alert" style="display: none;"></div>
