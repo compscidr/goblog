@@ -82,7 +82,7 @@ func (b *Blog) GetPosts(drafts bool) []Post {
 
 func (b *Blog) GetLatest() Post {
 	var post Post
-	(*b.db).Preload("Tags").Preload("PostType").Order("created_at desc").First(&post)
+	(*b.db).Preload("Tags").Preload("PostType").Where("draft = ?", false).Order("created_at desc").First(&post)
 	return post
 }
 
