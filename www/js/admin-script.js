@@ -86,9 +86,9 @@ function uploadFile(fileInput) {
 
 function updatePost(id, publish) {
     var tags = $("#tags").text().split(',')
-    for (var i = 0; i < tags.length; i++) {
-        tags[i] = {"name": tags[i].trim()}
-    }
+        .map(function(t) { return t.trim(); })
+        .filter(function(t) { return t !== ""; })
+        .map(function(t) { return {"name": t}; });
     var time = $("#created_at").val();
     var vtime = moment.utc(time)
 
@@ -123,9 +123,9 @@ function updatePost(id, publish) {
 
 function createPost(publish) {
     var tags = $("#tags").val().split(',')
-    for (var i = 0; i < tags.length; i++) {
-        tags[i] = {"name": tags[i].trim()}
-    }
+        .map(function(t) { return t.trim(); })
+        .filter(function(t) { return t !== ""; })
+        .map(function(t) { return {"name": t}; });
 
     var time = $("#created_at").val();
     var vtime = moment.utc(time)
