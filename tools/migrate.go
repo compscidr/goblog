@@ -330,8 +330,18 @@ func Migrate(db *gorm.DB) error {
 	seedBacklinks(db)
 	seedDefaultPages(db)
 	linkWritingPagesToPostType(db)
+	cleanupEmptyTags(db)
 
 	return nil
+}
+
+// cleanupEmptyTags removes empty-name tag associations and the empty tag itself.
+func cleanupEmptyTags(db *gorm.DB) {
+	result := db.Exec("DELETE FROM post_tags WHERE tag_name = ''")
+	if result.RowsAffected > 0 {
+		log.Printf("Cleaned up %d empty tag associations", result.RowsAffected)
+	}
+	db.Exec("DELETE FROM tags WHERE name = ''")
 }
 
 // seedDefaultPages creates the default pages (Writing, Research, About) if no pages exist.
