@@ -112,10 +112,11 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js" integrity="sha512-LhccdVNGe2QMEfI3x4DVV3ckMRe36TfydKss6mJpdHjNFiV07dFpS2xzeZedptKZrwxfICJpez09iNioiSZ3hA==" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js" integrity="sha512-78KH17QLT5e55GJqP76vutp1D2iAoy06WcYBXB6iBCsmO6wWzx0Qdg8EDpm8mKXv68BcvHOyeeP4wxAL0twJGQ==" crossorigin="anonymous"></script>
   <script type="text/javascript">
-    var converter = new showdown.Converter();
+    var converter = new showdown.Converter({tables: true});
     var md = "{{ .post.Content }}";
-    var html = converter.makeHtml(md);
+    var html = DOMPurify.sanitize(converter.makeHtml(md));
     $("#html").html(html)
   </script>
   <noscript>
@@ -165,7 +166,7 @@
             var raw = {{ .Content }};
             var el = document.getElementById("comment-content-{{ .ID }}");
             if (el && typeof converter !== 'undefined') {
-              el.innerHTML = converter.makeHtml(raw);
+              el.innerHTML = DOMPurify.sanitize(converter.makeHtml(raw));
             } else if (el) {
               el.textContent = raw;
             }
@@ -204,7 +205,7 @@
             var content = document.getElementById("comment-content").value;
             var preview = document.getElementById("comment-preview");
             if (typeof converter !== 'undefined') {
-              preview.innerHTML = converter.makeHtml(content);
+              preview.innerHTML = DOMPurify.sanitize(converter.makeHtml(content));
             } else {
               preview.textContent = content;
             }
