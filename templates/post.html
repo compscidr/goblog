@@ -113,7 +113,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js" integrity="sha512-LhccdVNGe2QMEfI3x4DVV3ckMRe36TfydKss6mJpdHjNFiV07dFpS2xzeZedptKZrwxfICJpez09iNioiSZ3hA==" crossorigin="anonymous"></script>
   <script type="text/javascript">
-    var converter = new showdown.Converter();
+    var converter = new showdown.Converter({tables: true});
     var md = "{{ .post.Content }}";
     var html = converter.makeHtml(md);
     $("#html").html(html)

@@ -53,6 +53,22 @@ video {
 /* 2. If supporting object-fit, overriding (1): */
 @supports (object-fit: cover) {  #video-bg > video { top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; } }
 
+/* Markdown tables */
+#html table, #page-content table {
+  width: 100%;
+  margin-bottom: 1rem;
+  border-collapse: collapse;
+}
+#html th, #html td, #page-content th, #page-content td {
+  padding: 0.5rem;
+  border: 1px solid #dee2e6;
+  text-align: left;
+}
+#html thead th, #page-content thead th {
+  border-bottom: 2px solid #dee2e6;
+  background-color: #f8f9fa;
+}
+
 /* Comments */
 .comment { border-bottom: 1px solid #eee; padding: 15px 0; text-align: left; }
 .comment-meta { color: #999; font-size: 13px; margin-bottom: 5px; }
