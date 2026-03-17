@@ -231,10 +231,47 @@ function rollbackRevision(postId, revisionId) {
     return false;
 }
 
+function togglePluginEnabled(checkbox) {
+    var pluginName = $(checkbox).data("plugin");
+    var enabled = checkbox.checked ? "true" : "false";
+    var $body = $("#plugin-body-" + pluginName);
+
+    if (checkbox.checked) {
+        $body.collapse("show");
+    } else {
+        $body.collapse("hide");
+    }
+
+    // Save the enabled setting immediately
+    var settings = [{"key": pluginName + ".enabled", "value": enabled, "type": "text"}];
+    $.ajax({
+        url: "/api/v1/settings",
+        type: "patch",
+        dataType: "json",
+        contentType: "application/json",
+        success: function(json) {
+            $("#ajax-error").html(pluginName + (checkbox.checked ? " enabled" : " disabled")).show();
+            $("#ajax-error").removeClass("alert-danger").addClass("alert-success");
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            $("#ajax-error").html("ERROR: " + textStatus + " " + errorThrown).show();
+            $("#ajax-error").removeClass("alert-success").addClass("alert-danger");
+        },
+        data: JSON.stringify(settings)
+    });
+}
+
 function updatePluginSettings(btn) {
     $("#ajax-error").hide();
     var settings = [];
+    var $card = $(btn).closest(".card");
     var $form = $(btn).closest("form");
+
+    // Include the enabled checkbox from the card header
+    var $toggle = $card.find(".plugin-enable-toggle");
+    if ($toggle.length) {
+        settings.push({"key": $toggle.attr("name"), "value": $toggle.is(":checked") ? "true" : "false", "type": "text"});
+    }
 
     $form.find(":input").each(function() {
         var key = this.name;

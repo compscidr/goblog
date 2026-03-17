@@ -38,27 +38,39 @@
     </div>
 
     {{ range .plugin_settings }}
+    {{ $pluginName := .PluginName }}
+    {{ $values := .CurrentValues }}
+    {{ $enabled := index $values "enabled" }}
     <div class="card mb-4">
-        <div class="card-header"><strong>Plugin: {{ .DisplayName }}</strong> <span class="text-muted">({{ .PluginName }})</span></div>
-        <div class="card-body">
-            <form class="plugin-settings-form" data-plugin="{{ .PluginName }}">
-                {{ $pluginName := .PluginName }}
-                {{ $values := .CurrentValues }}
-                {{ range .Settings }}
-                <div class="mb-3">
-                    <label for="{{ $pluginName }}.{{ .Key }}" class="form-label">{{ .Label }}</label>
-                    {{ if .Description }}<small class="text-muted d-block mb-1">{{ .Description }}</small>{{ end }}
-                    {{ if eq .Type "textarea" }}
-                    <textarea id="{{ $pluginName }}.{{ .Key }}" name="{{ $pluginName }}.{{ .Key }}" class="form-control" rows="3">{{ index $values .Key }}</textarea>
-                    {{ else }}
-                    <input type="text" id="{{ $pluginName }}.{{ .Key }}" name="{{ $pluginName }}.{{ .Key }}" value="{{ index $values .Key }}" class="form-control">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><strong>Plugin: {{ .DisplayName }}</strong> <span class="text-muted">({{ .PluginName }})</span></span>
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input plugin-enable-toggle" type="checkbox" id="{{ $pluginName }}.enabled" name="{{ $pluginName }}.enabled" data-plugin="{{ $pluginName }}" {{ if eq $enabled "true" }}checked{{ end }}
+                    onchange="togglePluginEnabled(this);">
+                <label class="form-check-label" for="{{ $pluginName }}.enabled">Enabled</label>
+            </div>
+        </div>
+        <div class="collapse {{ if eq $enabled "true" }}show{{ end }}" id="plugin-body-{{ $pluginName }}">
+            <div class="card-body">
+                <form class="plugin-settings-form" data-plugin="{{ $pluginName }}">
+                    {{ range .Settings }}
+                    {{ if ne .Key "enabled" }}
+                    <div class="mb-3">
+                        <label for="{{ $pluginName }}.{{ .Key }}" class="form-label">{{ .Label }}</label>
+                        {{ if .Description }}<small class="text-muted d-block mb-1">{{ .Description }}</small>{{ end }}
+                        {{ if eq .Type "textarea" }}
+                        <textarea id="{{ $pluginName }}.{{ .Key }}" name="{{ $pluginName }}.{{ .Key }}" class="form-control" rows="3">{{ index $values .Key }}</textarea>
+                        {{ else }}
+                        <input type="text" id="{{ $pluginName }}.{{ .Key }}" name="{{ $pluginName }}.{{ .Key }}" value="{{ index $values .Key }}" class="form-control">
+                        {{ end }}
+                    </div>
                     {{ end }}
-                </div>
-                {{ end }}
-                <button type="button" class="btn btn-primary" onclick="updatePluginSettings(this);">
-                    Save {{ .DisplayName }} Settings
-                </button>
-            </form>
+                    {{ end }}
+                    <button type="button" class="btn btn-primary" onclick="updatePluginSettings(this);">
+                        Save {{ .DisplayName }} Settings
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
     {{ end }}
