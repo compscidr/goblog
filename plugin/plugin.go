@@ -14,7 +14,7 @@ import (
 )
 
 // SettingDefinition describes a single setting that a plugin requires.
-// Settings are stored in the blog's Setting table namespaced as "pluginname.key".
+// Settings are stored in the plugin_settings table keyed by plugin name and setting key.
 type SettingDefinition struct {
 	Key          string // short key, e.g. "tracking_id"
 	Type         string // "text", "textarea", "file", "bool"

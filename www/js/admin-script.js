@@ -1,6 +1,7 @@
 // take the form data and use the patch method to update the settings
 function updateSettings(redirect) {
     $("#ajax-error").hide();
+    var currentTheme = $("#theme").val();
     var settings = [];
 
     // iterate over all input fields in the form and create a json object with the key, value, and type
@@ -50,9 +51,9 @@ function updateSettings(redirect) {
                 window.location = redirect;
             }
 
-            // Reload if theme was changed so new templates take effect
-            var themeChanged = settings.some(function(s) { return s.key === "theme"; });
-            if (themeChanged && redirect === undefined) {
+            // Reload if theme was actually changed so new templates take effect
+            var newTheme = $("#theme").val();
+            if (newTheme !== currentTheme && redirect === undefined) {
                 window.location.reload();
             }
         },
@@ -247,6 +248,7 @@ function togglePluginEnabled(checkbox) {
             $("#ajax-error").removeClass("alert-danger").addClass("alert-success");
         },
         error: function(jqXHR, textStatus, errorThrown) {
+            checkbox.checked = !checkbox.checked; // revert on failure
             $("#ajax-error").html("ERROR: " + textStatus + " " + errorThrown).show();
             $("#ajax-error").removeClass("alert-success").addClass("alert-danger");
         },

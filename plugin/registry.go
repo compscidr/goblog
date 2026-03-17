@@ -53,7 +53,9 @@ func (r *Registry) Register(p Plugin) {
 func (r *Registry) Plugins() []Plugin {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	return r.plugins
+	result := make([]Plugin, len(r.plugins))
+	copy(result, r.plugins)
+	return result
 }
 
 // Init seeds plugin settings and calls OnInit for all plugins.
@@ -94,8 +96,14 @@ func (r *Registry) StartScheduledJobs() {
 				for {
 					select {
 					case <-ticker.C:
+						r.mu.RLock()
+						db := r.db
+						r.mu.RUnlock()
+						if db == nil {
+							continue
+						}
 						settings := r.getPluginSettings(p.Name())
-						if err := job.Run(r.db, settings); err != nil {
+						if err := job.Run(db, settings); err != nil {
 							log.Printf("Plugin %s job %s error: %v", p.Name(), job.Name, err)
 						}
 					case <-r.stopCh:
@@ -114,6 +122,9 @@ func (r *Registry) Stop() {
 
 // getPluginSettings returns a plugin's settings as a simple key→value map.
 func (r *Registry) getPluginSettings(pluginName string) map[string]string {
+	if r.db == nil {
+		return make(map[string]string)
+	}
 	var settings []PluginSetting
 	r.db.Where("plugin_name = ?", pluginName).Find(&settings)
 	result := make(map[string]string)
@@ -129,6 +140,10 @@ func (r *Registry) getPluginSettings(pluginName string) map[string]string {
 func (r *Registry) InjectTemplateData(c *gin.Context, templateName string, data gin.H) gin.H {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
+
+	if r.db == nil {
+		return data
+	}
 
 	pluginsData := gin.H{}
 	headHTML := ""

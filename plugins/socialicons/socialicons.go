@@ -5,6 +5,7 @@ package socialicons
 
 import (
 	"goblog/plugin"
+	"html"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -84,14 +85,16 @@ func (p *SocialIconsPlugin) TemplateFooter(ctx *plugin.HookContext) string {
 	if ctx.Settings["enabled"] != "true" {
 		return ""
 	}
-	html := `<div class="text-center" style="padding: 10px 0;">`
+	out := `<div class="text-center" style="padding: 10px 0;">`
 	for _, s := range socials {
 		url := ctx.Settings[s.key]
 		if url == "" {
 			continue
 		}
-		html += `<a href="` + url + `" target="_blank" rel="noopener noreferrer" title="` + s.label + `" style="margin: 0 6px; color: inherit;"><i class="` + s.icon + ` fa-1x"></i></a>`
+		safeURL := html.EscapeString(url)
+		safeLabel := html.EscapeString(s.label)
+		out += `<a href="` + safeURL + `" target="_blank" rel="noopener noreferrer" title="` + safeLabel + `" style="margin: 0 6px; color: inherit;"><i class="` + s.icon + ` fa-1x"></i></a>`
 	}
-	html += `</div>`
-	return html
+	out += `</div>`
+	return out
 }

@@ -41,8 +41,13 @@ func (p *testPlugin) TemplateData(ctx *plugin.HookContext) gin.H {
 }
 
 func TestRegistryBasics(t *testing.T) {
-	db, _ := gorm.Open(sqlite.Open(":memory:"))
-	db.AutoMigrate(&plugin.PluginSetting{})
+	db, err := gorm.Open(sqlite.Open(":memory:"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AutoMigrate(&plugin.PluginSetting{}); err != nil {
+		t.Fatal(err)
+	}
 
 	reg := plugin.NewRegistry(db)
 	tp := &testPlugin{}
@@ -57,8 +62,13 @@ func TestRegistryBasics(t *testing.T) {
 }
 
 func TestRegistryInit(t *testing.T) {
-	db, _ := gorm.Open(sqlite.Open(":memory:"))
-	db.AutoMigrate(&plugin.PluginSetting{})
+	db, err := gorm.Open(sqlite.Open(":memory:"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AutoMigrate(&plugin.PluginSetting{}); err != nil {
+		t.Fatal(err)
+	}
 
 	reg := plugin.NewRegistry(db)
 	reg.Register(&testPlugin{})
@@ -75,8 +85,13 @@ func TestRegistryInit(t *testing.T) {
 }
 
 func TestRegistryInjectTemplateData(t *testing.T) {
-	db, _ := gorm.Open(sqlite.Open(":memory:"))
-	db.AutoMigrate(&plugin.PluginSetting{})
+	db, err := gorm.Open(sqlite.Open(":memory:"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AutoMigrate(&plugin.PluginSetting{}); err != nil {
+		t.Fatal(err)
+	}
 
 	reg := plugin.NewRegistry(db)
 	reg.Register(&testPlugin{})
@@ -119,8 +134,13 @@ func TestRegistryInjectTemplateData(t *testing.T) {
 }
 
 func TestGetAllSettings(t *testing.T) {
-	db, _ := gorm.Open(sqlite.Open(":memory:"))
-	db.AutoMigrate(&plugin.PluginSetting{})
+	db, err := gorm.Open(sqlite.Open(":memory:"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AutoMigrate(&plugin.PluginSetting{}); err != nil {
+		t.Fatal(err)
+	}
 
 	reg := plugin.NewRegistry(db)
 	reg.Register(&testPlugin{})

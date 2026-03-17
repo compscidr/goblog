@@ -4,10 +4,12 @@
 package scholar
 
 import (
+	"errors"
 	"fmt"
 	"goblog/blog"
 	"log"
 	"sort"
+	"sync"
 	"time"
 
 	gplugin "goblog/plugin"
@@ -20,7 +22,8 @@ import (
 // ScholarPlugin displays Google Scholar publications.
 type ScholarPlugin struct {
 	gplugin.BasePlugin
-	sch *scholarlib.Scholar
+	sch         *scholarlib.Scholar
+	scholarOnce sync.Once
 }
 
 // New creates a new scholar plugin.
@@ -48,6 +51,9 @@ func (p *ScholarPlugin) OnInit(db *gorm.DB) error {
 	var page blog.Page
 	result := db.Where("page_type = ?", "research").First(&page)
 	if result.Error != nil {
+		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("scholar plugin: failed to query research page: %w", result.Error)
+		}
 		// No research page exists — create the default
 		page = blog.Page{
 			Title:    "Research",
@@ -57,7 +63,9 @@ func (p *ScholarPlugin) OnInit(db *gorm.DB) error {
 			NavOrder: 20,
 			Enabled:  true,
 		}
-		db.Create(&page)
+		if err := db.Create(&page).Error; err != nil {
+			return fmt.Errorf("scholar plugin: failed to create research page: %w", err)
+		}
 		log.Println("Scholar plugin: created research page")
 	}
 
@@ -89,7 +97,7 @@ func (p *ScholarPlugin) Pages() []gplugin.PageDefinition {
 }
 
 func (p *ScholarPlugin) ensureScholar(settings map[string]string) {
-	if p.sch == nil {
+	p.scholarOnce.Do(func() {
 		profileCache := settings["profile_cache"]
 		articleCache := settings["article_cache"]
 		if profileCache == "" {
@@ -99,7 +107,7 @@ func (p *ScholarPlugin) ensureScholar(settings map[string]string) {
 			articleCache = "articles.json"
 		}
 		p.sch = scholarlib.New(profileCache, articleCache)
-	}
+	})
 }
 
 func (p *ScholarPlugin) RenderPage(ctx *gplugin.HookContext, pageType string) (string, gin.H) {

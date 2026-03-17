@@ -39,6 +39,7 @@ type goblog struct {
 	_blog              *blog.Blog
 	_auth              *auth.Auth
 	_admin             *admin.Admin
+	_registry          *gplugin.Registry
 	sessionKey         string
 	router             *gin.Engine
 	handlersRegistered bool
@@ -164,6 +165,9 @@ func (g goblog) rootHandler(c *gin.Context) {
 			g._auth.UpdateDb(db)
 			g._admin.UpdateDb(db)
 			g._wizard.UpdateDb(db)
+			g._registry.UpdateDb(db)
+			g._registry.Init()
+			g._registry.StartScheduledJobs()
 
 			if !isAuthConfigured() {
 				g._wizard.Landing(c)
@@ -299,24 +303,27 @@ func main() {
 	}
 	router.SetTrustedProxies(trustedProxies)
 
-	goblog := goblog{
-		_wizard:    &_wizard,
-		_blog:      &_blog,
-		_auth:      &_auth,
-		_admin:     &_admin,
-		sessionKey: sessionKey,
-		router:     router,
-	}
-
 	// Initialize plugin system
 	registry := gplugin.NewRegistry(db)
 	registry.Register(analytics.New())
 	registry.Register(socialicons.New())
 	registry.Register(scholarplugin.New())
-	gplugin.LoadDynamicPlugins(registry, "plugins/dynamic")
+	if os.Getenv("ENABLE_DYNAMIC_PLUGINS") == "true" {
+		gplugin.LoadDynamicPlugins(registry, "plugins/dynamic")
+	}
 	if db != nil {
 		registry.Init()
 		registry.StartScheduledJobs()
+	}
+
+	goblog := goblog{
+		_wizard:    &_wizard,
+		_blog:      &_blog,
+		_auth:      &_auth,
+		_admin:     &_admin,
+		_registry:  registry,
+		sessionKey: sessionKey,
+		router:     router,
 	}
 
 	// Filter nav pages: hide pages owned by disabled plugins

@@ -5,9 +5,12 @@ package analytics
 
 import (
 	"goblog/plugin"
+	"regexp"
 
 	"gorm.io/gorm"
 )
+
+var validTrackingID = regexp.MustCompile(`^[A-Za-z0-9-]+$`)
 
 // AnalyticsPlugin implements Google Analytics tracking.
 type AnalyticsPlugin struct {
@@ -48,6 +51,9 @@ func (p *AnalyticsPlugin) TemplateHead(ctx *plugin.HookContext) string {
 	trackingID := ctx.Settings["tracking_id"]
 	enabled := ctx.Settings["enabled"]
 	if trackingID == "" || enabled != "true" {
+		return ""
+	}
+	if !validTrackingID.MatchString(trackingID) {
 		return ""
 	}
 	return `<script async src="https://www.googletagmanager.com/gtag/js?id=` + trackingID + `"></script>

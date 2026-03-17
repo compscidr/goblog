@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,7 +12,8 @@ import (
 )
 
 // LoadDynamicPlugins scans a directory for .go plugin files and loads them
-// using the Yaegi Go interpreter. Each file must define a function:
+// using the Yaegi Go interpreter. Each file must use `package main` and
+// define a function:
 //
 //	func NewPlugin() plugin.Plugin
 //
@@ -67,7 +69,7 @@ func loadPlugin(path string) (Plugin, error) {
 
 	p, ok := v.Interface().(Plugin)
 	if !ok {
-		return nil, err
+		return nil, fmt.Errorf("%s: NewPlugin() did not return a plugin.Plugin", path)
 	}
 
 	return p, nil

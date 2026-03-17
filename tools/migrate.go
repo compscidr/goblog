@@ -417,16 +417,20 @@ func migrateSocialURLsToPlugin(db *gorm.DB) {
 	db.Where("key IN ?", socialKeys).Delete(&blog.Setting{})
 }
 
-// cleanupPluginSettingsFromMainTable removes any dot-namespaced keys
-// from the main settings table that belong in plugin_settings instead.
+// cleanupPluginSettingsFromMainTable removes known plugin-namespaced keys
+// from the main settings table that were created before plugin settings
+// moved to their own table.
 func cleanupPluginSettingsFromMainTable(db *gorm.DB) {
-	result := db.Exec("DELETE FROM settings WHERE key LIKE '%.%'")
-	if result.Error != nil {
-		log.Printf("Warning: failed to clean up plugin settings from main table: %v", result.Error)
-		return
-	}
-	if result.RowsAffected > 0 {
-		log.Printf("Cleaned up %d plugin settings from main settings table", result.RowsAffected)
+	knownPrefixes := []string{"analytics.%", "socialicons.%", "scholar.%"}
+	for _, prefix := range knownPrefixes {
+		result := db.Exec("DELETE FROM settings WHERE key LIKE ?", prefix)
+		if result.Error != nil {
+			log.Printf("Warning: failed to clean up %s from main table: %v", prefix, result.Error)
+			continue
+		}
+		if result.RowsAffected > 0 {
+			log.Printf("Cleaned up %d %s entries from main settings table", result.RowsAffected, prefix)
+		}
 	}
 }
 
