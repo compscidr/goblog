@@ -9,8 +9,10 @@ import (
 	"goblog/blog"
 	"html"
 	"log"
+	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -117,12 +119,13 @@ func (p *ScholarPlugin) RenderPage(ctx *gplugin.HookContext, pageType string) (s
 		return "", nil
 	}
 
+	data := gin.H{"has_plugin_content": true}
+
 	settings := ctx.Settings
 	scholarID := settings["scholar_id"]
 	if scholarID == "" {
-		return "page_content.html", gin.H{
-			"plugin_content": `<div class="alert alert-warning">Google Scholar ID not configured. Set it in the Scholar plugin settings.</div>`,
-		}
+		data["plugin_content"] = `<div class="alert alert-warning" role="alert">Google Scholar ID not configured. Set it in the Scholar plugin settings.</div>`
+		return "page_content.html", data
 	}
 
 	limitStr := settings["article_limit"]
@@ -136,42 +139,69 @@ func (p *ScholarPlugin) RenderPage(ctx *gplugin.HookContext, pageType string) (s
 	articles, err := p.sch.QueryProfileWithMemoryCache(scholarID, limit)
 	if err != nil {
 		log.Printf("Scholar query failed: %v", err)
-		return "page_content.html", gin.H{
-			"plugin_content": `<div class="alert alert-danger">` + html.EscapeString(err.Error()) + `</div>`,
-		}
+		data["plugin_content"] = `<div class="alert alert-danger" role="alert">` + html.EscapeString(err.Error()) + `</div>`
+		return "page_content.html", data
 	}
 
 	sortArticlesByDateDesc(articles)
 	p.sch.SaveCache(settings["profile_cache"], settings["article_cache"])
 
-	return "page_content.html", gin.H{
-		"plugin_content": renderArticlesHTML(articles),
+	data["plugin_content"] = renderArticlesHTML(articles)
+	return "page_content.html", data
+}
+
+// safeHref returns the URL only if it uses http or https scheme, otherwise empty.
+func safeHref(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return ""
 	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return ""
+	}
+	return html.EscapeString(rawURL)
 }
 
 // renderArticlesHTML generates the HTML for the articles list.
 func renderArticlesHTML(articles []*scholarlib.Article) string {
-	out := ""
+	if len(articles) == 0 {
+		return `<p>No publications found.</p>`
+	}
+
+	var b strings.Builder
 	for _, a := range articles {
-		out += `<div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #eee;">`
-		out += `<div><a href="` + html.EscapeString(a.ScholarURL) + `">` + html.EscapeString(a.Title) + `</a></div>`
-		if a.Authors != "" {
-			out += `<div style="color: #666; font-size: 13px;">` + html.EscapeString(a.Authors) + `</div>`
+		b.WriteString(`<div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #eee;">`)
+
+		// Title — link only if URL is safe
+		href := safeHref(a.ScholarURL)
+		if href != "" {
+			b.WriteString(`<div><a href="` + href + `">` + html.EscapeString(a.Title) + `</a></div>`)
+		} else {
+			b.WriteString(`<div>` + html.EscapeString(a.Title) + `</div>`)
 		}
-		out += `<div style="color: #888; font-size: 13px;">`
+
+		if a.Authors != "" {
+			b.WriteString(`<div style="color: #666; font-size: 13px;">` + html.EscapeString(a.Authors) + `</div>`)
+		}
+
+		// Meta line: year · journal · citations
+		var meta []string
 		if a.Year > 0 {
-			out += strconv.Itoa(a.Year)
+			meta = append(meta, strconv.Itoa(a.Year))
 		}
 		if a.Journal != "" {
-			out += ` &middot; ` + html.EscapeString(a.Journal)
+			meta = append(meta, html.EscapeString(a.Journal))
 		}
 		if a.NumCitations > 0 {
-			out += ` &middot; ` + strconv.Itoa(a.NumCitations) + ` citations`
+			meta = append(meta, strconv.Itoa(a.NumCitations)+" citations")
 		}
-		out += `</div>`
-		out += `</div>`
+		if len(meta) > 0 {
+			b.WriteString(`<div style="color: #888; font-size: 13px;">` + strings.Join(meta, " &middot; ") + `</div>`)
+		}
+
+		b.WriteString(`</div>`)
 	}
-	return out
+	return b.String()
 }
 
 func (p *ScholarPlugin) ScheduledJobs() []gplugin.ScheduledJob {
