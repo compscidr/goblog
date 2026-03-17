@@ -1,26 +1,24 @@
 {{ template "header.html" .}}
 <script src="/js/admin-script.js"></script>
 <div class="container">
-    <div class="nav-scroller bg-body shadow-sm">
-        <!-- https://getbootstrap.com/docs/5.0/examples/offcanvas-navbar/ -->
-        <nav class="nav nav-underline" aria-label="Secondary navigation">
-            <a class="nav-link" href="/admin/dashboard">Dashboard</a>
-            <a class="nav-link" href="/admin/posts">All Posts</a>
-            <a class="nav-link" href="/admin/newpost">New Post</a>
-            <a class="nav-link" href="/admin/pages">Pages</a>
-            <a class="nav-link" href="/admin/post-types">Post Types</a>
-            <a class="nav-link active" aria-current="page" href="/admin/settings">Settings</a>
-        </nav>
-    </div>
+    {{ template "admin_nav.html" . }}
     <h1>Settings</h1>
     <div id="ajax-error" class="alert alert-danger" role="alert" style="display: none;"></div>
     <form id="settings-form" enctype="multipart/form-data">
+        {{ $themes := .themes }}
         {{ range .settings }}
         <label for="{{ .Key }}" class="form-label">{{ .Key }}</label>
             {{ if eq .Type "file" }}
             <input type="{{ .Type }}" id="{{ .Key }}" name="{{ .Key }}" class="form-control" oninput="uploadFile(this)" required>
             {{ else if eq .Type "textarea" }}
             <textarea id="{{ .Key }}" name="{{ .Key }}" class="form-control" rows="5">{{ .Value }}</textarea>
+            {{ else if eq .Key "theme" }}
+            <select id="{{ .Key }}" name="{{ .Key }}" class="form-control">
+                {{ $current := .Value }}
+                {{ range $themes }}
+                <option value="{{ . }}" {{ if eq . $current }}selected{{ end }}>{{ . }}</option>
+                {{ end }}
+            </select>
             {{ else }}
             <input type="{{ .Type }}" id="{{ .Key }}" name="{{ .Key }}" value="{{ .Value }}" class="form-control" required>
             {{ end }}

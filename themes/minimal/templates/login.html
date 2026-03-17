@@ -1,0 +1,29 @@
+{{ template "header.html" .}}
+
+<script type="text/javascript">
+  var host = location.protocol + '//' + window.location.host
+  var urlParams = new URLSearchParams(window.location.search);
+  var code = urlParams.get('code');
+
+  if (code) {
+    var post = $.post(host + "/api/login", {"code": code});
+    post.done(function(data) {
+      window.location.href = '/';
+    });
+  }
+</script>
+
+<div style="display: flex; justify-content: center; align-items: center; min-height: 60vh;">
+  <div style="max-width: 360px; width: 100%; text-align: center; padding: 40px 20px;">
+    <h2 style="font-weight: 600; margin-bottom: 8px;">Sign In</h2>
+    <p style="color: #64748b; font-size: 14px; margin-bottom: 30px;">Log in to manage {{ .settings.site_title.Value }}</p>
+
+    <a id="github-button" href="" style="display: inline-flex; align-items: center; gap: 10px; padding: 10px 24px; background: #24292e; color: #fff; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500;">
+      <i class="fab fa-github fa-lg"></i> Continue with GitHub
+    </a>
+
+    <script>$("#github-button").prop("href", "https://github.com/login/oauth/authorize?client_id={{ .client_id }}&redirect_uri=" + window.location);</script>
+  </div>
+</div>
+
+{{ template "footer.html" .}}
