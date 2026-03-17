@@ -234,13 +234,6 @@ function rollbackRevision(postId, revisionId) {
 function togglePluginEnabled(checkbox) {
     var pluginName = $(checkbox).data("plugin");
     var enabled = checkbox.checked ? "true" : "false";
-    var $body = $("#plugin-body-" + pluginName);
-
-    if (checkbox.checked) {
-        $body.collapse("show");
-    } else {
-        $body.collapse("hide");
-    }
 
     // Save the enabled setting immediately
     var settings = [{"key": pluginName + ".enabled", "value": enabled, "type": "text"}];

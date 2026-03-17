@@ -42,15 +42,15 @@
     {{ $values := .CurrentValues }}
     {{ $enabled := index $values "enabled" }}
     <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card-header d-flex justify-content-between align-items-center" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#plugin-body-{{ $pluginName }}">
             <span><strong>Plugin: {{ .DisplayName }}</strong> <span class="text-muted">({{ .PluginName }})</span></span>
-            <div class="form-check form-switch mb-0">
+            <div class="form-check form-switch mb-0" onclick="event.stopPropagation();">
                 <input class="form-check-input plugin-enable-toggle" type="checkbox" id="{{ $pluginName }}.enabled" name="{{ $pluginName }}.enabled" data-plugin="{{ $pluginName }}" {{ if eq $enabled "true" }}checked{{ end }}
                     onchange="togglePluginEnabled(this);">
                 <label class="form-check-label" for="{{ $pluginName }}.enabled">Enabled</label>
             </div>
         </div>
-        <div class="collapse {{ if eq $enabled "true" }}show{{ end }}" id="plugin-body-{{ $pluginName }}">
+        <div class="collapse" id="plugin-body-{{ $pluginName }}">
             <div class="card-body">
                 <form class="plugin-settings-form" data-plugin="{{ $pluginName }}">
                     {{ range .Settings }}
