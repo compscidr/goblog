@@ -238,7 +238,7 @@ function togglePluginEnabled(checkbox) {
     // Save the enabled setting immediately
     var settings = [{"key": pluginName + ".enabled", "value": enabled, "type": "text"}];
     $.ajax({
-        url: "/api/v1/settings",
+        url: "/api/v1/plugin-settings",
         type: "patch",
         dataType: "json",
         contentType: "application/json",
@@ -275,7 +275,7 @@ function updatePluginSettings(btn) {
     });
 
     $.ajax({
-        url: "/api/v1/settings",
+        url: "/api/v1/plugin-settings",
         type: "patch",
         dataType: "json",
         contentType: "application/json",

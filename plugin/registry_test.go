@@ -1,7 +1,6 @@
 package plugin_test
 
 import (
-	"goblog/blog"
 	"goblog/plugin"
 	"net/http"
 	"net/http/httptest"
@@ -43,7 +42,7 @@ func (p *testPlugin) TemplateData(ctx *plugin.HookContext) gin.H {
 
 func TestRegistryBasics(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
-	db.AutoMigrate(&blog.Setting{})
+	db.AutoMigrate(&plugin.PluginSetting{})
 
 	reg := plugin.NewRegistry(db)
 	tp := &testPlugin{}
@@ -59,7 +58,7 @@ func TestRegistryBasics(t *testing.T) {
 
 func TestRegistryInit(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
-	db.AutoMigrate(&blog.Setting{})
+	db.AutoMigrate(&plugin.PluginSetting{})
 
 	reg := plugin.NewRegistry(db)
 	reg.Register(&testPlugin{})
@@ -68,8 +67,8 @@ func TestRegistryInit(t *testing.T) {
 	}
 
 	// Check setting was seeded
-	var setting blog.Setting
-	db.Where("key = ?", "test.api_key").First(&setting)
+	var setting plugin.PluginSetting
+	db.Where("plugin_name = ? AND key = ?", "test", "api_key").First(&setting)
 	if setting.Value != "default123" {
 		t.Fatalf("expected default value 'default123', got %q", setting.Value)
 	}
@@ -77,7 +76,7 @@ func TestRegistryInit(t *testing.T) {
 
 func TestRegistryInjectTemplateData(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
-	db.AutoMigrate(&blog.Setting{})
+	db.AutoMigrate(&plugin.PluginSetting{})
 
 	reg := plugin.NewRegistry(db)
 	reg.Register(&testPlugin{})
@@ -121,7 +120,7 @@ func TestRegistryInjectTemplateData(t *testing.T) {
 
 func TestGetAllSettings(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
-	db.AutoMigrate(&blog.Setting{})
+	db.AutoMigrate(&plugin.PluginSetting{})
 
 	reg := plugin.NewRegistry(db)
 	reg.Register(&testPlugin{})

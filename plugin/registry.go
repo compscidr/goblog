@@ -1,7 +1,6 @@
 package plugin
 
 import (
-	"goblog/blog"
 	"log"
 	"sync"
 	"time"
@@ -64,15 +63,16 @@ func (r *Registry) Init() error {
 	if r.db == nil {
 		return nil
 	}
+	// Create the plugin_settings table if it doesn't exist
+	r.db.AutoMigrate(&PluginSetting{})
 	for _, p := range r.plugins {
 		for _, s := range p.Settings() {
-			fullKey := p.Name() + "." + s.Key
-			setting := blog.Setting{
-				Key:   fullKey,
-				Type:  s.Type,
-				Value: s.DefaultValue,
+			setting := PluginSetting{
+				PluginName: p.Name(),
+				Key:        s.Key,
+				Value:      s.DefaultValue,
 			}
-			r.db.Where("key = ?", fullKey).FirstOrCreate(&setting)
+			r.db.Where("plugin_name = ? AND key = ?", p.Name(), s.Key).FirstOrCreate(&setting)
 		}
 		if err := p.OnInit(r.db); err != nil {
 			log.Printf("Plugin %s init error: %v", p.Name(), err)
@@ -112,15 +112,13 @@ func (r *Registry) Stop() {
 	close(r.stopCh)
 }
 
-// getPluginSettings returns a plugin's settings as a map with the
-// namespace prefix stripped (e.g. "analytics.tracking_id" -> "tracking_id").
+// getPluginSettings returns a plugin's settings as a simple key→value map.
 func (r *Registry) getPluginSettings(pluginName string) map[string]string {
-	var settings []blog.Setting
-	prefix := pluginName + "."
-	r.db.Where("key LIKE ?", prefix+"%").Find(&settings)
+	var settings []PluginSetting
+	r.db.Where("plugin_name = ?", pluginName).Find(&settings)
 	result := make(map[string]string)
 	for _, s := range settings {
-		result[s.Key[len(prefix):]] = s.Value
+		result[s.Key] = s.Value
 	}
 	return result
 }
@@ -176,6 +174,13 @@ func (r *Registry) GetAllSettings() []PluginSettingsGroup {
 		}
 	}
 	return groups
+}
+
+// UpdateSetting saves a single plugin setting.
+func (r *Registry) UpdateSetting(pluginName, key, value string) {
+	r.db.Where("plugin_name = ? AND key = ?", pluginName, key).
+		Assign(PluginSetting{Value: value}).
+		FirstOrCreate(&PluginSetting{PluginName: pluginName, Key: key, Value: value})
 }
 
 // Middleware returns a Gin middleware that stores the registry on the context.

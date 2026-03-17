@@ -67,6 +67,45 @@ func (a *Admin) getPluginSettings(c *gin.Context) interface{} {
 	return nil
 }
 
+// UpdatePluginSettings saves plugin settings via the plugin registry.
+func (a *Admin) UpdatePluginSettings(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	var settings []struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	}
+	if err := c.BindJSON(&settings); err != nil {
+		c.JSON(http.StatusBadRequest, "Malformed request")
+		return
+	}
+
+	reg, exists := c.Get("plugin_registry")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, "Plugin registry not available")
+		return
+	}
+	r, ok := reg.(*gplugin.Registry)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, "Plugin registry not available")
+		return
+	}
+
+	for _, s := range settings {
+		// Key format is "pluginname.settingkey"
+		parts := strings.SplitN(s.Key, ".", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		r.UpdateSetting(parts[0], parts[1], s.Value)
+	}
+
+	c.JSON(http.StatusAccepted, settings)
+}
+
 func (a *Admin) UpdateDb(db *gorm.DB) {
 	a.db = &db
 }

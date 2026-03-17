@@ -387,6 +387,7 @@ func main() {
 	router.POST("/test_db", testDB)
 	router.POST("/api/v1/upload", goblog._admin.UploadFile)
 	router.PATCH("/api/v1/settings", goblog._admin.UpdateSettings)
+	router.PATCH("/api/v1/plugin-settings", goblog._admin.UpdatePluginSettings)
 	//if we use true here - it will override the home route and just show files
 	router.Use(static.Serve("/", static.LocalFile("www", false)))
 	if err != nil {
