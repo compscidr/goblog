@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -285,7 +286,16 @@ func main() {
 
 	// setup the minimal router at the start to support both the wizard and the main server once the wizard is done
 	router := gin.Default()
-	router.SetTrustedProxies(nil)
+	// Trust only loopback proxies by default so c.ClientIP() works correctly
+	// behind a reverse proxy. Override with TRUSTED_PROXIES env var (comma-separated).
+	trustedProxies := []string{"127.0.0.1", "::1"}
+	if envProxies := os.Getenv("TRUSTED_PROXIES"); envProxies != "" {
+		trustedProxies = strings.Split(envProxies, ",")
+		for i := range trustedProxies {
+			trustedProxies[i] = strings.TrimSpace(trustedProxies[i])
+		}
+	}
+	router.SetTrustedProxies(trustedProxies)
 
 	goblog := goblog{
 		_wizard:    &_wizard,
