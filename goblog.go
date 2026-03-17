@@ -11,6 +11,7 @@ import (
 	"goblog/blog"
 	gplugin "goblog/plugin"
 	"goblog/plugins/analytics"
+	"goblog/plugins/socialicons"
 	"goblog/tools"
 	"goblog/wizard"
 	"gorm.io/driver/mysql"
@@ -311,6 +312,7 @@ func main() {
 	// Initialize plugin system
 	registry := gplugin.NewRegistry(db)
 	registry.Register(analytics.New())
+	registry.Register(socialicons.New())
 	gplugin.LoadDynamicPlugins(registry, "plugins/dynamic")
 	if db != nil {
 		registry.Init()
