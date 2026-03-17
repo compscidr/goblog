@@ -17,7 +17,8 @@
           <a href="{{.ScholarURL}}">{{.Title}}</a> <br/>
           {{.Authors}} <br/>
         </div>
-        <div class="col">{{.Year}}</div>
+        <div class="col-2">{{.Year}}</div>
+        <div class="col-2">{{ if .NumCitations }}{{ .NumCitations }} cited{{ end }}</div>
       </div>
     {{end}}
   </div>

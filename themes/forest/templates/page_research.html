@@ -16,7 +16,8 @@
           <a href="{{.ScholarURL}}" style="color: #2d5a27;">{{.Title}}</a> <br/>
           <span style="color: #7a937a;">{{.Authors}}</span> <br/>
         </div>
-        <div class="col" style="color: #7a937a;">{{.Year}}</div>
+        <div class="col-2" style="color: #7a937a;">{{.Year}}</div>
+        <div class="col-2" style="color: #7a937a;">{{ if .NumCitations }}{{ .NumCitations }} cited{{ end }}</div>
       </div>
     {{end}}
   </div></div>
