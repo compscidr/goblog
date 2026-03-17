@@ -13,7 +13,8 @@
     var path = window.location.pathname;
     var links = document.querySelectorAll('.nav-underline .nav-link');
     links.forEach(function(link) {
-        if (link.getAttribute('href') === path) {
+        var href = link.getAttribute('href');
+        if (path === href || (href !== '/admin/dashboard' && path.startsWith(href + '/'))) {
             link.classList.add('active');
             link.setAttribute('aria-current', 'page');
         }

@@ -303,9 +303,11 @@ func main() {
 	log.Println("Hostname: ", hostname)
 	// Load templates from the active theme directory, falling back to "default"
 	activeTheme := "default"
-	settings := _blog.GetSettings()
-	if t, ok := settings["theme"]; ok && t.Value != "" {
-		activeTheme = t.Value
+	if !_blog.IsDbNil() {
+		settings := _blog.GetSettings()
+		if t, ok := settings["theme"]; ok && t.Value != "" {
+			activeTheme = t.Value
+		}
 	}
 
 	funcMap := template.FuncMap{
@@ -313,10 +315,32 @@ func main() {
 	}
 	router.SetFuncMap(funcMap)
 
+	// isValidTheme checks that a theme name is safe and exists on disk.
+	isValidTheme := func(theme string) bool {
+		// Only allow alphanumeric, hyphens, and underscores
+		for _, c := range theme {
+			if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+				return false
+			}
+		}
+		info, err := os.Stat(filepath.Join("themes", theme, "templates"))
+		return err == nil && info.IsDir()
+	}
+
 	loadTheme := func(theme string) {
-		themePath := "themes/" + theme + "/"
+		if !isValidTheme(theme) {
+			log.Printf("Warning: theme %q is invalid or missing, falling back to default", theme)
+			theme = "default"
+		}
+		themePath := filepath.Join("themes", theme) + "/"
 		log.Println("Loading theme: " + theme)
-		tmpl := template.Must(template.New("").Funcs(funcMap).ParseGlob(themePath + "templates/*.html"))
+		tmpl, err := template.New("").Funcs(funcMap).ParseGlob(themePath + "templates/*.html")
+		if err != nil {
+			log.Printf("Warning: failed to load theme %q: %v — falling back to default", theme, err)
+			theme = "default"
+			themePath = "themes/default/"
+			tmpl = template.Must(template.New("").Funcs(funcMap).ParseGlob(themePath + "templates/*.html"))
+		}
 		router.SetHTMLTemplate(tmpl)
 		activeTheme = theme
 	}
