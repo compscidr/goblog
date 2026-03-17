@@ -10,7 +10,7 @@
         <h2 class="text-left" contenteditable="true" id="title" onfocusout="updatePost({{ .post.ID }}, true)">{{ .post.Title }}</h2>
         {{ end }}
 
-        <p class="blog-post-meta text-left">Posted on {{ .post.CreatedAt.Format "Jan 02, 2006 15:04:05 UTC" }}. Last Edited on {{ .post.UpdatedAt.Format "Jan 02, 2006 15:04:05 UTC" }} [ <a href="#" onclick="return deletePost($post.ID)">Delete</a>] </p>
+        <p class="blog-post-meta text-left">Posted on {{ .post.CreatedAt.Format "Jan 02, 2006 15:04:05 UTC" }}. Last Edited on {{ .post.UpdatedAt.Format "Jan 02, 2006 15:04:05 UTC" }} [ <a href="#" onclick="return deletePost({{ .post.ID }})">Delete</a>] </p>
         <p class="tags text-left">
           {{range .post.Tags}}
             <a href="{{ .Permalink }}">#{{.Name}}</a>
