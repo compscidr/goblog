@@ -486,10 +486,11 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 	default:
 		// Check if a plugin handles this page type
 		if reg, exists := c.Get("plugin_registry"); exists {
-			type pageRenderer interface {
+			type pluginPageHandler interface {
 				RenderPluginPage(c *gin.Context, pageType string) (string, gin.H, bool)
+				HasPageType(pageType string) bool
 			}
-			if r, ok := reg.(pageRenderer); ok {
+			if r, ok := reg.(pluginPageHandler); ok {
 				tmpl, pluginData, handled := r.RenderPluginPage(c, page.PageType)
 				if handled {
 					data := gin.H{
@@ -503,11 +504,24 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 						"settings":   b.GetSettings(),
 						"nav_pages":  navPages,
 					}
-					// Merge plugin data into template data
 					for k, v := range pluginData {
 						data[k] = v
 					}
 					b.Render(c, http.StatusOK, tmpl, data)
+					return
+				}
+				// Plugin owns this page type but is disabled — show 404
+				if r.HasPageType(page.PageType) {
+					b.Render(c, http.StatusNotFound, "error.html", gin.H{
+						"error":       "Page Not Available",
+						"description": "This page is currently disabled.",
+						"version":     b.Version,
+						"title":       "Not Available",
+						"recent":      b.GetLatest(),
+						"admin_page":  false,
+						"settings":    b.GetSettings(),
+						"nav_pages":   navPages,
+					})
 					return
 				}
 			}

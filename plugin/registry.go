@@ -237,6 +237,20 @@ func (r *Registry) GetNavItems() []PageDefinition {
 	return items
 }
 
+// HasPageType returns true if any registered plugin (enabled or not) defines the given page type.
+func (r *Registry) HasPageType(pageType string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, p := range r.plugins {
+		for _, page := range p.Pages() {
+			if page.PageType == pageType {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // UpdateSetting saves a single plugin setting.
 func (r *Registry) UpdateSetting(pluginName, key, value string) {
 	r.db.Where("plugin_name = ? AND key = ?", pluginName, key).

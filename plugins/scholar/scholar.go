@@ -5,6 +5,7 @@ package scholar
 
 import (
 	"fmt"
+	"goblog/blog"
 	"log"
 	"sort"
 	"time"
@@ -42,8 +43,35 @@ func (p *ScholarPlugin) Settings() []gplugin.SettingDefinition {
 }
 
 func (p *ScholarPlugin) OnInit(db *gorm.DB) error {
-	// Scholar library will be initialized lazily on first page render
-	// since we need the settings to know which cache files to use
+	// Ensure a research page exists in the pages table.
+	// The user can customize title, slug, hero, nav order via admin.
+	var page blog.Page
+	result := db.Where("page_type = ?", "research").First(&page)
+	if result.Error != nil {
+		// No research page exists — create the default
+		page = blog.Page{
+			Title:    "Research",
+			Slug:     "research",
+			PageType: "research",
+			ShowInNav: true,
+			NavOrder: 20,
+			Enabled:  true,
+		}
+		db.Create(&page)
+		log.Println("Scholar plugin: created research page")
+	}
+
+	// Migrate ScholarID from page record to plugin settings (backward compat)
+	if page.ScholarID != "" {
+		var existing gplugin.PluginSetting
+		if err := db.Where("plugin_name = ? AND key = ?", "scholar", "scholar_id").First(&existing).Error; err != nil || existing.Value == "" {
+			db.Where("plugin_name = ? AND key = ?", "scholar", "scholar_id").
+				Assign(gplugin.PluginSetting{Value: page.ScholarID}).
+				FirstOrCreate(&gplugin.PluginSetting{PluginName: "scholar", Key: "scholar_id", Value: page.ScholarID})
+			log.Printf("Scholar plugin: migrated scholar_id %s from page to plugin settings", page.ScholarID)
+		}
+	}
+
 	return nil
 }
 
