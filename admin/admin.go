@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"goblog/auth"
 	"goblog/blog"
+	gplugin "goblog/plugin"
 	"log"
 	"net/http"
 	"net/url"
@@ -54,6 +55,72 @@ func ListThemes() []string {
 		themes = []string{"default"}
 	}
 	return themes
+}
+
+// getPluginSettings retrieves plugin settings groups from the registry on the Gin context.
+func (a *Admin) getPluginSettings(c *gin.Context) interface{} {
+	if reg, exists := c.Get("plugin_registry"); exists {
+		if r, ok := reg.(*gplugin.Registry); ok {
+			return r.GetAllSettings()
+		}
+	}
+	return nil
+}
+
+// getDisabledPluginPageTypes returns a map of page types that belong to disabled plugins.
+func (a *Admin) getDisabledPluginPageTypes(c *gin.Context) map[string]bool {
+	result := make(map[string]bool)
+	if reg, exists := c.Get("plugin_registry"); exists {
+		if r, ok := reg.(*gplugin.Registry); ok {
+			for _, p := range r.Plugins() {
+				for _, page := range p.Pages() {
+					if !r.IsPluginEnabled(p.Name()) {
+						result[page.PageType] = true
+					}
+				}
+			}
+		}
+	}
+	return result
+}
+
+// UpdatePluginSettings saves plugin settings via the plugin registry.
+func (a *Admin) UpdatePluginSettings(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
+
+	var settings []struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	}
+	if err := c.BindJSON(&settings); err != nil {
+		c.JSON(http.StatusBadRequest, "Malformed request")
+		return
+	}
+
+	reg, exists := c.Get("plugin_registry")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, "Plugin registry not available")
+		return
+	}
+	r, ok := reg.(*gplugin.Registry)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, "Plugin registry not available")
+		return
+	}
+
+	for _, s := range settings {
+		// Key format is "pluginname.settingkey"
+		parts := strings.SplitN(s.Key, ".", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		r.UpdateSetting(parts[0], parts[1], s.Value)
+	}
+
+	c.JSON(http.StatusAccepted, settings)
 }
 
 func (a *Admin) UpdateDb(db *gorm.DB) {
@@ -619,9 +686,10 @@ func (a *Admin) AdminSettings(c *gin.Context) {
 		"version":    a.version,
 		"recent":     a.b.GetLatest(),
 		"admin_page": true,
-		"settings":   a.b.GetSettings(),
-		"nav_pages":  a.b.GetNavPages(),
-		"themes":     ListThemes(),
+		"settings":        a.b.GetSettings(),
+		"nav_pages":       a.b.GetNavPages(),
+		"themes":          ListThemes(),
+		"plugin_settings": a.getPluginSettings(c),
 	})
 }
 
@@ -831,14 +899,15 @@ func (a *Admin) AdminPages(c *gin.Context) {
 	var pages []blog.Page
 	(*a.db).Order("nav_order asc").Find(&pages)
 	c.HTML(http.StatusOK, "admin_pages.html", gin.H{
-		"pages":      pages,
-		"logged_in":  a.auth.IsLoggedIn(c),
-		"is_admin":   a.auth.IsAdmin(c),
-		"version":    a.version,
-		"recent":     a.b.GetLatest(),
-		"admin_page": true,
-		"settings":   a.b.GetSettings(),
-		"nav_pages":  a.b.GetNavPages(),
+		"pages":                    pages,
+		"logged_in":                a.auth.IsLoggedIn(c),
+		"is_admin":                 a.auth.IsAdmin(c),
+		"version":                  a.version,
+		"recent":                   a.b.GetLatest(),
+		"admin_page":               true,
+		"settings":                 a.b.GetSettings(),
+		"nav_pages":                a.b.GetNavPages(),
+		"disabled_plugin_pages":    a.getDisabledPluginPageTypes(c),
 	})
 }
 
@@ -877,15 +946,16 @@ func (a *Admin) AdminEditPage(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "admin_edit_page.html", gin.H{
-		"page":       page,
-		"post_types": a.b.GetPostTypes(),
-		"logged_in":  a.auth.IsLoggedIn(c),
-		"is_admin":   a.auth.IsAdmin(c),
-		"version":    a.version,
-		"recent":     a.b.GetLatest(),
-		"admin_page": true,
-		"settings":   a.b.GetSettings(),
-		"nav_pages":  a.b.GetNavPages(),
+		"page":                  page,
+		"post_types":            a.b.GetPostTypes(),
+		"logged_in":             a.auth.IsLoggedIn(c),
+		"is_admin":              a.auth.IsAdmin(c),
+		"version":               a.version,
+		"recent":                a.b.GetLatest(),
+		"admin_page":            true,
+		"settings":              a.b.GetSettings(),
+		"nav_pages":             a.b.GetNavPages(),
+		"disabled_plugin_pages": a.getDisabledPluginPageTypes(c),
 	})
 }
 

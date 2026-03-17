@@ -1,12 +1,12 @@
-package blog
+package scholar
 
 import (
-	scholar "github.com/compscidr/scholar"
+	scholarlib "github.com/compscidr/scholar"
 	"testing"
 )
 
 func TestSortArticlesByDateDesc(t *testing.T) {
-	articles := []*scholar.Article{
+	articles := []*scholarlib.Article{
 		{Title: "Old", Year: 2020, Month: 3, Day: 15},
 		{Title: "Newest", Year: 2025, Month: 1, Day: 10},
 		{Title: "SameYearLater", Year: 2023, Month: 11, Day: 5},

@@ -4,11 +4,14 @@ package main
 
 import (
 	"fmt"
-	scholar "github.com/compscidr/scholar"
 	"github.com/joho/godotenv"
 	"goblog/admin"
 	"goblog/auth"
 	"goblog/blog"
+	gplugin "goblog/plugin"
+	"goblog/plugins/analytics"
+	scholarplugin "goblog/plugins/scholar"
+	"goblog/plugins/socialicons"
 	"goblog/tools"
 	"goblog/wizard"
 	"gorm.io/driver/mysql"
@@ -36,6 +39,7 @@ type goblog struct {
 	_blog              *blog.Blog
 	_auth              *auth.Auth
 	_admin             *admin.Admin
+	_registry          *gplugin.Registry
 	sessionKey         string
 	router             *gin.Engine
 	handlersRegistered bool
@@ -161,6 +165,9 @@ func (g goblog) rootHandler(c *gin.Context) {
 			g._auth.UpdateDb(db)
 			g._admin.UpdateDb(db)
 			g._wizard.UpdateDb(db)
+			g._registry.UpdateDb(db)
+			g._registry.Init()
+			g._registry.StartScheduledJobs()
 
 			if !isAuthConfigured() {
 				g._wizard.Landing(c)
@@ -279,8 +286,7 @@ func main() {
 	}
 
 	_auth := auth.New(db, Version)
-	_sch := scholar.New("profiles.json", "articles.json")
-	_blog := blog.New(db, &_auth, Version, _sch)
+	_blog := blog.New(db, &_auth, Version)
 	_admin := admin.New(db, &_auth, &_blog, Version)
 	_wizard := wizard.New(db, Version)
 
@@ -297,16 +303,39 @@ func main() {
 	}
 	router.SetTrustedProxies(trustedProxies)
 
+	// Initialize plugin system
+	registry := gplugin.NewRegistry(db)
+	registry.Register(analytics.New())
+	registry.Register(socialicons.New())
+	registry.Register(scholarplugin.New())
+	if os.Getenv("ENABLE_DYNAMIC_PLUGINS") == "true" {
+		gplugin.LoadDynamicPlugins(registry, "plugins/dynamic")
+	}
+	if db != nil {
+		registry.Init()
+		registry.StartScheduledJobs()
+	}
+
 	goblog := goblog{
 		_wizard:    &_wizard,
 		_blog:      &_blog,
 		_auth:      &_auth,
 		_admin:     &_admin,
+		_registry:  registry,
 		sessionKey: sessionKey,
 		router:     router,
 	}
 
+	// Filter nav pages: hide pages owned by disabled plugins
+	_blog.PageFilter = func(page blog.Page) bool {
+		if !registry.HasPageType(page.PageType) {
+			return true // not a plugin page, always show
+		}
+		return registry.IsPageTypeEnabled(page.PageType)
+	}
+
 	router.Use(CORS())
+	router.Use(gplugin.Middleware(registry))
 	store := cookie.NewStore([]byte(sessionKey))
 	hostname, err := os.Hostname()
 	router.Use(sessions.Sessions(hostname, store))
@@ -375,6 +404,7 @@ func main() {
 	router.POST("/test_db", testDB)
 	router.POST("/api/v1/upload", goblog._admin.UploadFile)
 	router.PATCH("/api/v1/settings", goblog._admin.UpdateSettings)
+	router.PATCH("/api/v1/plugin-settings", goblog._admin.UpdatePluginSettings)
 	//if we use true here - it will override the home route and just show files
 	router.Use(static.Serve("/", static.LocalFile("www", false)))
 	if err != nil {

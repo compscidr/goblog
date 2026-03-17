@@ -1,6 +1,7 @@
 // take the form data and use the patch method to update the settings
 function updateSettings(redirect) {
     $("#ajax-error").hide();
+    var currentTheme = $("#theme").val();
     var settings = [];
 
     // iterate over all input fields in the form and create a json object with the key, value, and type
@@ -48,6 +49,12 @@ function updateSettings(redirect) {
 
             if (redirect !== undefined) {
                 window.location = redirect;
+            }
+
+            // Reload if theme was actually changed so new templates take effect
+            var newTheme = $("#theme").val();
+            if (newTheme !== currentTheme && redirect === undefined) {
+                window.location.reload();
             }
         },
         error: function(jqXHR, textStatus, errorThrown) {
@@ -223,4 +230,65 @@ function rollbackRevision(postId, revisionId) {
         }
     });
     return false;
+}
+
+function togglePluginEnabled(checkbox) {
+    var pluginName = $(checkbox).data("plugin");
+    var enabled = checkbox.checked ? "true" : "false";
+
+    // Save the enabled setting immediately
+    var settings = [{"key": pluginName + ".enabled", "value": enabled, "type": "text"}];
+    $.ajax({
+        url: "/api/v1/plugin-settings",
+        type: "patch",
+        dataType: "json",
+        contentType: "application/json",
+        success: function(json) {
+            $("#ajax-error").html(pluginName + (checkbox.checked ? " enabled" : " disabled")).show();
+            $("#ajax-error").removeClass("alert-danger").addClass("alert-success");
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            checkbox.checked = !checkbox.checked; // revert on failure
+            $("#ajax-error").html("ERROR: " + textStatus + " " + errorThrown).show();
+            $("#ajax-error").removeClass("alert-success").addClass("alert-danger");
+        },
+        data: JSON.stringify(settings)
+    });
+}
+
+function updatePluginSettings(btn) {
+    $("#ajax-error").hide();
+    var settings = [];
+    var $card = $(btn).closest(".card");
+    var $form = $(btn).closest("form");
+
+    // Include the enabled checkbox from the card header
+    var $toggle = $card.find(".plugin-enable-toggle");
+    if ($toggle.length) {
+        settings.push({"key": $toggle.attr("name"), "value": $toggle.is(":checked") ? "true" : "false", "type": "text"});
+    }
+
+    $form.find(":input").each(function() {
+        var key = this.name;
+        var type = this.tagName === "TEXTAREA" ? "textarea" : "text";
+        var value = this.value;
+        if (this.type === "submit" || this.type === "button" || !key) return;
+        settings.push({"key": key, "value": value, "type": type});
+    });
+
+    $.ajax({
+        url: "/api/v1/plugin-settings",
+        type: "patch",
+        dataType: "json",
+        contentType: "application/json",
+        success: function(json) {
+            $("#ajax-error").html("Plugin settings updated").show();
+            $("#ajax-error").removeClass("alert-danger").addClass("alert-success");
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            $("#ajax-error").html("ERROR: " + textStatus + " " + errorThrown).show();
+            $("#ajax-error").removeClass("alert-success").addClass("alert-danger");
+        },
+        data: JSON.stringify(settings)
+    });
 }

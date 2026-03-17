@@ -4,40 +4,9 @@
       <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 20px;">
         <div>
           <p style="font-weight: 600; font-size: 14px; margin-bottom: 8px; color: #333;">{{ .settings.site_title.Value }}</p>
-          <div style="display: flex; gap: 12px; font-size: 16px;">
-            {{ if .settings.github_url.Value }}
-              <a href="{{ .settings.github_url.Value }}" target="_blank" title="Github" style="color: #64748b;"><i class="fab fa-github"></i></a>
-            {{ end }}
-            {{ if .settings.linkedin_url.Value }}
-              <a href="{{ .settings.linkedin_url.Value }}" target="_blank" title="LinkedIn" style="color: #64748b;"><i class="fab fa-linkedin"></i></a>
-            {{ end }}
-            {{ if .settings.x_url.Value }}
-              <a href="{{ .settings.x_url.Value }}" target="_blank" title="X" style="color: #64748b;"><i class="fab fa-x"></i></a>
-            {{ end }}
-            {{ if .settings.keybase_url.Value }}
-              <a href="{{ .settings.keybase_url.Value }}" target="_blank" title="Keybase" style="color: #64748b;"><i class="fab fa-keybase"></i></a>
-            {{ end }}
-            {{ if .settings.instagram_url.Value }}
-              <a href="{{ .settings.instagram_url.Value }}" target="_blank" title="Instagram" style="color: #64748b;"><i class="fab fa-instagram"></i></a>
-            {{ end }}
-            {{ if .settings.facebook_url.Value }}
-              <a href="{{ .settings.facebook_url.Value }}" target="_blank" title="Facebook" style="color: #64748b;"><i class="fab fa-facebook"></i></a>
-            {{ end }}
-            {{ if .settings.strava_url.Value }}
-              <a href="{{ .settings.strava_url.Value }}" target="_blank" title="Strava" style="color: #64748b;"><i class="fab fa-strava"></i></a>
-            {{ end }}
-            {{ if .settings.spotify_url.Value }}
-              <a href="{{ .settings.spotify_url.Value }}" target="_blank" title="Spotify" style="color: #64748b;"><i class="fab fa-spotify"></i></a>
-            {{ end }}
-            {{ if .settings.xbox_url.Value }}
-              <a href="{{ .settings.xbox_url.Value }}" target="_blank" title="Xbox" style="color: #64748b;"><i class="fab fa-xbox"></i></a>
-            {{ end }}
-            {{ if .settings.steam_url.Value }}
-              <a href="{{ .settings.steam_url.Value }}" target="_blank" title="Steam" style="color: #64748b;"><i class="fab fa-steam"></i></a>
-            {{ end }}
-          </div>
+          {{ with .plugin_footer_html }}{{ . | rawHTML }}{{ end }}
         </div>
-        <p style="color: #94a3b8; font-size: 11px; margin: 0;">Powered by <a href="https://github.com/compscidr/goblog" style="color: #94a3b8;">goblog {{ .version }}</a></p>
+        <p style="color: #94a3b8; font-size: 11px; margin: 0;">Powered by <a href="https://github.com/goblogplatform/goblog" style="color: #94a3b8;">goblog {{ .version }}</a></p>
       </div>
     </div>
   </div>

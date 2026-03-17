@@ -76,6 +76,7 @@
   {{ with index .settings "custom_header_code" }}{{ if .Value }}
   {{ .Value | rawHTML }}
   {{ end }}{{ end }}
+  {{ with .plugin_head_html }}{{ . | rawHTML }}{{ end }}
 </head>
 <body>
   <div id="header" class="text-center">

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"goblog/auth"
 	"goblog/blog"
+	gplugin "goblog/plugin"
 	"gorm.io/gorm"
 	"log"
 	"regexp"
@@ -272,16 +273,6 @@ func seedDefaultSettings(db *gorm.DB) {
 		{Key: "site_tags", Type: "text", Value: "Decentralization, Mesh Net"},
 		{Key: "landing_page_image", Type: "file", Value: "/img/profile.png"},
 		{Key: "favicon", Type: "file", Value: "/img/favicon.ico"},
-		{Key: "github_url", Type: "text", Value: "https://www.github.com/compscidr"},
-		{Key: "linkedin_url", Type: "text", Value: "https://www.linkedin.com/in/jasonernst/"},
-		{Key: "x_url", Type: "text", Value: "https://www.x.com/compscidr"},
-		{Key: "keybase_url", Type: "text", Value: "https://keybase.io/compscidr"},
-		{Key: "instagram_url", Type: "text", Value: "https://www.instagram.com/compscidr"},
-		{Key: "facebook_url", Type: "text", Value: "https://www.facebook.com/jason.b.ernst"},
-		{Key: "strava_url", Type: "text", Value: "https://www.strava.com/athletes/2021127"},
-		{Key: "spotify_url", Type: "text", Value: "https://open.spotify.com/user/csgrad"},
-		{Key: "xbox_url", Type: "text", Value: "https://account.xbox.com/en-us/profile?gamertag=Compscidr"},
-		{Key: "steam_url", Type: "text", Value: "https://steamcommunity.com/id/compscidr"},
 		{Key: "custom_header_code", Type: "textarea", Value: ""},
 		{Key: "custom_footer_code", Type: "textarea", Value: ""},
 		{Key: "theme", Type: "text", Value: "default"},
@@ -379,8 +370,68 @@ func Migrate(db *gorm.DB) error {
 	seedDefaultPages(db)
 	linkWritingPagesToPostType(db)
 	cleanupEmptyTags(db)
+	migrateSocialURLsToPlugin(db)
+	cleanupPluginSettingsFromMainTable(db)
 
 	return nil
+}
+
+// migrateSocialURLsToPlugin moves social URL settings from the main settings
+// table to the plugin_settings table under the "socialicons" plugin.
+func migrateSocialURLsToPlugin(db *gorm.DB) {
+	socialKeys := []string{
+		"github_url", "linkedin_url", "x_url", "keybase_url",
+		"instagram_url", "facebook_url", "strava_url", "spotify_url",
+		"xbox_url", "steam_url",
+	}
+
+	// Ensure plugin_settings table exists
+	db.AutoMigrate(&gplugin.PluginSetting{})
+
+	for _, key := range socialKeys {
+		var setting blog.Setting
+		if err := db.Where("key = ?", key).First(&setting).Error; err != nil {
+			continue // not found, skip
+		}
+		if setting.Value == "" {
+			continue
+		}
+		// Migrate to plugin_settings if not already there
+		ps := gplugin.PluginSetting{
+			PluginName: "socialicons",
+			Key:        key,
+			Value:      setting.Value,
+		}
+		db.Where("plugin_name = ? AND key = ?", "socialicons", key).FirstOrCreate(&ps)
+	}
+
+	// Also ensure the enabled setting exists
+	db.Where("plugin_name = ? AND key = ?", "socialicons", "enabled").
+		FirstOrCreate(&gplugin.PluginSetting{
+			PluginName: "socialicons",
+			Key:        "enabled",
+			Value:      "true",
+		})
+
+	// Remove migrated keys from main settings table
+	db.Where("key IN ?", socialKeys).Delete(&blog.Setting{})
+}
+
+// cleanupPluginSettingsFromMainTable removes known plugin-namespaced keys
+// from the main settings table that were created before plugin settings
+// moved to their own table.
+func cleanupPluginSettingsFromMainTable(db *gorm.DB) {
+	knownPrefixes := []string{"analytics.%", "socialicons.%", "scholar.%"}
+	for _, prefix := range knownPrefixes {
+		result := db.Exec("DELETE FROM settings WHERE key LIKE ?", prefix)
+		if result.Error != nil {
+			log.Printf("Warning: failed to clean up %s from main table: %v", prefix, result.Error)
+			continue
+		}
+		if result.RowsAffected > 0 {
+			log.Printf("Cleaned up %d %s entries from main settings table", result.RowsAffected, prefix)
+		}
+	}
 }
 
 // cleanupEmptyTags removes empty-name tag associations and the empty tag itself.
@@ -436,7 +487,7 @@ I also enjoy driving, working on cars, video games, contributing to [open source
 			Slug:      "research",
 			HeroURL:   "/img/aidecentralized.jpg",
 			HeroType:  "image",
-			PageType:  blog.PageTypeResearch,
+			PageType:  "research", // owned by scholar plugin
 			ShowInNav: true,
 			NavOrder:  2,
 			Enabled:   true,

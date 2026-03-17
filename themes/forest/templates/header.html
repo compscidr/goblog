@@ -76,6 +76,7 @@
   {{ with index .settings "custom_header_code" }}{{ if .Value }}
   {{ .Value | rawHTML }}
   {{ end }}{{ end }}
+  {{ with .plugin_head_html }}{{ . | rawHTML }}{{ end }}
 </head>
 <body>
   <div id="header" style="background: rgba(30, 50, 30, 0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 14px 0;">
