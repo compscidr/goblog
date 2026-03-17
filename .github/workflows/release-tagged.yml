@@ -60,4 +60,6 @@ jobs:
         push: true
         build-args: |
           VERSION=${{ steps.checkout.outputs.tag }}
-        tags: compscidr/goblog:${{ steps.checkout.outputs.tag }},compscidr/goblog:latest
+        tags: |
+          compscidr/goblog:${{ steps.checkout.outputs.tag }}
+          compscidr/goblog:latest
