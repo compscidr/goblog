@@ -18,6 +18,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -328,8 +329,8 @@ func main() {
 
 	// Serve theme static files dynamically based on active theme
 	router.GET("/theme/*filepath", func(c *gin.Context) {
-		fp := c.Param("filepath")
-		c.File("themes/" + activeTheme + "/static" + fp)
+		fp := filepath.Clean(c.Param("filepath"))
+		c.File(filepath.Join("themes", activeTheme, "static", fp))
 	})
 
 	router.GET("/", goblog.rootHandler)
