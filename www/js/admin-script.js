@@ -49,6 +49,12 @@ function updateSettings(redirect) {
             if (redirect !== undefined) {
                 window.location = redirect;
             }
+
+            // Reload if theme was changed so new templates take effect
+            var themeChanged = settings.some(function(s) { return s.key === "theme"; });
+            if (themeChanged && redirect === undefined) {
+                window.location.reload();
+            }
         },
         error: function(jqXHR, textStatus, errorThrown) {
             // show #ajax-error with the error message
@@ -225,15 +231,16 @@ function rollbackRevision(postId, revisionId) {
     return false;
 }
 
-function updatePluginSettings() {
+function updatePluginSettings(btn) {
     $("#ajax-error").hide();
     var settings = [];
+    var $form = $(btn).closest("form");
 
-    $("#plugin-settings-form :input").each(function() {
+    $form.find(":input").each(function() {
         var key = this.name;
         var type = this.tagName === "TEXTAREA" ? "textarea" : "text";
         var value = this.value;
-        if (this.type === "submit" || !key) return;
+        if (this.type === "submit" || this.type === "button" || !key) return;
         settings.push({"key": key, "value": value, "type": type});
     });
 
