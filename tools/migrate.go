@@ -483,7 +483,7 @@ I also enjoy driving, working on cars, video games, contributing to [open source
 			Slug:      "research",
 			HeroURL:   "/img/aidecentralized.jpg",
 			HeroType:  "image",
-			PageType:  blog.PageTypeResearch,
+			PageType:  "research", // owned by scholar plugin
 			ShowInNav: true,
 			NavOrder:  2,
 			Enabled:   true,

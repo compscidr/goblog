@@ -319,6 +319,14 @@ func main() {
 		registry.StartScheduledJobs()
 	}
 
+	// Filter nav pages: hide pages owned by disabled plugins
+	_blog.PageFilter = func(page blog.Page) bool {
+		if !registry.HasPageType(page.PageType) {
+			return true // not a plugin page, always show
+		}
+		return registry.IsPageTypeEnabled(page.PageType)
+	}
+
 	router.Use(CORS())
 	router.Use(gplugin.Middleware(registry))
 	store := cookie.NewStore([]byte(sessionKey))

@@ -5,7 +5,6 @@ import "time"
 // Page types
 const (
 	PageTypeWriting  = "writing"
-	PageTypeResearch = "research"
 	PageTypeAbout    = "about"
 	PageTypeCustom   = "custom"
 	PageTypeTags     = "tags"
@@ -23,11 +22,11 @@ type Page struct {
 	Content   string     `sql:"type:text;" json:"content"`
 	HeroURL   string     `json:"hero_url"`
 	HeroType  string     `json:"hero_type"` // "image" or "video"
-	PageType  string     `json:"page_type"` // "writing", "research", "about", "custom"
+	PageType  string     `json:"page_type"` // "writing", "research", "about", "custom", or plugin-defined
 	ShowInNav bool       `json:"show_in_nav"`
 	NavOrder  int        `json:"nav_order"`
 	Enabled   bool       `json:"enabled"`
-	ScholarID  string `json:"scholar_id,omitempty"`
+	ScholarID  string `json:"scholar_id,omitempty"` // deprecated: use scholar plugin settings instead
 	PostTypeID *uint  `json:"post_type_id,omitempty"`
 }
 

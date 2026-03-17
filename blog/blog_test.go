@@ -197,7 +197,7 @@ func TestBlogWorkflow(t *testing.T) {
 
 	// Create pages so dynamic page resolution works
 	writingPage := blog.Page{Title: "Writing", Slug: "posts", PageType: blog.PageTypeWriting, ShowInNav: true, NavOrder: 1, Enabled: true}
-	researchPage := blog.Page{Title: "Research", Slug: "research", PageType: blog.PageTypeResearch, ShowInNav: true, NavOrder: 2, Enabled: true, ScholarID: "SbUmSEAAAAAJ"}
+	researchPage := blog.Page{Title: "Research", Slug: "research", PageType: "research", ShowInNav: true, NavOrder: 2, Enabled: true}
 	aboutPage := blog.Page{Title: "About", Slug: "about", PageType: blog.PageTypeAbout, ShowInNav: true, NavOrder: 3, Enabled: true, Content: "About page content"}
 	tagsPage := blog.Page{Title: "Tags", Slug: "tags", PageType: blog.PageTypeTags, ShowInNav: false, NavOrder: 4, Enabled: true}
 	archivesPage := blog.Page{Title: "Archives", Slug: "archives", PageType: blog.PageTypeArchives, ShowInNav: false, NavOrder: 5, Enabled: true}

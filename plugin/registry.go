@@ -237,6 +237,20 @@ func (r *Registry) GetNavItems() []PageDefinition {
 	return items
 }
 
+// IsPageTypeEnabled returns true if the plugin that owns the given page type is enabled.
+func (r *Registry) IsPageTypeEnabled(pageType string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, p := range r.plugins {
+		for _, page := range p.Pages() {
+			if page.PageType == pageType {
+				return r.IsPluginEnabled(p.Name())
+			}
+		}
+	}
+	return false
+}
+
 // HasPageType returns true if any registered plugin (enabled or not) defines the given page type.
 func (r *Registry) HasPageType(pageType string) bool {
 	r.mu.RLock()

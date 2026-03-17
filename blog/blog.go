@@ -24,12 +24,17 @@ import (
 	"github.com/ikeikeikeike/go-sitemap-generator/v2/stm"
 )
 
+// PageFilter is a function that decides whether a page should be shown.
+// Used to filter out pages owned by disabled plugins.
+type PageFilter func(page Page) bool
+
 // Blog API handles non-admin functions of the blog like listing posts, tags
 // comments, etc.
 type Blog struct {
 	db             **gorm.DB // needs a double pointer to be able to update the db
 	auth           auth.IAuth
 	Version        string
+	PageFilter     PageFilter // optional filter set by plugin system
 	commentLimiter map[string]time.Time
 	limiterMu      sync.Mutex
 }
@@ -354,9 +359,19 @@ func (b *Blog) TrackReferer(c *gin.Context, postID uint) {
 	}
 }
 // GetNavPages returns enabled pages that should show in the navigation, ordered by nav_order.
+// Pages owned by disabled plugins are filtered out.
 func (b *Blog) GetNavPages() []Page {
 	var pages []Page
 	(*b.db).Where("enabled = ? AND show_in_nav = ?", true, true).Order("nav_order asc").Find(&pages)
+	if b.PageFilter != nil {
+		var filtered []Page
+		for _, p := range pages {
+			if b.PageFilter(p) {
+				filtered = append(filtered, p)
+			}
+		}
+		return filtered
+	}
 	return pages
 }
 
