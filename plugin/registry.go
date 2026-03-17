@@ -176,6 +176,67 @@ func (r *Registry) GetAllSettings() []PluginSettingsGroup {
 	return groups
 }
 
+// IsPluginEnabled checks if a plugin is enabled via its settings.
+func (r *Registry) IsPluginEnabled(pluginName string) bool {
+	settings := r.getPluginSettings(pluginName)
+	return settings["enabled"] == "true"
+}
+
+// GetPagePlugin returns the plugin that owns a given page type, or nil.
+func (r *Registry) GetPagePlugin(pageType string) Plugin {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, p := range r.plugins {
+		if !r.IsPluginEnabled(p.Name()) {
+			continue
+		}
+		for _, page := range p.Pages() {
+			if page.PageType == pageType {
+				return p
+			}
+		}
+	}
+	return nil
+}
+
+// RenderPluginPage renders a plugin-owned page. Returns template name, data, and whether it was handled.
+func (r *Registry) RenderPluginPage(c *gin.Context, pageType string) (string, gin.H, bool) {
+	p := r.GetPagePlugin(pageType)
+	if p == nil {
+		return "", nil, false
+	}
+	settings := r.getPluginSettings(p.Name())
+	ctx := &HookContext{
+		GinContext: c,
+		DB:         r.db,
+		Settings:   settings,
+		Template:   pageType,
+	}
+	tmpl, data := p.RenderPage(ctx, pageType)
+	if tmpl == "" {
+		return "", nil, false
+	}
+	return tmpl, data, true
+}
+
+// GetNavItems returns navigation items from all enabled plugins that define pages.
+func (r *Registry) GetNavItems() []PageDefinition {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	var items []PageDefinition
+	for _, p := range r.plugins {
+		if !r.IsPluginEnabled(p.Name()) {
+			continue
+		}
+		for _, page := range p.Pages() {
+			if page.ShowInNav {
+				items = append(items, page)
+			}
+		}
+	}
+	return items
+}
+
 // UpdateSetting saves a single plugin setting.
 func (r *Registry) UpdateSetting(pluginName, key, value string) {
 	r.db.Where("plugin_name = ? AND key = ?", pluginName, key).

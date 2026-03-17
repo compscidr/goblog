@@ -3,7 +3,7 @@ package blog_test
 import (
 	"bytes"
 	"encoding/json"
-	scholar "github.com/compscidr/scholar"
+	
 	"goblog/admin"
 	"goblog/auth"
 	"goblog/blog"
@@ -53,8 +53,8 @@ func TestBlogWorkflow(t *testing.T) {
 	defaultType := blog.PostType{Name: "Post", Slug: "posts", Description: "Blog posts"}
 	db.Create(&defaultType)
 	a := &Auth{}
-	sch := scholar.New("profiles.json", "articles.json")
-	b := blog.New(db, a, "test", sch)
+	
+	b := blog.New(db, a, "test")
 	admin := admin.New(db, a, &b, "test")
 
 	router := gin.Default()
@@ -472,8 +472,8 @@ func TestBacklinks(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
 	db.AutoMigrate(&auth.BlogUser{}, &blog.PostType{}, &blog.Post{}, &blog.Tag{}, &blog.Backlink{}, &blog.ExternalBacklink{})
 	a := &Auth{}
-	sch := scholar.New("profiles.json", "articles.json")
-	b := blog.New(db, a, "test", sch)
+	
+	b := blog.New(db, a, "test")
 
 	// Create two posts. Post B will link to Post A.
 	postA := blog.Post{
@@ -539,8 +539,8 @@ func TestGetNavPages(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
 	db.AutoMigrate(&blog.Page{}, &blog.PostType{}, &blog.Post{}, &blog.Setting{})
 	a := &Auth{}
-	sch := scholar.New("profiles.json", "articles.json")
-	b := blog.New(db, a, "test", sch)
+	
+	b := blog.New(db, a, "test")
 
 	// Create pages with various states
 	db.Create(&blog.Page{Title: "Writing", Slug: "posts", PageType: blog.PageTypeWriting, ShowInNav: true, NavOrder: 2, Enabled: true})
@@ -565,8 +565,8 @@ func TestGetPageBySlug(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
 	db.AutoMigrate(&blog.Page{}, &blog.PostType{}, &blog.Post{}, &blog.Setting{})
 	a := &Auth{}
-	sch := scholar.New("profiles.json", "articles.json")
-	b := blog.New(db, a, "test", sch)
+	
+	b := blog.New(db, a, "test")
 
 	db.Create(&blog.Page{Title: "About", Slug: "about", PageType: blog.PageTypeAbout, Enabled: true})
 	db.Create(&blog.Page{Title: "Disabled", Slug: "disabled-page", PageType: blog.PageTypeCustom, Enabled: false})
@@ -597,8 +597,8 @@ func TestExternalBacklinks(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
 	db.AutoMigrate(&auth.BlogUser{}, &blog.PostType{}, &blog.Post{}, &blog.Tag{}, &blog.Backlink{}, &blog.ExternalBacklink{})
 	a := &Auth{}
-	sch := scholar.New("profiles.json", "articles.json")
-	b := blog.New(db, a, "test", sch)
+	
+	b := blog.New(db, a, "test")
 
 	post := blog.Post{
 		Title:   "Test Post",

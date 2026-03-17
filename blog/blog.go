@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"sort"
 
-	scholar "github.com/compscidr/scholar"
 	"goblog/auth"
 	"log"
 	"net/http"
@@ -31,18 +30,16 @@ type Blog struct {
 	db             **gorm.DB // needs a double pointer to be able to update the db
 	auth           auth.IAuth
 	Version        string
-	scholar        *scholar.Scholar
 	commentLimiter map[string]time.Time
 	limiterMu      sync.Mutex
 }
 
-// New constructs an Admin API
-func New(db *gorm.DB, auth auth.IAuth, version string, scholar *scholar.Scholar) Blog {
+// New constructs a Blog API
+func New(db *gorm.DB, auth auth.IAuth, version string) Blog {
 	api := Blog{
 		db:             &db,
 		auth:           auth,
 		Version:        version,
-		scholar:        scholar,
 		commentLimiter: make(map[string]time.Time),
 	}
 	return api
@@ -69,19 +66,6 @@ func (b *Blog) Render(c *gin.Context, code int, templateName string, data gin.H)
 		}
 	}
 	c.HTML(code, templateName, data)
-}
-
-// sortArticlesByDateDesc sorts scholar articles by publication date in descending order.
-func sortArticlesByDateDesc(articles []*scholar.Article) {
-	sort.Slice(articles, func(i, j int) bool {
-		if articles[i].Year != articles[j].Year {
-			return articles[i].Year > articles[j].Year
-		}
-		if articles[i].Month != articles[j].Month {
-			return articles[i].Month > articles[j].Month
-		}
-		return articles[i].Day > articles[j].Day
-	})
 }
 
 // Generic Functions (not JSON or HTML)
@@ -468,38 +452,6 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 			"settings":   b.GetSettings(),
 			"nav_pages":  navPages,
 		})
-	case PageTypeResearch:
-		articles, err := b.scholar.QueryProfileWithMemoryCache(page.ScholarID, 50)
-		if err == nil {
-			sortArticlesByDateDesc(articles)
-			b.scholar.SaveCache("profiles.json", "articles.json")
-			b.Render(c, http.StatusOK, "page_research.html", gin.H{
-				"logged_in":  b.auth.IsLoggedIn(c),
-				"is_admin":   b.auth.IsAdmin(c),
-				"page":       page,
-				"articles":   articles,
-				"version":    b.Version,
-				"title":      page.Title,
-				"recent":     b.GetLatest(),
-				"admin_page": false,
-				"settings":   b.GetSettings(),
-				"nav_pages":  navPages,
-			})
-		} else {
-			b.Render(c, http.StatusOK, "page_research.html", gin.H{
-				"logged_in":  b.auth.IsLoggedIn(c),
-				"is_admin":   b.auth.IsAdmin(c),
-				"page":       page,
-				"articles":   make([]interface{}, 0),
-				"version":    b.Version,
-				"title":      page.Title,
-				"recent":     b.GetLatest(),
-				"admin_page": false,
-				"settings":   b.GetSettings(),
-				"errors":     err.Error(),
-				"nav_pages":  navPages,
-			})
-		}
 	case PageTypeTags:
 		b.Render(c, http.StatusOK, "page_tags.html", gin.H{
 			"logged_in":  b.auth.IsLoggedIn(c),
@@ -531,7 +483,36 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 			"settings":    b.GetSettings(),
 			"nav_pages":   navPages,
 		})
-	default: // about, custom
+	default:
+		// Check if a plugin handles this page type
+		if reg, exists := c.Get("plugin_registry"); exists {
+			type pageRenderer interface {
+				RenderPluginPage(c *gin.Context, pageType string) (string, gin.H, bool)
+			}
+			if r, ok := reg.(pageRenderer); ok {
+				tmpl, pluginData, handled := r.RenderPluginPage(c, page.PageType)
+				if handled {
+					data := gin.H{
+						"logged_in":  b.auth.IsLoggedIn(c),
+						"is_admin":   b.auth.IsAdmin(c),
+						"page":       page,
+						"version":    b.Version,
+						"title":      page.Title,
+						"recent":     b.GetLatest(),
+						"admin_page": false,
+						"settings":   b.GetSettings(),
+						"nav_pages":  navPages,
+					}
+					// Merge plugin data into template data
+					for k, v := range pluginData {
+						data[k] = v
+					}
+					b.Render(c, http.StatusOK, tmpl, data)
+					return
+				}
+			}
+		}
+		// Fallback: render as custom content page
 		b.Render(c, http.StatusOK, "page_content.html", gin.H{
 			"logged_in":  b.auth.IsLoggedIn(c),
 			"is_admin":   b.auth.IsAdmin(c),
@@ -884,40 +865,6 @@ func (b *Blog) Speaking(c *gin.Context) {
 		"settings":   b.GetSettings(),
 		"nav_pages":  b.GetNavPages(),
 	})
-}
-
-// Speaking is the index page for research publications
-func (b *Blog) Research(c *gin.Context) {
-	articles, err := b.scholar.QueryProfileWithMemoryCache("SbUmSEAAAAAJ", 50)
-	if err == nil {
-		sortArticlesByDateDesc(articles)
-		b.scholar.SaveCache("profiles.json", "articles.json")
-		b.Render(c, http.StatusOK, "research.html", gin.H{
-			"logged_in":  b.auth.IsLoggedIn(c),
-			"is_admin":   b.auth.IsAdmin(c),
-			"version":    b.Version,
-			"title":      "Research Publications",
-			"recent":     b.GetLatest(),
-			"articles":   articles,
-			"admin_page": false,
-			"settings":   b.GetSettings(),
-			"nav_pages":  b.GetNavPages(),
-		})
-	} else {
-		articles := make([]*scholar.Article, 0)
-		b.Render(c, http.StatusOK, "research.html", gin.H{
-			"logged_in":  b.auth.IsLoggedIn(c),
-			"is_admin":   b.auth.IsAdmin(c),
-			"version":    b.Version,
-			"title":      "Research Publications",
-			"recent":     b.GetLatest(),
-			"articles":   articles,
-			"admin_page": false,
-			"settings":   b.GetSettings(),
-			"errors":     err.Error(),
-			"nav_pages":  b.GetNavPages(),
-		})
-	}
 }
 
 // Projects is the index page for projects / code

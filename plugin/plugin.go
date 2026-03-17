@@ -39,6 +39,18 @@ type HookContext struct {
 	Data       gin.H             // the existing template data (read-only)
 }
 
+// PageDefinition describes a dynamic page type that a plugin provides.
+// The plugin registers a page type and handles rendering when that page
+// is visited. The page can optionally appear in the navigation.
+type PageDefinition struct {
+	PageType    string // unique identifier, e.g. "research"
+	Title       string // default title for nav and page heading
+	Slug        string // default URL slug, e.g. "research"
+	ShowInNav   bool   // whether to show in navigation by default
+	NavOrder    int    // sort order in navigation
+	Description string // help text for admin UI
+}
+
 // Plugin is the core interface. Embed BasePlugin to get no-op defaults
 // and only implement the methods you need.
 type Plugin interface {
@@ -51,14 +63,23 @@ type Plugin interface {
 	TemplateHead(ctx *HookContext) string
 	TemplateFooter(ctx *HookContext) string
 	OnInit(db *gorm.DB) error
+
+	// Pages returns dynamic page types this plugin provides.
+	Pages() []PageDefinition
+
+	// RenderPage is called when a plugin-owned page is visited.
+	// Returns the template name and data to render, or empty string to skip.
+	RenderPage(ctx *HookContext, pageType string) (templateName string, data gin.H)
 }
 
 // BasePlugin provides no-op implementations of all Plugin methods.
 type BasePlugin struct{}
 
-func (BasePlugin) Settings() []SettingDefinition           { return nil }
-func (BasePlugin) ScheduledJobs() []ScheduledJob           { return nil }
-func (BasePlugin) TemplateData(ctx *HookContext) gin.H     { return nil }
-func (BasePlugin) TemplateHead(ctx *HookContext) string    { return "" }
-func (BasePlugin) TemplateFooter(ctx *HookContext) string  { return "" }
-func (BasePlugin) OnInit(db *gorm.DB) error                { return nil }
+func (BasePlugin) Settings() []SettingDefinition                                       { return nil }
+func (BasePlugin) ScheduledJobs() []ScheduledJob                                       { return nil }
+func (BasePlugin) TemplateData(ctx *HookContext) gin.H                                 { return nil }
+func (BasePlugin) TemplateHead(ctx *HookContext) string                                { return "" }
+func (BasePlugin) TemplateFooter(ctx *HookContext) string                              { return "" }
+func (BasePlugin) OnInit(db *gorm.DB) error                                            { return nil }
+func (BasePlugin) Pages() []PageDefinition                                             { return nil }
+func (BasePlugin) RenderPage(ctx *HookContext, pageType string) (string, gin.H)        { return "", nil }

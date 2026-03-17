@@ -4,13 +4,13 @@ package main
 
 import (
 	"fmt"
-	scholar "github.com/compscidr/scholar"
 	"github.com/joho/godotenv"
 	"goblog/admin"
 	"goblog/auth"
 	"goblog/blog"
 	gplugin "goblog/plugin"
 	"goblog/plugins/analytics"
+	scholarplugin "goblog/plugins/scholar"
 	"goblog/plugins/socialicons"
 	"goblog/tools"
 	"goblog/wizard"
@@ -282,8 +282,7 @@ func main() {
 	}
 
 	_auth := auth.New(db, Version)
-	_sch := scholar.New("profiles.json", "articles.json")
-	_blog := blog.New(db, &_auth, Version, _sch)
+	_blog := blog.New(db, &_auth, Version)
 	_admin := admin.New(db, &_auth, &_blog, Version)
 	_wizard := wizard.New(db, Version)
 
@@ -313,6 +312,7 @@ func main() {
 	registry := gplugin.NewRegistry(db)
 	registry.Register(analytics.New())
 	registry.Register(socialicons.New())
+	registry.Register(scholarplugin.New())
 	gplugin.LoadDynamicPlugins(registry, "plugins/dynamic")
 	if db != nil {
 		registry.Init()

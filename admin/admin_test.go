@@ -3,7 +3,7 @@ package admin_test
 import (
 	"bytes"
 	"encoding/json"
-	scholar "github.com/compscidr/scholar"
+	
 	"goblog/admin"
 	"goblog/auth"
 	"goblog/blog"
@@ -55,8 +55,8 @@ func TestCreatePost(t *testing.T) {
 	defaultType := blog.PostType{Name: "Post", Slug: "posts", Description: "Blog posts"}
 	db.Create(&defaultType)
 	a := &Auth{}
-	sch := scholar.New("profiles.json", "articles.json")
-	b := blog.New(db, a, "test", sch)
+	
+	b := blog.New(db, a, "test")
 	ad := admin.New(db, a, &b, "test")
 
 	router := gin.Default()
