@@ -67,6 +67,23 @@ func (a *Admin) getPluginSettings(c *gin.Context) interface{} {
 	return nil
 }
 
+// getDisabledPluginPageTypes returns a map of page types that belong to disabled plugins.
+func (a *Admin) getDisabledPluginPageTypes(c *gin.Context) map[string]bool {
+	result := make(map[string]bool)
+	if reg, exists := c.Get("plugin_registry"); exists {
+		if r, ok := reg.(*gplugin.Registry); ok {
+			for _, p := range r.Plugins() {
+				for _, page := range p.Pages() {
+					if !r.IsPluginEnabled(p.Name()) {
+						result[page.PageType] = true
+					}
+				}
+			}
+		}
+	}
+	return result
+}
+
 // UpdatePluginSettings saves plugin settings via the plugin registry.
 func (a *Admin) UpdatePluginSettings(c *gin.Context) {
 	if !a.auth.IsAdmin(c) {
@@ -882,14 +899,15 @@ func (a *Admin) AdminPages(c *gin.Context) {
 	var pages []blog.Page
 	(*a.db).Order("nav_order asc").Find(&pages)
 	c.HTML(http.StatusOK, "admin_pages.html", gin.H{
-		"pages":      pages,
-		"logged_in":  a.auth.IsLoggedIn(c),
-		"is_admin":   a.auth.IsAdmin(c),
-		"version":    a.version,
-		"recent":     a.b.GetLatest(),
-		"admin_page": true,
-		"settings":   a.b.GetSettings(),
-		"nav_pages":  a.b.GetNavPages(),
+		"pages":                    pages,
+		"logged_in":                a.auth.IsLoggedIn(c),
+		"is_admin":                 a.auth.IsAdmin(c),
+		"version":                  a.version,
+		"recent":                   a.b.GetLatest(),
+		"admin_page":               true,
+		"settings":                 a.b.GetSettings(),
+		"nav_pages":                a.b.GetNavPages(),
+		"disabled_plugin_pages":    a.getDisabledPluginPageTypes(c),
 	})
 }
 
@@ -928,15 +946,16 @@ func (a *Admin) AdminEditPage(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "admin_edit_page.html", gin.H{
-		"page":       page,
-		"post_types": a.b.GetPostTypes(),
-		"logged_in":  a.auth.IsLoggedIn(c),
-		"is_admin":   a.auth.IsAdmin(c),
-		"version":    a.version,
-		"recent":     a.b.GetLatest(),
-		"admin_page": true,
-		"settings":   a.b.GetSettings(),
-		"nav_pages":  a.b.GetNavPages(),
+		"page":                  page,
+		"post_types":            a.b.GetPostTypes(),
+		"logged_in":             a.auth.IsLoggedIn(c),
+		"is_admin":              a.auth.IsAdmin(c),
+		"version":               a.version,
+		"recent":                a.b.GetLatest(),
+		"admin_page":            true,
+		"settings":              a.b.GetSettings(),
+		"nav_pages":             a.b.GetNavPages(),
+		"disabled_plugin_pages": a.getDisabledPluginPageTypes(c),
 	})
 }
 

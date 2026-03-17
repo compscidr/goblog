@@ -6,6 +6,14 @@
     <div id="ajax-error" class="alert alert-danger" role="alert" style="display: none;"></div>
     <div id="ajax-success" class="alert alert-success" role="alert" style="display: none;"></div>
 
+    {{ $disabledPlugins := .disabled_plugin_pages }}
+    {{ if index $disabledPlugins .page.PageType }}
+    <div class="alert alert-warning" role="alert">
+        <strong>Plugin disabled.</strong> This page's type (<code>{{ .page.PageType }}</code>) is provided by a plugin that is currently disabled.
+        The page will not be visible to visitors until the plugin is enabled in <a href="/admin/settings">Settings</a>.
+    </div>
+    {{ end }}
+
     <form id="page-form">
         <div class="mb-3">
             <label for="title" class="form-label">Title</label>
@@ -56,11 +64,6 @@
             </select>
         </div>
 
-        <div class="mb-3" id="scholar-section" style="{{ if ne .page.PageType "research" }}display:none;{{ end }}">
-            <label for="scholar_id" class="form-label">Google Scholar ID</label>
-            <input type="text" class="form-control" id="scholar_id" value="{{ .page.ScholarID }}">
-        </div>
-
         <div class="mb-3" id="content-section" style="{{ if or (eq .page.PageType "writing") (eq .page.PageType "research") (eq .page.PageType "tags") (eq .page.PageType "archives") }}display:none;{{ end }}">
             <label for="content" class="form-label">Content (Markdown)</label>
             <textarea rows="15" class="form-control" id="content">{{ .page.Content }}</textarea>
@@ -100,7 +103,6 @@ if (currentPostTypeID) {
 
 document.getElementById('page_type').addEventListener('change', function() {
     var type = this.value;
-    document.getElementById('scholar-section').style.display = (type === 'research') ? '' : 'none';
     document.getElementById('content-section').style.display = (type === 'writing' || type === 'research' || type === 'tags' || type === 'archives') ? 'none' : '';
     document.getElementById('post-type-filter-section').style.display = (type === 'writing') ? '' : 'none';
 });
@@ -117,7 +119,6 @@ function savePage() {
         "hero_url": document.getElementById('hero_url').value,
         "hero_type": document.getElementById('hero_type').value,
         "content": document.getElementById('content').value,
-        "scholar_id": document.getElementById('scholar_id').value,
         "nav_order": parseInt(document.getElementById('nav_order').value) || 0,
         "show_in_nav": document.getElementById('show_in_nav').checked,
         "enabled": document.getElementById('enabled').checked,
