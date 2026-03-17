@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0%"  stop-color="#2A4A2A"/>
+      <stop offset="100%" stop-color="#142014"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect width="512" height="512" rx="100" ry="100" fill="url(#bg)"/>
+
+  <!-- Subtle inner highlight border -->
+  <rect width="512" height="512" rx="100" ry="100"
+        fill="none"
+        stroke="rgba(255,255,255,0.07)"
+        stroke-width="7"/>
+
+  <!-- Quill feather watermark (behind text) -->
+  <g opacity="0.18" stroke="#EEFAEE" stroke-width="9" stroke-linecap="round">
+    <line x1="112.6" y1="425.0" x2="399.4" y2="87.0"/>
+    <line x1="198.7" y1="323.6" x2="253.3" y2="370.0"/>
+    <line x1="198.7" y1="323.6" x2="144.0" y2="277.2"/>
+    <line x1="233.1" y1="283.0" x2="287.7" y2="329.4"/>
+    <line x1="233.1" y1="283.0" x2="178.4" y2="236.7"/>
+    <line x1="267.5" y1="242.5" x2="322.1" y2="288.9"/>
+    <line x1="267.5" y1="242.5" x2="212.8" y2="196.1"/>
+    <line x1="301.9" y1="201.9" x2="356.5" y2="248.3"/>
+    <line x1="301.9" y1="201.9" x2="247.2" y2="155.6"/>
+  </g>
+
+  <!-- "gb" text — Georgia serif, bold, centred -->
+  <text
+    x="256.0" y="337.9"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="256"
+    font-weight="bold"
+    text-anchor="middle"
+    fill="#EEFAEE"
+    letter-spacing="2"
+  >gb</text>
+
+  <!-- Accent underline -->
+  <line
+    x1="94.7" y1="391.7"
+    x2="417.3" y2="391.7"
+    stroke="#6BBF6B"
+    stroke-width="12"
+    stroke-linecap="round"
+    opacity="0.90"
+  />
+
+  <!-- Quill nib tip at right end of underline -->
+  <path
+    d="M 417.3 391.7
+       C 437.8 378.9,
+         453.1 363.5,
+         435.2 363.5
+       C 450.6 376.3,
+         437.8 394.2,
+         417.3 391.7 Z"
+    fill="#6BBF6B"
+    opacity="0.80"
+  />
+</svg>
