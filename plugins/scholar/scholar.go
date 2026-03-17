@@ -7,8 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"goblog/blog"
+	"html"
 	"log"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -118,8 +120,8 @@ func (p *ScholarPlugin) RenderPage(ctx *gplugin.HookContext, pageType string) (s
 	settings := ctx.Settings
 	scholarID := settings["scholar_id"]
 	if scholarID == "" {
-		return "page_research.html", gin.H{
-			"errors": "Google Scholar ID not configured. Set it in the Scholar plugin settings.",
+		return "page_content.html", gin.H{
+			"plugin_content": `<div class="alert alert-warning">Google Scholar ID not configured. Set it in the Scholar plugin settings.</div>`,
 		}
 	}
 
@@ -132,18 +134,44 @@ func (p *ScholarPlugin) RenderPage(ctx *gplugin.HookContext, pageType string) (s
 	p.ensureScholar(settings)
 
 	articles, err := p.sch.QueryProfileWithMemoryCache(scholarID, limit)
-	data := gin.H{}
-	if err == nil {
-		sortArticlesByDateDesc(articles)
-		p.sch.SaveCache(settings["profile_cache"], settings["article_cache"])
-		data["articles"] = articles
-	} else {
+	if err != nil {
 		log.Printf("Scholar query failed: %v", err)
-		data["articles"] = make([]*scholarlib.Article, 0)
-		data["errors"] = err.Error()
+		return "page_content.html", gin.H{
+			"plugin_content": `<div class="alert alert-danger">` + html.EscapeString(err.Error()) + `</div>`,
+		}
 	}
 
-	return "page_research.html", data
+	sortArticlesByDateDesc(articles)
+	p.sch.SaveCache(settings["profile_cache"], settings["article_cache"])
+
+	return "page_content.html", gin.H{
+		"plugin_content": renderArticlesHTML(articles),
+	}
+}
+
+// renderArticlesHTML generates the HTML for the articles list.
+func renderArticlesHTML(articles []*scholarlib.Article) string {
+	out := ""
+	for _, a := range articles {
+		out += `<div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #eee;">`
+		out += `<div><a href="` + html.EscapeString(a.ScholarURL) + `">` + html.EscapeString(a.Title) + `</a></div>`
+		if a.Authors != "" {
+			out += `<div style="color: #666; font-size: 13px;">` + html.EscapeString(a.Authors) + `</div>`
+		}
+		out += `<div style="color: #888; font-size: 13px;">`
+		if a.Year > 0 {
+			out += strconv.Itoa(a.Year)
+		}
+		if a.Journal != "" {
+			out += ` &middot; ` + html.EscapeString(a.Journal)
+		}
+		if a.NumCitations > 0 {
+			out += ` &middot; ` + strconv.Itoa(a.NumCitations) + ` citations`
+		}
+		out += `</div>`
+		out += `</div>`
+	}
+	return out
 }
 
 func (p *ScholarPlugin) ScheduledJobs() []gplugin.ScheduledJob {
