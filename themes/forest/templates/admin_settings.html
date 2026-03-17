@@ -1,0 +1,33 @@
+{{ template "header.html" .}}
+<script src="/js/admin-script.js"></script>
+<div class="container">
+    {{ template "admin_nav.html" . }}
+    <h1>Settings</h1>
+    <div id="ajax-error" class="alert alert-danger" role="alert" style="display: none;"></div>
+    <form id="settings-form" enctype="multipart/form-data">
+        {{ $themes := .themes }}
+        {{ range .settings }}
+        <label for="{{ .Key }}" class="form-label">{{ .Key }}</label>
+            {{ if eq .Type "file" }}
+            <input type="{{ .Type }}" id="{{ .Key }}" name="{{ .Key }}" class="form-control" oninput="uploadFile(this)" required>
+            {{ else if eq .Type "textarea" }}
+            <textarea id="{{ .Key }}" name="{{ .Key }}" class="form-control" rows="5">{{ .Value }}</textarea>
+            {{ else if eq .Key "theme" }}
+            <select id="{{ .Key }}" name="{{ .Key }}" class="form-control">
+                {{ $current := .Value }}
+                {{ range $themes }}
+                <option value="{{ . }}" {{ if eq . $current }}selected{{ end }}>{{ . }}</option>
+                {{ end }}
+            </select>
+            {{ else }}
+            <input type="{{ .Type }}" id="{{ .Key }}" name="{{ .Key }}" value="{{ .Value }}" class="form-control" required>
+            {{ end }}
+        {{ end }}
+        <button type="button" class="btn btn-primary mt-2" onclick="updateSettings();">
+            Save Settings
+        </button>
+    </form>
+
+</div> <!-- / container -->
+
+{{ template "footer.html" .}}
