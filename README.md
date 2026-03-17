@@ -1,69 +1,103 @@
 # goblog
 [![Build and Test](https://github.com/compscidr/goblog/actions/workflows/push.yml/badge.svg)](https://github.com/compscidr/goblog/actions/workflows/push.yml)
-[![codecov](https://codecov.io/gh/compscidr/goblog/branch/master/graph/badge.svg)](https://codecov.io/gh/compscidr/goblog)
+[![codecov](https://codecov.io/gh/compscidr/goblog/branch/main/graph/badge.svg)](https://codecov.io/gh/compscidr/goblog)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Simple blogging platform built with golang. Currently running on my website: https://www.jasonernst.com
+A self-hosted blogging platform built with Go. Running at https://www.jasonernst.com
 
-It is split into two parts:
-- A JSON REST API located at /api/v1/
-- An HTML API located at /
+## Features
 
-The HTML API is optional - any frontend could be used instead. I toyed with a
-single page Javascript app for a bit, but I like to have all of the content
-generated on the server side so that SEO works better.
+### Content
+- Markdown posts with code syntax highlighting and table support
+- Draft / publish workflow
+- Post revision history with rollback
+- Tags with tag cloud
+- Configurable post types (blog posts, notes, etc.)
+- Full-text search
+- File uploads (images, PDFs, etc.)
+- Internal and external backlink tracking
+- Comments with markdown support, spam honeypot, and rate limiting
+- RSS-ready sitemap generation
 
-Users can log into the blog using Github authentication code which is then
-translated by the blog API into an authorization token, which is then stored
-in a session cookie.
+### Pages
+- Configurable dynamic pages (writing, research, archives, tags, about, custom)
+- Google Scholar integration for research pages (with caching and throttle resilience)
+- Archives sorted by year and month
 
-Creating, modifying and deleting posts and administering comments may only be
-done with the admin user. Presently the user is hardcoded by github email, but
-I'll likely create an initial install onboarding which makes the first logged
-in user the admin.
+### Theming
+- WordPress-style theme system (`themes/{name}/`)
+- Switch themes from admin settings without restart (hot-reload)
+- Two built-in themes: `default` (monospace, gray) and `minimal` (sans-serif, blue accent)
+- Theme-specific CSS served at `/theme/`
+- Custom header/footer code injection via settings (for analytics, etc.)
 
-Other logged in users are able to post, update and delete comments (todo)
+### Admin
+- GitHub OAuth login
+- Install wizard for first-time setup
+- Admin dashboard with recent comments
+- Configurable settings (site title, subtitle, social URLs, favicon, etc.)
+- Post type management
+- Page management with hero images/videos
 
-Every function in the API should be covered by units and integration tests.
+### Infrastructure
+- SQLite database (file-based, zero config)
+- Docker support with tagged releases on Docker Hub
+- Configurable trusted proxies for reverse proxy deployments (`TRUSTED_PROXIES` env var)
+- GitHub Actions CI/CD
 
-What works:
-- Install Wizard for onboarding
-- List, Create, Update, Delete
-- Local sqlite3 db in a file
-- Markdown rendering, code highlighting for content
-- Posts, Tags, Error Pages, File Uploads (images, pdfs, etc)
-- Github action which builds and deploys a tagged dockerhub release when a versioned release is cut
-- Version string in template header from `git describe`
-- Meta, Title, etc which changes with posts for SEO
-- Post date editing so old posts can be imported
+## Quick Start
 
-Todo:
-- draft posts
-- default hero images or something so posts don't look so bare
-- cron job to backup posts
-- user comments
-- mysql [WiP], postgres, other dbs
-
-## Other tools used:
-- Gin: https://github.com/gin-gonic/gin. Used for multiplexing / routing the
-http requests.
-- Gorm: https://github.com/jinzhu/gorm. Used for object relational mapping.
-
-## Building and running:
-```
+### Local
+```bash
 go build
-goblog
+./goblog
 ```
+Visit http://localhost:7000 and follow the install wizard.
+
+### Docker
+```bash
+docker run -p 7000:7000 compscidr/goblog:latest
+```
+
+### Behind a Reverse Proxy
+Set `TRUSTED_PROXIES` so `X-Forwarded-For` headers are trusted for client IP resolution:
+```bash
+TRUSTED_PROXIES=172.16.0.0/12 ./goblog
+```
+
+## Theming
+
+Themes live in `themes/{name}/` with this structure:
+```
+themes/
+  default/
+    templates/    # HTML templates
+    static/       # CSS and assets (served at /theme/)
+  minimal/
+    templates/
+    static/
+```
+
+To create a custom theme:
+1. Copy `themes/default/` to `themes/my-theme/`
+2. Customize templates and CSS
+3. Set the `theme` setting to `my-theme` in admin settings
 
 ## Testing
-```
-go test goblog/...
+```bash
+go test ./...
 ```
 
-## Coverage:
-More details here: https://blog.golang.org/cover
-```
-go test goblog/... -coverprofile=coverage.out
-go tool cover -func=coverage.out
-go tool cover -html=coverage.out
-```
+## Architecture
+
+- **Gin** for HTTP routing and middleware
+- **GORM** for database ORM (SQLite, MySQL support)
+- **Showdown.js** + **DOMPurify** for client-side markdown rendering
+- **Bootstrap 5** for UI framework
+- Server-side rendered templates with JSON REST API at `/api/v1/`
+
+## Todo
+- PostgreSQL support (#14)
+- Plugin system (#480)
+- Cross-posting to other platforms (#12)
+- Research page citation counts (#513)
