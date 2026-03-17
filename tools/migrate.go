@@ -379,8 +379,22 @@ func Migrate(db *gorm.DB) error {
 	seedDefaultPages(db)
 	linkWritingPagesToPostType(db)
 	cleanupEmptyTags(db)
+	cleanupPluginSettingsFromMainTable(db)
 
 	return nil
+}
+
+// cleanupPluginSettingsFromMainTable removes any dot-namespaced keys
+// from the main settings table that belong in plugin_settings instead.
+func cleanupPluginSettingsFromMainTable(db *gorm.DB) {
+	result := db.Exec("DELETE FROM settings WHERE key LIKE '%.%'")
+	if result.Error != nil {
+		log.Printf("Warning: failed to clean up plugin settings from main table: %v", result.Error)
+		return
+	}
+	if result.RowsAffected > 0 {
+		log.Printf("Cleaned up %d plugin settings from main settings table", result.RowsAffected)
+	}
 }
 
 // cleanupEmptyTags removes empty-name tag associations and the empty tag itself.
