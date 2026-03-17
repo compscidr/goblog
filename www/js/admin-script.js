@@ -224,3 +224,32 @@ function rollbackRevision(postId, revisionId) {
     });
     return false;
 }
+
+function updatePluginSettings() {
+    $("#ajax-error").hide();
+    var settings = [];
+
+    $("#plugin-settings-form :input").each(function() {
+        var key = this.name;
+        var type = this.tagName === "TEXTAREA" ? "textarea" : "text";
+        var value = this.value;
+        if (this.type === "submit" || !key) return;
+        settings.push({"key": key, "value": value, "type": type});
+    });
+
+    $.ajax({
+        url: "/api/v1/settings",
+        type: "patch",
+        dataType: "json",
+        contentType: "application/json",
+        success: function(json) {
+            $("#ajax-error").html("Plugin settings updated").show();
+            $("#ajax-error").removeClass("alert-danger").addClass("alert-success");
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            $("#ajax-error").html("ERROR: " + textStatus + " " + errorThrown).show();
+            $("#ajax-error").removeClass("alert-success").addClass("alert-danger");
+        },
+        data: JSON.stringify(settings)
+    });
+}

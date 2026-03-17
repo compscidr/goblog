@@ -18,6 +18,8 @@ require (
 	gorm.io/gorm v1.31.1
 )
 
+require github.com/traefik/yaegi v0.16.1
+
 require (
 	filippo.io/edwards25519 v1.1.1 // indirect
 	github.com/PuerkitoBio/goquery v1.12.0 // indirect

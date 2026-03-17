@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"goblog/auth"
 	"goblog/blog"
+	gplugin "goblog/plugin"
 	"log"
 	"net/http"
 	"net/url"
@@ -54,6 +55,16 @@ func ListThemes() []string {
 		themes = []string{"default"}
 	}
 	return themes
+}
+
+// getPluginSettings retrieves plugin settings groups from the registry on the Gin context.
+func (a *Admin) getPluginSettings(c *gin.Context) interface{} {
+	if reg, exists := c.Get("plugin_registry"); exists {
+		if r, ok := reg.(*gplugin.Registry); ok {
+			return r.GetAllSettings()
+		}
+	}
+	return nil
 }
 
 func (a *Admin) UpdateDb(db *gorm.DB) {
@@ -619,9 +630,10 @@ func (a *Admin) AdminSettings(c *gin.Context) {
 		"version":    a.version,
 		"recent":     a.b.GetLatest(),
 		"admin_page": true,
-		"settings":   a.b.GetSettings(),
-		"nav_pages":  a.b.GetNavPages(),
-		"themes":     ListThemes(),
+		"settings":        a.b.GetSettings(),
+		"nav_pages":       a.b.GetNavPages(),
+		"themes":          ListThemes(),
+		"plugin_settings": a.getPluginSettings(c),
 	})
 }
 

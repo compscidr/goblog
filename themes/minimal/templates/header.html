@@ -76,6 +76,7 @@
   {{ with index .settings "custom_header_code" }}{{ if .Value }}
   {{ .Value | rawHTML }}
   {{ end }}{{ end }}
+  {{ with .plugin_head_html }}{{ . | rawHTML }}{{ end }}
 </head>
 <body>
   <div id="header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">

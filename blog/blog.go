@@ -56,6 +56,21 @@ func (b *Blog) IsDbNil() bool {
 	return (*b.db) == nil
 }
 
+// Render wraps c.HTML with plugin data injection. If a plugin registry
+// is available on the Gin context, it enriches the template data with
+// plugin_head_html, plugin_footer_html, and plugins data.
+func (b *Blog) Render(c *gin.Context, code int, templateName string, data gin.H) {
+	if reg, exists := c.Get("plugin_registry"); exists {
+		type injector interface {
+			InjectTemplateData(c *gin.Context, templateName string, data gin.H) gin.H
+		}
+		if r, ok := reg.(injector); ok {
+			data = r.InjectTemplateData(c, templateName, data)
+		}
+	}
+	c.HTML(code, templateName, data)
+}
+
 // sortArticlesByDateDesc sorts scholar articles by publication date in descending order.
 func sortArticlesByDateDesc(articles []*scholar.Article) {
 	sort.Slice(articles, func(i, j int) bool {
@@ -416,7 +431,7 @@ func (b *Blog) getPostByTypeAndParams(typeSlug string, year int, month int, day 
 // PostTypeListing renders the listing page for a post type
 func (b *Blog) PostTypeListing(c *gin.Context, pt *PostType) {
 	posts := b.GetPostsByType(pt.ID, false)
-	c.HTML(http.StatusOK, "post_type_listing.html", gin.H{
+	b.Render(c, http.StatusOK, "post_type_listing.html", gin.H{
 		"logged_in":  b.auth.IsLoggedIn(c),
 		"is_admin":   b.auth.IsAdmin(c),
 		"post_type":  pt,
@@ -441,7 +456,7 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 		} else {
 			posts = b.GetPosts(false)
 		}
-		c.HTML(http.StatusOK, "page_writing.html", gin.H{
+		b.Render(c, http.StatusOK, "page_writing.html", gin.H{
 			"logged_in":  b.auth.IsLoggedIn(c),
 			"is_admin":   b.auth.IsAdmin(c),
 			"posts":      posts,
@@ -458,7 +473,7 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 		if err == nil {
 			sortArticlesByDateDesc(articles)
 			b.scholar.SaveCache("profiles.json", "articles.json")
-			c.HTML(http.StatusOK, "page_research.html", gin.H{
+			b.Render(c, http.StatusOK, "page_research.html", gin.H{
 				"logged_in":  b.auth.IsLoggedIn(c),
 				"is_admin":   b.auth.IsAdmin(c),
 				"page":       page,
@@ -471,7 +486,7 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 				"nav_pages":  navPages,
 			})
 		} else {
-			c.HTML(http.StatusOK, "page_research.html", gin.H{
+			b.Render(c, http.StatusOK, "page_research.html", gin.H{
 				"logged_in":  b.auth.IsLoggedIn(c),
 				"is_admin":   b.auth.IsAdmin(c),
 				"page":       page,
@@ -486,7 +501,7 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 			})
 		}
 	case PageTypeTags:
-		c.HTML(http.StatusOK, "page_tags.html", gin.H{
+		b.Render(c, http.StatusOK, "page_tags.html", gin.H{
 			"logged_in":  b.auth.IsLoggedIn(c),
 			"is_admin":   b.auth.IsAdmin(c),
 			"tags":       b.getTags(),
@@ -501,7 +516,7 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 	case PageTypeArchives:
 		yearKeys, byYear := b.getArchivesByYear()
 		monthKeys, byYearMonth := b.getArchivesByYearMonth()
-		c.HTML(http.StatusOK, "page_archives.html", gin.H{
+		b.Render(c, http.StatusOK, "page_archives.html", gin.H{
 			"logged_in":      b.auth.IsLoggedIn(c),
 			"is_admin":       b.auth.IsAdmin(c),
 			"yearKeys":       yearKeys,
@@ -517,7 +532,7 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 			"nav_pages":   navPages,
 		})
 	default: // about, custom
-		c.HTML(http.StatusOK, "page_content.html", gin.H{
+		b.Render(c, http.StatusOK, "page_content.html", gin.H{
 			"logged_in":  b.auth.IsLoggedIn(c),
 			"is_admin":   b.auth.IsAdmin(c),
 			"page":       page,
@@ -534,7 +549,7 @@ func (b *Blog) DynamicPage(c *gin.Context, page *Page) {
 // renderAdminPost renders the admin edit view for a post, used by NoRoute for admin type-prefixed URLs
 func (b *Blog) renderAdminPost(c *gin.Context, post *Post) {
 	if !b.auth.IsAdmin(c) {
-		c.HTML(http.StatusUnauthorized, "error.html", gin.H{
+		b.Render(c, http.StatusUnauthorized, "error.html", gin.H{
 			"error":       "Unauthorized",
 			"description": "You are not authorized to view this page",
 			"version":     b.Version,
@@ -546,7 +561,7 @@ func (b *Blog) renderAdminPost(c *gin.Context, post *Post) {
 		})
 		return
 	}
-	c.HTML(http.StatusOK, "post-admin.html", gin.H{
+	b.Render(c, http.StatusOK, "post-admin.html", gin.H{
 		"logged_in":          b.auth.IsLoggedIn(c),
 		"is_admin":           b.auth.IsAdmin(c),
 		"post":               post,
@@ -566,7 +581,7 @@ func (b *Blog) renderAdminPost(c *gin.Context, post *Post) {
 func (b *Blog) renderPost(c *gin.Context, post *Post) {
 	b.TrackReferer(c, post.ID)
 	if b.auth.IsAdmin(c) {
-		c.HTML(http.StatusOK, "post-admin.html", gin.H{
+		b.Render(c, http.StatusOK, "post-admin.html", gin.H{
 			"logged_in":          b.auth.IsLoggedIn(c),
 			"is_admin":           b.auth.IsAdmin(c),
 			"post":               post,
@@ -583,7 +598,7 @@ func (b *Blog) renderPost(c *gin.Context, post *Post) {
 			"nav_pages":          b.GetNavPages(),
 		})
 	} else {
-		c.HTML(http.StatusOK, "post.html", gin.H{
+		b.Render(c, http.StatusOK, "post.html", gin.H{
 			"logged_in":     b.auth.IsLoggedIn(c),
 			"is_admin":      b.auth.IsAdmin(c),
 			"post":          post,
@@ -687,7 +702,7 @@ func (b *Blog) NoRoute(c *gin.Context) {
 		}
 	}
 
-	c.HTML(http.StatusNotFound, "error.html", gin.H{
+	b.Render(c, http.StatusNotFound, "error.html", gin.H{
 		"logged_in":   b.auth.IsLoggedIn(c),
 		"is_admin":    b.auth.IsAdmin(c),
 		"error":       "404: Page Not Found",
@@ -710,7 +725,7 @@ func (b *Blog) Home(c *gin.Context) {
 	if subtitle, ok := settings["site_subtitle"]; ok && subtitle.Value != "" {
 		title = subtitle.Value
 	}
-	c.HTML(http.StatusOK, "home.html", gin.H{
+	b.Render(c, http.StatusOK, "home.html", gin.H{
 		"logged_in":    b.auth.IsLoggedIn(c),
 		"is_admin":     b.auth.IsAdmin(c),
 		"version":      b.Version,
@@ -726,7 +741,7 @@ func (b *Blog) Home(c *gin.Context) {
 
 // Posts is the index page for blog posts
 func (b *Blog) Posts(c *gin.Context) {
-	c.HTML(http.StatusOK, "posts.html", gin.H{
+	b.Render(c, http.StatusOK, "posts.html", gin.H{
 		"logged_in":  b.auth.IsLoggedIn(c),
 		"is_admin":   b.auth.IsAdmin(c),
 		"posts":      b.GetPosts(false),
@@ -743,7 +758,7 @@ func (b *Blog) Posts(c *gin.Context) {
 func (b *Blog) Post(c *gin.Context) {
 	post, err := b.GetPostObject(c)
 	if err != nil {
-		c.HTML(http.StatusNotFound, "error.html", gin.H{
+		b.Render(c, http.StatusNotFound, "error.html", gin.H{
 			"error":       "Post Not Found",
 			"description": err.Error(),
 			"version":     b.Version,
@@ -773,16 +788,16 @@ func (b *Blog) Post(c *gin.Context) {
 			data["external_backlinks"] = b.GetExternalBacklinks(post.ID)
 			data["post_types"] = b.GetPostTypes()
 		}
-		c.HTML(http.StatusOK, "post.html", data)
+		b.Render(c, http.StatusOK, "post.html", data)
 		//if b.auth.IsAdmin(c) {
-		//	c.HTML(http.StatusOK, "post-admin.html", gin.H{
+		//	b.Render(c, http.StatusOK, "post-admin.html", gin.H{
 		//		"logged_in": b.auth.IsLoggedIn(c),
 		//		"is_admin":  b.auth.IsAdmin(c),
 		//		"post":      post,
 		//		"version":   b.version,
 		//	})
 		//} else {
-		//	c.HTML(http.StatusOK, "post.html", gin.H{
+		//	b.Render(c, http.StatusOK, "post.html", gin.H{
 		//		"logged_in": b.auth.IsLoggedIn(c),
 		//		"is_admin":  b.auth.IsAdmin(c),
 		//		"post":      post,
@@ -799,7 +814,7 @@ func (b *Blog) Search(c *gin.Context) {
 	if query != "" {
 		posts = b.SearchPosts(query)
 	}
-	c.HTML(http.StatusOK, "search.html", gin.H{
+	b.Render(c, http.StatusOK, "search.html", gin.H{
 		"logged_in":  b.auth.IsLoggedIn(c),
 		"is_admin":   b.auth.IsAdmin(c),
 		"posts":      posts,
@@ -818,7 +833,7 @@ func (b *Blog) Tag(c *gin.Context) {
 	tag := strings.TrimPrefix(c.Param("name"), "/")
 	posts, err := b.getPostsByTag(c)
 	if err != nil {
-		c.HTML(http.StatusNotFound, "error.html", gin.H{
+		b.Render(c, http.StatusNotFound, "error.html", gin.H{
 			"error":       "Tag '" + tag + "' Not Found",
 			"description": err.Error(),
 			"version":     b.Version,
@@ -829,7 +844,7 @@ func (b *Blog) Tag(c *gin.Context) {
 			"nav_pages":   b.GetNavPages(),
 		})
 	} else {
-		c.HTML(http.StatusOK, "tag.html", gin.H{
+		b.Render(c, http.StatusOK, "tag.html", gin.H{
 			"logged_in":  b.auth.IsLoggedIn(c),
 			"is_admin":   b.auth.IsAdmin(c),
 			"posts":      posts,
@@ -846,7 +861,7 @@ func (b *Blog) Tag(c *gin.Context) {
 
 // Tags is the index page for all Tags
 func (b *Blog) Tags(c *gin.Context) {
-	c.HTML(http.StatusOK, "tags.html", gin.H{
+	b.Render(c, http.StatusOK, "tags.html", gin.H{
 		"version":    b.Version,
 		"title":      "Tags",
 		"tags":       b.getTags(),
@@ -859,7 +874,7 @@ func (b *Blog) Tags(c *gin.Context) {
 
 // Speaking is the index page for presentations
 func (b *Blog) Speaking(c *gin.Context) {
-	c.HTML(http.StatusOK, "presentations.html", gin.H{
+	b.Render(c, http.StatusOK, "presentations.html", gin.H{
 		"logged_in":  b.auth.IsLoggedIn(c),
 		"is_admin":   b.auth.IsAdmin(c),
 		"version":    b.Version,
@@ -877,7 +892,7 @@ func (b *Blog) Research(c *gin.Context) {
 	if err == nil {
 		sortArticlesByDateDesc(articles)
 		b.scholar.SaveCache("profiles.json", "articles.json")
-		c.HTML(http.StatusOK, "research.html", gin.H{
+		b.Render(c, http.StatusOK, "research.html", gin.H{
 			"logged_in":  b.auth.IsLoggedIn(c),
 			"is_admin":   b.auth.IsAdmin(c),
 			"version":    b.Version,
@@ -890,7 +905,7 @@ func (b *Blog) Research(c *gin.Context) {
 		})
 	} else {
 		articles := make([]*scholar.Article, 0)
-		c.HTML(http.StatusOK, "research.html", gin.H{
+		b.Render(c, http.StatusOK, "research.html", gin.H{
 			"logged_in":  b.auth.IsLoggedIn(c),
 			"is_admin":   b.auth.IsAdmin(c),
 			"version":    b.Version,
@@ -907,7 +922,7 @@ func (b *Blog) Research(c *gin.Context) {
 
 // Projects is the index page for projects / code
 func (b *Blog) Projects(c *gin.Context) {
-	c.HTML(http.StatusOK, "projects.html", gin.H{
+	b.Render(c, http.StatusOK, "projects.html", gin.H{
 		"logged_in":  b.auth.IsLoggedIn(c),
 		"is_admin":   b.auth.IsAdmin(c),
 		"version":    b.Version,
@@ -921,7 +936,7 @@ func (b *Blog) Projects(c *gin.Context) {
 
 // About is the about page
 func (b *Blog) About(c *gin.Context) {
-	c.HTML(http.StatusOK, "about.html", gin.H{
+	b.Render(c, http.StatusOK, "about.html", gin.H{
 		"logged_in":  b.auth.IsLoggedIn(c),
 		"is_admin":   b.auth.IsAdmin(c),
 		"version":    b.Version,
@@ -937,7 +952,7 @@ func (b *Blog) About(c *gin.Context) {
 func (b *Blog) Archives(c *gin.Context) {
 	yearKeys, byYear := b.getArchivesByYear()
 	monthKeys, byYearMonth := b.getArchivesByYearMonth()
-	c.HTML(http.StatusOK, "archives.html", gin.H{
+	b.Render(c, http.StatusOK, "archives.html", gin.H{
 		"logged_in":     b.auth.IsLoggedIn(c),
 		"is_admin":      b.auth.IsAdmin(c),
 		"version":       b.Version,
@@ -998,7 +1013,7 @@ func (b *Blog) Login(c *gin.Context) {
 		err = godotenv.Load("local.env")
 		if err != nil {
 			//todo: handle better - perhaps return error to browser
-			c.HTML(http.StatusInternalServerError, "Error loading .env file: "+err.Error(), gin.H{
+			b.Render(c, http.StatusInternalServerError, "Error loading .env file: "+err.Error(), gin.H{
 				"logged_in":  b.auth.IsLoggedIn(c),
 				"is_admin":   b.auth.IsAdmin(c),
 				"version":    b.Version,
@@ -1013,7 +1028,7 @@ func (b *Blog) Login(c *gin.Context) {
 	}
 
 	clientID := os.Getenv("client_id")
-	c.HTML(http.StatusOK, "login.html", gin.H{
+	b.Render(c, http.StatusOK, "login.html", gin.H{
 		"logged_in":  b.auth.IsLoggedIn(c),
 		"is_admin":   b.auth.IsAdmin(c),
 		"client_id":  clientID,
@@ -1141,7 +1156,7 @@ func (b *Blog) SubmitComment(c *gin.Context) {
 
 func (b *Blog) checkValidDb(c *gin.Context) {
 	if b.db == nil {
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
+		b.Render(c, http.StatusInternalServerError, "error.html", gin.H{
 			"error":       "Database Not Found",
 			"description": "Database is not connected",
 			"version":     b.Version,

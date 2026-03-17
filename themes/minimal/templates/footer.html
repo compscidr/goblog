@@ -47,4 +47,5 @@
 {{ with index .settings "custom_footer_code" }}{{ if .Value }}
   {{ .Value | rawHTML }}
 {{ end }}{{ end }}
+{{ with .plugin_footer_html }}{{ . | rawHTML }}{{ end }}
 </body>

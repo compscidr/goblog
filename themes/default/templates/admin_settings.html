@@ -23,10 +23,34 @@
             <input type="{{ .Type }}" id="{{ .Key }}" name="{{ .Key }}" value="{{ .Value }}" class="form-control" required>
             {{ end }}
         {{ end }}
-        <button class="btn btn-primary mt-2" onclick="updateSettings();">
+        <button type="button" class="btn btn-primary mt-2" onclick="updateSettings();">
             Save Settings
         </button>
     </form>
+
+    {{ if .plugin_settings }}
+    <hr>
+    <h2>Plugins</h2>
+    <form id="plugin-settings-form">
+        {{ range .plugin_settings }}
+        <h4>{{ .DisplayName }}</h4>
+        {{ $pluginName := .PluginName }}
+        {{ $values := .CurrentValues }}
+        {{ range .Settings }}
+            <label for="{{ $pluginName }}.{{ .Key }}" class="form-label">{{ .Label }}</label>
+            {{ if .Description }}<small class="text-muted d-block mb-1">{{ .Description }}</small>{{ end }}
+            {{ if eq .Type "textarea" }}
+            <textarea id="{{ $pluginName }}.{{ .Key }}" name="{{ $pluginName }}.{{ .Key }}" class="form-control mb-2" rows="3">{{ index $values .Key }}</textarea>
+            {{ else }}
+            <input type="text" id="{{ $pluginName }}.{{ .Key }}" name="{{ $pluginName }}.{{ .Key }}" value="{{ index $values .Key }}" class="form-control mb-2">
+            {{ end }}
+        {{ end }}
+        {{ end }}
+        <button type="button" class="btn btn-primary mt-2" onclick="updatePluginSettings();">
+            Save Plugin Settings
+        </button>
+    </form>
+    {{ end }}
 
 </div> <!-- / container -->
 

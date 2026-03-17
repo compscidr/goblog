@@ -9,6 +9,8 @@ import (
 	"goblog/admin"
 	"goblog/auth"
 	"goblog/blog"
+	gplugin "goblog/plugin"
+	"goblog/plugins/analytics"
 	"goblog/tools"
 	"goblog/wizard"
 	"gorm.io/driver/mysql"
@@ -306,7 +308,17 @@ func main() {
 		router:     router,
 	}
 
+	// Initialize plugin system
+	registry := gplugin.NewRegistry(db)
+	registry.Register(analytics.New())
+	gplugin.LoadDynamicPlugins(registry, "plugins/dynamic")
+	if db != nil {
+		registry.Init()
+		registry.StartScheduledJobs()
+	}
+
 	router.Use(CORS())
+	router.Use(gplugin.Middleware(registry))
 	store := cookie.NewStore([]byte(sessionKey))
 	hostname, err := os.Hostname()
 	router.Use(sessions.Sessions(hostname, store))
