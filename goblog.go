@@ -374,12 +374,17 @@ func main() {
 		}
 		themePath := filepath.Join("themes", theme) + "/"
 		log.Println("Loading theme: " + theme)
-		tmpl, err := template.New("").Funcs(funcMap).ParseGlob(themePath + "templates/*.html")
+		// Load shared templates first, then theme templates
+		tmpl, err := template.New("").Funcs(funcMap).ParseGlob("templates/shared/*.html")
+		if err != nil {
+			log.Fatalf("Failed to load shared templates: %v", err)
+		}
+		tmpl, err = tmpl.ParseGlob(themePath + "templates/*.html")
 		if err != nil {
 			log.Printf("Warning: failed to load theme %q: %v — falling back to default", theme, err)
 			theme = "default"
 			themePath = "themes/default/"
-			tmpl = template.Must(template.New("").Funcs(funcMap).ParseGlob(themePath + "templates/*.html"))
+			tmpl = template.Must(template.Must(template.New("").Funcs(funcMap).ParseGlob("templates/shared/*.html")).ParseGlob(themePath + "templates/*.html"))
 		}
 		router.SetHTMLTemplate(tmpl)
 		activeTheme = theme
