@@ -6,7 +6,7 @@
   <meta name="keywords" content="{{ .settings.site_title.Value }}{{range .post.Tags}}, {{.Name}}{{end}}">
   <meta name="author" content="{{ .settings.site_title.Value }}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="{{ with index .settings "robots_tag" }}{{ .Value }}{{ else }}index, follow{{ end }}" />
+  <meta name="robots" content="{{ with index .settings "robots_tag" }}{{ if .Value }}{{ .Value }}{{ else }}index, follow{{ end }}{{ else }}index, follow{{ end }}" />
   <meta property="og:site_name" content="{{ .settings.site_title.Value }}">
   {{ if .post }}
   <meta name="description" content="{{ .post.PlainTextPreview 155 }}">

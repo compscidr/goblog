@@ -377,8 +377,7 @@ func main() {
 		// Load shared templates first, then theme templates
 		tmpl, err := template.New("").Funcs(funcMap).ParseGlob("templates/shared/*.html")
 		if err != nil {
-			log.Printf("Warning: failed to load shared templates: %v", err)
-			tmpl = template.New("").Funcs(funcMap)
+			log.Fatalf("Failed to load shared templates: %v", err)
 		}
 		tmpl, err = tmpl.ParseGlob(themePath + "templates/*.html")
 		if err != nil {
