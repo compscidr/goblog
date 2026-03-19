@@ -21,6 +21,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"path/filepath"
 	"strings"
 
@@ -42,7 +43,7 @@ type goblog struct {
 	_registry          *gplugin.Registry
 	sessionKey         string
 	router             *gin.Engine
-	handlersRegistered bool
+	routesOnce         sync.Once
 }
 
 func envFilePresent() bool {
@@ -106,7 +107,7 @@ func attemptConnectDb() *gorm.DB {
 }
 
 // depending on if the env file is present or not, we will show the wizard or the main site
-func (g goblog) rootHandler(c *gin.Context) {
+func (g *goblog) rootHandler(c *gin.Context) {
 	if !envFilePresent() {
 		log.Println("Root handler: No .env file found")
 		c.HTML(http.StatusOK, "wizard_db.html", gin.H{
@@ -186,7 +187,7 @@ func (g goblog) rootHandler(c *gin.Context) {
 	}
 }
 
-func (g goblog) loginHandler(c *gin.Context) {
+func (g *goblog) loginHandler(c *gin.Context) {
 	if !envFilePresent() {
 		log.Println("Root handler: No .env file found")
 		c.HTML(http.StatusOK, "wizard_db.html", gin.H{
@@ -316,7 +317,7 @@ func main() {
 		registry.StartScheduledJobs()
 	}
 
-	goblog := goblog{
+	goblog := &goblog{
 		_wizard:    &_wizard,
 		_blog:      &_blog,
 		_auth:      &_auth,
@@ -422,12 +423,13 @@ func main() {
 	}
 }
 
-func (g goblog) addRoutes() {
-	if g.handlersRegistered {
-		log.Println("Handlers already registered")
-		return
-	}
-	g.handlersRegistered = true
+func (g *goblog) addRoutes() {
+	g.routesOnce.Do(func() {
+		g.addRoutesInner()
+	})
+}
+
+func (g *goblog) addRoutesInner() {
 	log.Println("Adding main blog routes")
 	//all of this is the json api
 	g.router.MaxMultipartMemory = 50 << 20
@@ -491,7 +493,7 @@ func (g goblog) addRoutes() {
 
 // getAndHead registers a handler for both GET and HEAD on the given path.
 // HEAD is required by the HTTP spec for any resource that supports GET.
-func getAndHead(router *gin.Engine, path string, handler gin.HandlerFunc) {
+func getAndHead(router gin.IRoutes, path string, handler gin.HandlerFunc) {
 	router.GET(path, handler)
 	router.HEAD(path, handler)
 }
