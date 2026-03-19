@@ -276,6 +276,8 @@ func seedDefaultSettings(db *gorm.DB) {
 		{Key: "custom_header_code", Type: "textarea", Value: ""},
 		{Key: "custom_footer_code", Type: "textarea", Value: ""},
 		{Key: "theme", Type: "text", Value: "default"},
+		{Key: "robots_tag", Type: "text", Value: "index, follow"},
+		{Key: "site_url", Type: "text", Value: ""},
 	}
 	for _, s := range defaults {
 		db.Where("key = ?", s.Key).FirstOrCreate(&s)

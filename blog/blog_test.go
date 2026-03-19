@@ -175,7 +175,11 @@ func TestBlogWorkflow(t *testing.T) {
 	router.SetFuncMap(template.FuncMap{
 		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
 	})
-	router.LoadHTMLGlob("../themes/default/templates/*")
+	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
+		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
+	}).ParseGlob("../templates/shared/*.html"))
+	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
+	router.SetHTMLTemplate(tmpl)
 	a.On("IsAdmin", mock.Anything).Return(false).Once()
 	a.On("IsLoggedIn", mock.Anything).Return(false)
 	jsonValue, _ = json.Marshal("")
