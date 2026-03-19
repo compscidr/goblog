@@ -21,6 +21,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"path/filepath"
 	"strings"
 
@@ -42,7 +43,7 @@ type goblog struct {
 	_registry          *gplugin.Registry
 	sessionKey         string
 	router             *gin.Engine
-	handlersRegistered bool
+	routesOnce         sync.Once
 }
 
 func envFilePresent() bool {
@@ -106,7 +107,7 @@ func attemptConnectDb() *gorm.DB {
 }
 
 // depending on if the env file is present or not, we will show the wizard or the main site
-func (g goblog) rootHandler(c *gin.Context) {
+func (g *goblog) rootHandler(c *gin.Context) {
 	if !envFilePresent() {
 		log.Println("Root handler: No .env file found")
 		c.HTML(http.StatusOK, "wizard_db.html", gin.H{
@@ -186,7 +187,7 @@ func (g goblog) rootHandler(c *gin.Context) {
 	}
 }
 
-func (g goblog) loginHandler(c *gin.Context) {
+func (g *goblog) loginHandler(c *gin.Context) {
 	if !envFilePresent() {
 		log.Println("Root handler: No .env file found")
 		c.HTML(http.StatusOK, "wizard_db.html", gin.H{
@@ -316,7 +317,7 @@ func main() {
 		registry.StartScheduledJobs()
 	}
 
-	goblog := goblog{
+	goblog := &goblog{
 		_wizard:    &_wizard,
 		_blog:      &_blog,
 		_auth:      &_auth,
@@ -402,8 +403,8 @@ func main() {
 		c.File(filepath.Join("themes", activeTheme, "static", fp))
 	})
 
-	router.GET("/", goblog.rootHandler)
-	router.GET("/login", goblog.loginHandler)
+	getAndHead(router, "/", goblog.rootHandler)
+	getAndHead(router, "/login", goblog.loginHandler)
 	router.GET("/wizard", goblog._wizard.SaveToken)
 	router.POST("/wizard_db", updateDB)
 	router.POST("/test_db", testDB)
@@ -427,12 +428,13 @@ func main() {
 	}
 }
 
-func (g goblog) addRoutes() {
-	if g.handlersRegistered {
-		log.Println("Handlers already registered")
-		return
-	}
-	g.handlersRegistered = true
+func (g *goblog) addRoutes() {
+	g.routesOnce.Do(func() {
+		g.addRoutesInner()
+	})
+}
+
+func (g *goblog) addRoutesInner() {
 	log.Println("Adding main blog routes")
 	//all of this is the json api
 	g.router.MaxMultipartMemory = 50 << 20
@@ -468,16 +470,16 @@ func (g goblog) addRoutes() {
 	//the json API. The json API is tested more easily. Also javascript can
 	//served in the html can be used to create and update posts by directly
 	//working with the json API.
-	g.router.GET("/index.php", g._blog.Home)
-	g.router.GET("/posts/:yyyy/:mm/:dd/:slug", g._blog.Post)
+	getAndHead(g.router, "/index.php", g._blog.Home)
+	getAndHead(g.router, "/posts/:yyyy/:mm/:dd/:slug", g._blog.Post)
 	// lets posts work with our without the word posts in front
-	g.router.GET("/:yyyy/:mm/:dd/:slug", g._blog.Post)
+	getAndHead(g.router, "/:yyyy/:mm/:dd/:slug", g._blog.Post)
 	g.router.GET("/admin/posts/:yyyy/:mm/:dd/:slug", g._admin.Post)
-	g.router.GET("/tag/*name", g._blog.Tag)
+	getAndHead(g.router, "/tag/*name", g._blog.Tag)
 	g.router.GET("/logout", g._blog.Logout)
 
-	g.router.GET("/search", g._blog.Search)
-	g.router.GET("/sitemap.xml", g._blog.Sitemap)
+	getAndHead(g.router, "/search", g._blog.Search)
+	getAndHead(g.router, "/sitemap.xml", g._blog.Sitemap)
 	// lets old WordPress stuff stored at wp-content/uploads work
 	g.router.Use(static.Serve("/wp-content", static.LocalFile("www", false)))
 
@@ -492,6 +494,13 @@ func (g goblog) addRoutes() {
 	g.router.GET("/admin/post-types/:id", g._admin.AdminEditPostType)
 
 	g.router.NoRoute(g._blog.NoRoute)
+}
+
+// getAndHead registers a handler for both GET and HEAD on the given path.
+// HEAD is required by the HTTP spec for any resource that supports GET.
+func getAndHead(router gin.IRoutes, path string, handler gin.HandlerFunc) {
+	router.GET(path, handler)
+	router.HEAD(path, handler)
 }
 
 func CORS() gin.HandlerFunc {
