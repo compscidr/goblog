@@ -60,3 +60,48 @@ func TestIsWizardMode_WithAdminUser_ReturnsFalse(t *testing.T) {
 		t.Fatal("IsWizardMode must be false once an admin_users row exists")
 	}
 }
+
+func TestEnsureAdmin_NoAdmin_CreatesRow(t *testing.T) {
+	a, db := newAuth(t)
+	user := auth.BlogUser{ID: 42, Login: "operator"}
+	db.Create(&user)
+
+	if err := a.EnsureAdmin(user.ID); err != nil {
+		t.Fatalf("EnsureAdmin: %v", err)
+	}
+
+	var count int64
+	db.Model(&auth.AdminUser{}).Count(&count)
+	if count != 1 {
+		t.Fatalf("expected 1 admin_users row, got %d", count)
+	}
+	var got auth.AdminUser
+	db.First(&got)
+	if got.BlogUserID != user.ID {
+		t.Fatalf("expected admin BlogUserID=%d, got %d", user.ID, got.BlogUserID)
+	}
+}
+
+func TestEnsureAdmin_AdminExists_NoOp(t *testing.T) {
+	a, db := newAuth(t)
+	first := auth.BlogUser{ID: 1, Login: "first"}
+	second := auth.BlogUser{ID: 2, Login: "second"}
+	db.Create(&first)
+	db.Create(&second)
+	db.Create(&auth.AdminUser{BlogUserID: first.ID, BlogUser: first})
+
+	if err := a.EnsureAdmin(second.ID); err != nil {
+		t.Fatalf("EnsureAdmin: %v", err)
+	}
+
+	var count int64
+	db.Model(&auth.AdminUser{}).Count(&count)
+	if count != 1 {
+		t.Fatalf("expected EnsureAdmin to be a no-op when an admin exists, got %d admin rows", count)
+	}
+	var got auth.AdminUser
+	db.First(&got)
+	if got.BlogUserID != first.ID {
+		t.Fatalf("expected first admin to remain (id=%d), got id=%d", first.ID, got.BlogUserID)
+	}
+}

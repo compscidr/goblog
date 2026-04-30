@@ -189,12 +189,33 @@ func (a *Auth) LoginPostHandler(c *gin.Context) {
 		existingUser = *user
 	}
 
+	// On a fresh install where the operator has pre-populated .env (e.g. via
+	// configuration management), the install wizard's UI flow is bypassed and
+	// no admin user is ever created. Promote the first successful OAuth login
+	// to admin so the operator can administer the site without re-running the
+	// wizard. Same trust model as the wizard: whoever first completes OAuth
+	// against the server's client_secret becomes the admin.
+	if err := a.EnsureAdmin(user.ID); err != nil {
+		log.Println("Error ensuring admin user: " + err.Error())
+	}
+
 	//save the access token in the session
 	session := sessions.Default(c)
 	session.Set("token", data.AccessToken)
 	session.Save()
 
 	c.JSON(http.StatusOK, existingUser)
+}
+
+// EnsureAdmin promotes the given BlogUser to admin if and only if no admin
+// user currently exists. Idempotent and safe to call on every login.
+func (a *Auth) EnsureAdmin(blogUserID int) error {
+	var existing AdminUser
+	err := (*a.db).First(&existing).Error
+	if err == nil {
+		return nil // an admin already exists; nothing to do
+	}
+	return (*a.db).Create(&AdminUser{BlogUserID: blogUserID}).Error
 }
 
 // DisplayUserTable is a debug function, shows the user table
