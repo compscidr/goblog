@@ -209,13 +209,23 @@ func (a *Auth) LoginPostHandler(c *gin.Context) {
 
 // EnsureAdmin promotes the given BlogUser to admin if and only if no admin
 // user currently exists. Idempotent and safe to call on every login.
+//
+// The check-and-create runs inside a transaction so two concurrent first
+// logins can't both observe an empty admin_users table and both create a
+// row. Lookup errors other than "record not found" are surfaced rather
+// than swallowed as if no admin existed.
 func (a *Auth) EnsureAdmin(blogUserID int) error {
-	var existing AdminUser
-	err := (*a.db).First(&existing).Error
-	if err == nil {
-		return nil // an admin already exists; nothing to do
-	}
-	return (*a.db).Create(&AdminUser{BlogUserID: blogUserID}).Error
+	return (*a.db).Transaction(func(tx *gorm.DB) error {
+		var existing AdminUser
+		err := tx.First(&existing).Error
+		if err == nil {
+			return nil // an admin already exists; nothing to do
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		return tx.Create(&AdminUser{BlogUserID: blogUserID}).Error
+	})
 }
 
 // DisplayUserTable is a debug function, shows the user table
