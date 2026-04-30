@@ -21,6 +21,7 @@ import (
 type IAuth interface {
 	IsAdmin(c *gin.Context) bool
 	IsLoggedIn(c *gin.Context) bool
+	IsWizardMode(c *gin.Context) bool
 }
 
 // Auth API
@@ -203,16 +204,17 @@ func (a *Auth) DisplayUserTable() {
 	log.Println(users)
 }
 
-// IsAdmin returns true if the user logged in is the admin user
-// First tries for a session token, and if that fails falls back on an auth token
+// IsAdmin returns true if the user logged in is the admin user.
+// First tries for a session token, and if that fails falls back on an auth token.
+//
+// Returns false when no admin user exists in the DB. Pre-admin handlers that
+// the install wizard genuinely needs (e.g. UploadFile, UpdateSettings) should
+// also accept IsWizardMode as an exemption.
 func (a *Auth) IsAdmin(c *gin.Context) bool {
-
-	// if there is no admin user in the db, then we can't have an admin user, so we'll just return true for now, mostly
-	// so the wizard can upload images
 	var adminUser AdminUser
 	err := (*a.db).First(&adminUser).Error
 	if err != nil {
-		return true
+		return false
 	}
 
 	session := sessions.Default(c)
@@ -223,9 +225,6 @@ func (a *Auth) IsAdmin(c *gin.Context) bool {
 			return false
 		}
 	}
-
-	//debug
-	//a.DisplayUserTable()
 
 	// first make sure the access token matches a logged in user
 	var existingUser BlogUser
@@ -239,6 +238,17 @@ func (a *Auth) IsAdmin(c *gin.Context) bool {
 		return false
 	}
 	return true
+}
+
+// IsWizardMode returns true when the install wizard has not yet completed,
+// detected by the absence of any row in the admin_users table. The wizard's
+// own pre-admin endpoints (image upload, initial settings) gate on this so
+// that fresh-install setup can complete before an admin user exists, without
+// IsAdmin itself being permissive to anonymous traffic.
+func (a *Auth) IsWizardMode(c *gin.Context) bool {
+	var adminUser AdminUser
+	err := (*a.db).First(&adminUser).Error
+	return err != nil
 }
 
 // IsLoggedIn Returns true if the user is logged in, false otherwise

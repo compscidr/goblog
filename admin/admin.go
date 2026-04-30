@@ -199,7 +199,8 @@ func (a *Admin) CreatePost(c *gin.Context) {
 func (a *Admin) UploadFile(c *gin.Context) {
 	log.Println("Upload file API hit")
 
-	if !a.auth.IsAdmin(c) {
+	// Allow the install wizard (pre-admin) to upload images during setup.
+	if !a.auth.IsAdmin(c) && !a.auth.IsWizardMode(c) {
 		log.Println("IS ADMIN RETURNED FALSE")
 		c.JSON(http.StatusUnauthorized, "Not Authorized")
 		return
@@ -530,7 +531,8 @@ func (a *Admin) UpdateSettings(c *gin.Context) {
 		return
 	}
 
-	if !a.auth.IsAdmin(c) {
+	// Allow the install wizard (pre-admin) to write the initial settings.
+	if !a.auth.IsAdmin(c) && !a.auth.IsWizardMode(c) {
 		log.Println("IS ADMIN RETURNED FALSE")
 		c.JSON(http.StatusUnauthorized, "Not Authorized")
 		return
