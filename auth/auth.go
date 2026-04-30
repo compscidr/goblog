@@ -189,12 +189,43 @@ func (a *Auth) LoginPostHandler(c *gin.Context) {
 		existingUser = *user
 	}
 
+	// On a fresh install where the operator has pre-populated .env (e.g. via
+	// configuration management), the install wizard's UI flow is bypassed and
+	// no admin user is ever created. Promote the first successful OAuth login
+	// to admin so the operator can administer the site without re-running the
+	// wizard. Same trust model as the wizard: whoever first completes OAuth
+	// against the server's client_secret becomes the admin.
+	if err := a.EnsureAdmin(user.ID); err != nil {
+		log.Println("Error ensuring admin user: " + err.Error())
+	}
+
 	//save the access token in the session
 	session := sessions.Default(c)
 	session.Set("token", data.AccessToken)
 	session.Save()
 
 	c.JSON(http.StatusOK, existingUser)
+}
+
+// EnsureAdmin promotes the given BlogUser to admin if and only if no admin
+// user currently exists. Idempotent and safe to call on every login.
+//
+// The check-and-create runs inside a transaction so two concurrent first
+// logins can't both observe an empty admin_users table and both create a
+// row. Lookup errors other than "record not found" are surfaced rather
+// than swallowed as if no admin existed.
+func (a *Auth) EnsureAdmin(blogUserID int) error {
+	return (*a.db).Transaction(func(tx *gorm.DB) error {
+		var existing AdminUser
+		err := tx.First(&existing).Error
+		if err == nil {
+			return nil // an admin already exists; nothing to do
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		return tx.Create(&AdminUser{BlogUserID: blogUserID}).Error
+	})
 }
 
 // DisplayUserTable is a debug function, shows the user table
