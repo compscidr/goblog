@@ -40,6 +40,11 @@ func (m *Auth) IsLoggedIn(c *gin.Context) bool {
 	return args.Bool(0)
 }
 
+func (m *Auth) IsWizardMode(c *gin.Context) bool {
+	args := m.Called(c)
+	return args.Bool(0)
+}
+
 func TestBlogWorkflow(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
 	db.AutoMigrate(&auth.BlogUser{})

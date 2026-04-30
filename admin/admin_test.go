@@ -41,6 +41,11 @@ func (m *Auth) IsLoggedIn(c *gin.Context) bool {
 	return args.Bool(0)
 }
 
+func (m *Auth) IsWizardMode(c *gin.Context) bool {
+	args := m.Called(c)
+	return args.Bool(0)
+}
+
 func TestCreatePost(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
 	db.AutoMigrate(&auth.BlogUser{})
@@ -404,13 +409,26 @@ func TestCreatePost(t *testing.T) {
 	//	t.Fatalf("Expected to get status %d but instead got %d\n%s", http.StatusBadRequest, w.Code, body)
 	//}
 
-	//file upload, not admin
+	//file upload, not admin and not wizard mode
 	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	a.On("IsWizardMode", mock.Anything).Return(false).Once()
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusUnauthorized {
 		body, _ := ioutil.ReadAll(w.Body)
 		t.Fatalf("Expected to get status %d but instead got %d\n%s", http.StatusUnauthorized, w.Code, body)
+	}
+
+	//file upload, not admin but in wizard mode (fresh install) — should be allowed
+	a.On("IsAdmin", mock.Anything).Return(false).Once()
+	a.On("IsWizardMode", mock.Anything).Return(true).Once()
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/v1/upload", nil)
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		// expecting 400 (no file in form) rather than 401 — proves the auth gate let us through
+		body, _ := ioutil.ReadAll(w.Body)
+		t.Fatalf("Expected to get status %d (past auth gate, missing file) but instead got %d\n%s", http.StatusBadRequest, w.Code, body)
 	}
 
 	//file upload, missing file
