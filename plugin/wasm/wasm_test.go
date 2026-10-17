@@ -519,3 +519,29 @@ func TestTemplateHooksDeclineWhileBusy(t *testing.T) {
 		t.Errorf("health after re-creation = %q", h)
 	}
 }
+
+func TestPostsHostFunction(t *testing.T) {
+	ctx := hookCtx(map[string]string{"enabled": "true"}, "/echo/posts", "posts")
+	render := func(p *Plugin) string {
+		_, data := p.RenderPage(ctx, "echo")
+		html, _ := data["plugin_content"].(string)
+		return html
+	}
+	// No source (validation): an empty list, not an error.
+	if got := render(loadEcho(t, Options{})); got != "[]" {
+		t.Errorf("no source = %q", got)
+	}
+	var asked int
+	p := loadEcho(t, Options{Posts: func(limit int) ([]plugin.Post, error) {
+		asked = limit
+		return []plugin.Post{{ID: 7, Title: "Hi", URL: "https://x/posts/hi", Tags: []string{}}}, nil
+	}})
+	got := render(p)
+	if asked != 2 || !strings.Contains(got, `"id":7`) || !strings.Contains(got, `"url":"https://x/posts/hi"`) {
+		t.Errorf("limit=%d posts = %q", asked, got)
+	}
+	failing := loadEcho(t, Options{Posts: func(int) ([]plugin.Post, error) { return nil, errors.New("db down") }})
+	if got := render(failing); got != "[]" {
+		t.Errorf("error = %q", got)
+	}
+}

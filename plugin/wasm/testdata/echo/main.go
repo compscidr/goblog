@@ -24,6 +24,9 @@ func hostStoreDelete(uint64) uint64
 //go:wasmimport extism:host/user store_list
 func hostStoreList(uint64) uint64
 
+//go:wasmimport extism:host/user posts_list
+func hostPostsList(uint64) uint64
+
 // storeGetOK returns the value and whether the key exists: the host returns
 // offset 0 (Extism's null) for a missing key.
 func storeGetOK(key string) (string, bool) {
@@ -146,6 +149,8 @@ func renderPage() int32 {
 			after = "missing"
 		}
 		return out(map[string]any{"html": "got=" + got + " keys=" + keys + " after=[" + after + "]"})
+	case "posts":
+		return out(map[string]any{"html": pdk.ParamString(hostPostsList(2))})
 	case "raw-badstatus":
 		return out(map[string]any{"raw": map[string]any{"status": 5, "body": "x"}})
 	case "raw-defaults":

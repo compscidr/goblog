@@ -64,13 +64,14 @@ func hostAllowed(allowed []string, host string) bool {
 	return false
 }
 
-// hostFunctions builds the store_* host functions (namespace
+// hostFunctions builds the store_* and posts_list host functions (namespace
 // extism:host/user). They read the plugin's name through p at call time,
 // because the name is only known after the identity export has run.
 //
 // Shapes: store_get(key) → value (offset 0 = null when missing or on error),
 // store_set(key, value) → 0/1, store_delete(key) → 0/1, store_list(prefix) →
-// JSON array of keys ("[]" on error).
+// JSON array of keys ("[]" on error), posts_list(limit) → JSON array of
+// plugin.Post, newest first ("[]" on error or with no Posts source).
 //
 // The plugin name is empty until identity has returned; until then the
 // store is not touched: reads are null/empty, writes fail.
@@ -154,7 +155,19 @@ func hostFunctions(p *Plugin) []extism.HostFunction {
 		b, _ := json.Marshal(keys)
 		stack[0], _ = cp.WriteBytes(b)
 	}, i64, i64)
-	return []extism.HostFunction{get, set, del, list}
+	posts := extism.NewHostFunctionWithStack("posts_list", func(ctx context.Context, cp *extism.CurrentPlugin, stack []uint64) {
+		out := []plugin.Post{}
+		if p.opts.Posts != nil {
+			if ps, err := p.opts.Posts(int(stack[0])); err != nil {
+				warn(cp, "posts_list", err)
+			} else if ps != nil {
+				out = ps
+			}
+		}
+		b, _ := json.Marshal(out)
+		stack[0], _ = cp.WriteBytes(b)
+	}, i64, i64)
+	return []extism.HostFunction{get, set, del, list, posts}
 }
 
 // nopStore is used when no Store is configured (validation): every write

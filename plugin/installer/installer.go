@@ -682,7 +682,7 @@ func (i *Installer) fetchAndCheck(ctx context.Context, e directory.Entry) ([]byt
 	if !strings.EqualFold(hex.EncodeToString(sum[:]), e.SHA256) {
 		return nil, nil, ErrChecksum
 	}
-	p, err := wasm.LoadBytes(src, wasm.Options{Store: i.Registry.Store(), AllowedHosts: e.AllowedHosts})
+	p, err := wasm.LoadBytes(src, wasm.Options{Store: i.Registry.Store(), AllowedHosts: e.AllowedHosts, Posts: i.Registry.Posts})
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %v", ErrLoad, err)
 	}

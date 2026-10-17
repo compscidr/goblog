@@ -26,9 +26,10 @@ import (
 
 // Options configure a loaded plugin.
 type Options struct {
-	Store        plugin.Store                     // nil → writes fail, reads are empty
-	AllowedHosts []string                         // hosts the plugin may reach over HTTP; nil → none
-	Logf         func(format string, args ...any) // nil → log.Printf
+	Store        plugin.Store                           // nil → writes fail, reads are empty
+	AllowedHosts []string                               // hosts the plugin may reach over HTTP; nil → none
+	Logf         func(format string, args ...any)       // nil → log.Printf
+	Posts        func(limit int) ([]plugin.Post, error) // posts_list source; nil → always empty
 	// NoCache skips the shared compilation cache — for one-off loads such
 	// as validation, so the compiled code is freed on Close.
 	NoCache bool
@@ -57,7 +58,7 @@ var Exports = []string{"identity", "settings", "pages", "jobs", "template_head",
 
 // HostFunctions are what goblog offers in the extism:host/user namespace
 // besides the PDK's own logging and http_request.
-var HostFunctions = []string{"store_get", "store_set", "store_delete", "store_list"}
+var HostFunctions = []string{"store_get", "store_set", "store_delete", "store_list", "posts_list"}
 
 // compilationCache is shared by every instance so a module is compiled once
 // per process (validate, install and boot all load the same bytes).
