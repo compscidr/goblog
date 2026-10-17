@@ -348,10 +348,6 @@ func (a *Auth) EnsureAdmin(user *BlogUser) error {
 	})
 }
 
-// ErrNotPromotable is returned by PromoteAdmin for users who can't hold
-// admin: only GitHub users can (email login is a weaker credential, see #565).
-var ErrNotPromotable = errors.New("only GitHub users can be admin")
-
 // ErrLastAdmin is returned by DemoteAdmin when the demotion would leave the
 // site with no admin at all, which would also re-open the install wizard
 // (IsWizardMode is "no admin_users row").
@@ -394,17 +390,15 @@ func (a *Auth) ListUsers(offset, limit int) ([]UserListing, int64, error) {
 
 // PromoteAdmin makes the given user an admin. Unlike EnsureAdmin this is not
 // gated on the admin_login / admin_github_id pin: that pin only governs who
-// bootstraps the first admin, after which existing admins decide. Returns
-// gorm.ErrRecordNotFound for an unknown user and ErrNotPromotable for a
-// non-GitHub user. Idempotent.
+// bootstraps the first admin, after which existing admins decide. Any provider
+// can be promoted: an email login is as strong as its mailbox, which is also
+// what a GitHub account falls back on for recovery (#565). Returns
+// gorm.ErrRecordNotFound for an unknown user. Idempotent.
 func (a *Auth) PromoteAdmin(userID int) error {
 	return (*a.db).Transaction(func(tx *gorm.DB) error {
 		var user BlogUser
 		if err := tx.First(&user, userID).Error; err != nil {
 			return err
-		}
-		if user.Provider != ProviderGitHub {
-			return ErrNotPromotable
 		}
 		var existing AdminUser
 		err := tx.Where("blog_user_id = ?", userID).First(&existing).Error

@@ -1085,8 +1085,8 @@ func TestAdminUsers_RendersUsers(t *testing.T) {
 			if r := row(plain); !control("promoteAdmin", plain).MatchString(r) {
 				t.Errorf("github non-admin must have a promote control: %s", r)
 			}
-			if r := row(mailer); strings.Contains(r, "promoteAdmin(") || strings.Contains(r, "demoteAdmin(") {
-				t.Errorf("email user must have no controls: %s", r)
+			if r := row(mailer); !control("promoteAdmin", mailer).MatchString(r) {
+				t.Errorf("email non-admin must have a promote control: %s", r)
 			}
 			if !strings.Contains(body, "3 users") {
 				t.Errorf("expected a total in the summary")
@@ -1156,8 +1156,8 @@ func TestPromoteAdminAPI(t *testing.T) {
 	if n != 1 {
 		t.Fatalf("expected plain to be admin after promotion")
 	}
-	if w := adminsJSON(router, "POST", mailer.ID); w.Code != http.StatusBadRequest {
-		t.Errorf("promote email user: expected 400, got %d", w.Code)
+	if w := adminsJSON(router, "POST", mailer.ID); w.Code != http.StatusOK {
+		t.Errorf("promote email user: expected 200, got %d", w.Code)
 	}
 	if w := adminsJSON(router, "POST", 999); w.Code != http.StatusNotFound {
 		t.Errorf("promote unknown user: expected 404, got %d", w.Code)
