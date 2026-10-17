@@ -235,8 +235,9 @@ func (a *Auth) UpsertUser(user *BlogUser) (*BlogUser, error) {
 // completeGithubLogin exchanges an authorization code for a token, stores the
 // user behind it and puts the token in the session. GithubCallback is its only
 // caller: the code used to arrive by POST from the login page, which meant
-// anyone could hand the server a code for any account (#637).
-func (a *Auth) completeGithubLogin(c *gin.Context, code string) error {
+// anyone could hand the server a code for any account (#637). promote makes
+// the GitHub user an admin; GithubCallback decides it.
+func (a *Auth) completeGithubLogin(c *gin.Context, code string, promote bool) error {
 	data, err := a.requestAccessToken(code)
 	if err != nil {
 		return errors.New("error requesting token access: " + err.Error())
@@ -262,6 +263,11 @@ func (a *Auth) completeGithubLogin(c *gin.Context, code string) error {
 		log.Printf("%s (id %s) logged in but is not the configured admin; not promoting", stored.Login, stored.ProviderID)
 	} else if err != nil {
 		log.Println("Error ensuring admin user: " + err.Error())
+	}
+	if promote {
+		if err := a.PromoteAdmin(stored.ID); err != nil {
+			return errors.New("error making the GitHub user an admin: " + err.Error())
+		}
 	}
 
 	// Set but do not save: GithubCallback saves once, so the response carries

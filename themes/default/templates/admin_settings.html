@@ -77,8 +77,11 @@
             <label for="github_client_secret" class="form-label">Client Secret</label>
             <input type="password" id="github_client_secret" class="form-control" autocomplete="off">
         </div>
-        <div class="form-text mb-3">Signing in with GitHub makes a separate account that is not an admin and is not linked to your password account. To use GitHub as your admin login, sign in with GitHub once, then sign back in with your password and promote that account on the <a href="/admin/users">Users</a> page.</div>
         <button type="button" class="btn btn-primary" onclick="saveGithubLogin();">Save GitHub login</button>
+        {{ if .github_client_id }}
+        <a class="btn btn-outline-secondary" href="/login/github?admin=1&next=%2Fadmin%2Fsettings">Sign in with GitHub as admin</a>
+        <div class="form-text">Makes your GitHub account an admin and signs you in with it. Your password login keeps working.</div>
+        {{ end }}
     </div>
     <h3>Email</h3>
     <p>

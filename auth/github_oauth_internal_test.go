@@ -75,12 +75,27 @@ func callbackRouter(t *testing.T) (*gin.Engine, *fakeGithub) {
 		s := sessions.Default(c)
 		s.Set(OAuthStateKey, c.Query("state"))
 		s.Set(OAuthNextKey, "/admin/settings")
+		// ?admin= seeds a password admin and asks for the promotion that
+		// "Sign in with GitHub as admin" asks for: "self" signs this browser
+		// in as that admin, "other" leaves it signed out.
+		if who := c.Query("admin"); who != "" {
+			pw := BlogUser{Provider: ProviderPassword, ProviderID: "me@example.invalid", AccessToken: "pw-token"}
+			db.Create(&pw)
+			db.Create(&AdminUser{BlogUserID: pw.ID})
+			if who == "self" {
+				s.Set("token", pw.AccessToken)
+			}
+			s.Set(OAuthAdminKey, true)
+		}
 		if err := s.Save(); err != nil {
 			t.Fatalf("seeding the session: %v", err)
 		}
 		c.Status(http.StatusOK)
 	})
 	r.GET("/login", a.GithubCallback)
+	r.GET("/isadmin", func(c *gin.Context) {
+		c.String(http.StatusOK, "%v", a.IsAdmin(c))
+	})
 	r.GET("/whoami", func(c *gin.Context) {
 		token, _ := sessions.Default(c).Get("token").(string)
 		c.String(http.StatusOK, token)
@@ -275,5 +290,24 @@ func TestGithubCallback_RestartCannotLoop(t *testing.T) {
 	}
 	if fake.tokenCalls != 0 {
 		t.Errorf("exchanged anyway (%d calls)", fake.tokenCalls)
+	}
+}
+
+// TestGithubCallback_AdminPromotesTheirGithubAccount: "Sign in with GitHub as
+// admin" on the Settings page makes the GitHub account that comes back an
+// admin, so a password admin can move to GitHub login in one step (#668).
+// The request alone is not enough: the browser must be signed in as an admin
+// when GitHub returns, or a link could promote anyone.
+func TestGithubCallback_AdminPromotesTheirGithubAccount(t *testing.T) {
+	for who, want := range map[string]string{"self": "true", "other": "false"} {
+		r, _ := callbackRouter(t)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/seed?state=s&admin="+who, nil))
+
+		w = get(t, r, "/login?code=good-code&state=s", w.Result().Cookies())
+
+		if got := get(t, r, "/isadmin", w.Result().Cookies()).Body.String(); got != want {
+			t.Errorf("admin=%s: GitHub user is admin = %s, want %s", who, got, want)
+		}
 	}
 }
