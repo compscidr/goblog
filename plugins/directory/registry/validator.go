@@ -7,8 +7,8 @@ import (
 	"errors"
 	"sync"
 
-	"goblog/plugin"
-	"goblog/plugin/wasm"
+	"github.com/goblogplatform/goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin/wasm"
 )
 
 // Validator loads a plugin module the way goblog would and reports its

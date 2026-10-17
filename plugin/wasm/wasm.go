@@ -16,7 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin"
 
 	extism "github.com/extism/go-sdk"
 	"github.com/gin-gonic/gin"

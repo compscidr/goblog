@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"goblog/plugins/directory/registry"
+	"github.com/goblogplatform/goblog/plugins/directory/registry"
 
 	"gorm.io/gorm"
 )

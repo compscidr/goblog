@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"goblog/mail"
+	"github.com/goblogplatform/goblog/mail"
 )
 
 func TestMessage_HeadersAndCRLF(t *testing.T) {

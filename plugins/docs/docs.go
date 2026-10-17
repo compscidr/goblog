@@ -9,8 +9,8 @@ import (
 	"log"
 	"strings"
 
-	"goblog/blog"
-	gplugin "goblog/plugin"
+	"github.com/goblogplatform/goblog/blog"
+	gplugin "github.com/goblogplatform/goblog/plugin"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

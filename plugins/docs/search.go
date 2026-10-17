@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	gplugin "goblog/plugin"
+	gplugin "github.com/goblogplatform/goblog/plugin"
 )
 
 // snippetLen is roughly how many characters of text a search result shows

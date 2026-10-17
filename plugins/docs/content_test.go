@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"goblog/plugin/wasm"
-	"goblog/plugins/directory/registry"
+	"github.com/goblogplatform/goblog/plugin/wasm"
+	"github.com/goblogplatform/goblog/plugins/directory/registry"
 )
 
 // internalLink matches /docs/<slug>[#anchor] links in rendered HTML.

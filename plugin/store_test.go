@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

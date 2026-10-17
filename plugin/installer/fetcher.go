@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"goblog/plugins/directory"
+	"github.com/goblogplatform/goblog/plugins/directory"
 )
 
 // maxIndexBytes caps what is read from the registry so a misbehaving index

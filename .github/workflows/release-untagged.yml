@@ -36,7 +36,7 @@ jobs:
         run: go build -ldflags="-X 'main.Version=latest'" -v .
 
       - name: Test
-        run: go test -race -coverprofile=coverage.txt -covermode=atomic goblog/...
+        run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
 
       - name: Code Coverage
         uses: codecov/codecov-action@v5.5.2

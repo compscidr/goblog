@@ -2,8 +2,8 @@ package plugin_test
 
 import (
 	"errors"
-	"goblog/blog"
-	"goblog/plugin"
+	"github.com/goblogplatform/goblog/blog"
+	"github.com/goblogplatform/goblog/plugin"
 	"net/http"
 	"net/http/httptest"
 	"strings"

@@ -21,9 +21,9 @@ import (
 	"sync"
 	"time"
 
-	"goblog/plugin"
-	"goblog/plugin/wasm"
-	"goblog/plugins/directory"
+	"github.com/goblogplatform/goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin/wasm"
+	"github.com/goblogplatform/goblog/plugins/directory"
 )
 
 // DefaultIndexURL is the public plugin directory index.

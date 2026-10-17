@@ -11,8 +11,8 @@ import (
 	"regexp"
 	"sort"
 
-	"goblog/auth"
-	"goblog/datadir"
+	"github.com/goblogplatform/goblog/auth"
+	"github.com/goblogplatform/goblog/datadir"
 	"html/template"
 	"log"
 	"net"

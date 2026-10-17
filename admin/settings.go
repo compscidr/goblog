@@ -3,7 +3,7 @@ package admin
 import (
 	"sort"
 
-	"goblog/blog"
+	"github.com/goblogplatform/goblog/blog"
 )
 
 // SettingField is one site setting as the Settings page renders it: the

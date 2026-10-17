@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"goblog/theme"
-	tinstaller "goblog/theme/installer"
+	"github.com/goblogplatform/goblog/theme"
+	tinstaller "github.com/goblogplatform/goblog/theme/installer"
 
 	"github.com/gin-gonic/gin"
 )

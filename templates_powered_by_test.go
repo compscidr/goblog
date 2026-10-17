@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"goblog/blog"
-	"goblog/theme"
+	"github.com/goblogplatform/goblog/blog"
+	"github.com/goblogplatform/goblog/theme"
 )
 
 // TestPoweredBy: the shared _powered_by partial shows the credit unless the

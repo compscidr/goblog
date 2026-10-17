@@ -3,7 +3,7 @@ package admin
 import (
 	"net/http"
 
-	"goblog/blog"
+	"github.com/goblogplatform/goblog/blog"
 
 	"github.com/gin-gonic/gin"
 )

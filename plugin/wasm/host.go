@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"sync"
 
-	"goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin"
 
 	extism "github.com/extism/go-sdk"
 	"github.com/gobwas/glob"

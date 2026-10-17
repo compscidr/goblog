@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin"
 )
 
 func echoModule(t *testing.T) []byte {
