@@ -3,6 +3,8 @@ package wasm
 import (
 	"reflect"
 	"strings"
+
+	"goblog/plugin"
 )
 
 // JSON shapes of the host contract (spec §1). Field names are the API: a
@@ -84,7 +86,7 @@ type renderResult struct {
 // plugin contract, for the documentation lint.
 func ContractFieldNames() []string {
 	var out []string
-	for _, v := range []any{Identity{}, settingDef{}, pageDef{}, jobDef{}, requestCtx{}, hookInput{}, jobInput{}, initInput{}, rawResponse{}, renderResult{}} {
+	for _, v := range []any{Identity{}, settingDef{}, pageDef{}, jobDef{}, requestCtx{}, hookInput{}, jobInput{}, initInput{}, rawResponse{}, renderResult{}, plugin.Post{}} {
 		t := reflect.TypeOf(v)
 		for i := 0; i < t.NumField(); i++ {
 			if tag, _, _ := strings.Cut(t.Field(i).Tag.Get("json"), ","); tag != "" && tag != "-" {

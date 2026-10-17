@@ -235,7 +235,7 @@ Decode only what you use — the scholar plugin's `hookInput` has `settings` and
 
 ## Host functions
 
-goblog adds four store functions — `store_get`, `store_set`, `store_delete` and `store_list` — to the module's imports in Extism's `extism:host/user` namespace. Logging and HTTP are Extism's own.
+goblog adds four store functions — `store_get`, `store_set`, `store_delete` and `store_list` — and `posts_list` to the module's imports in Extism's `extism:host/user` namespace. Logging and HTTP are Extism's own.
 
 ### store
 
@@ -290,6 +290,28 @@ func storeSet(key, value string) {
 	defer v.Free()
 	hostStoreSet(k.Offset(), v.Offset())
 }
+```
+
+### posts_list
+
+`posts_list(limit)` returns the site's newest published posts, newest first, so a plugin can act on what the blog publishes — cross-post it, announce it, index it. `limit` is a plain number, not an offset, clamped to 1–50; the return is the offset of a JSON array. Drafts are never listed. Before the database is configured and under `validate-plugin` it returns `[]`, as it does on error (logged at warn level under the plugin's name).
+
+| Field | Meaning |
+|---|---|
+| `id` | The post's ID: stable across edits, so it is the key to remember a post by. |
+| `title` | The title. |
+| `url` | The post's absolute URL under the `site_url` setting — the canonical link to give a copy elsewhere. Site-relative (`/posts/…`) when `site_url` is unset. |
+| `content` | The post's Markdown source. |
+| `tags` | Tag names; `[]` when it has none. |
+| `created_at` / `updated_at` | RFC 3339 timestamps. `created_at` is the publish date the post's URL is built from. |
+
+Call it from `run_job`: compare the IDs against what the store says the plugin has already handled.
+
+```go
+//go:wasmimport extism:host/user posts_list
+func hostPostsList(uint64) uint64
+
+posts := pdk.ParamString(hostPostsList(20)) // JSON array
 ```
 
 ### logging

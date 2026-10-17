@@ -99,7 +99,7 @@ func LoadWasmPlugins(registry *plugin.Registry, dir string, store plugin.Store) 
 			log.Printf("Warning: skipping %s: %v", e.Name(), err)
 			continue
 		}
-		p, err := Load(path, Options{Store: store, AllowedHosts: hosts})
+		p, err := Load(path, Options{Store: store, AllowedHosts: hosts, Posts: registry.Posts})
 		if err != nil {
 			log.Printf("Warning: failed to load wasm plugin %s: %v", e.Name(), err)
 			continue
