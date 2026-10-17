@@ -27,7 +27,7 @@
           <td>
             {{ if .IsAdmin }}
               {{ if $.can_demote }}<a href="javascript:void(0)" onclick="demoteAdmin({{ .ID }})" class="text-danger">[demote]</a>{{ end }}
-            {{ else if eq .Provider "github" }}
+            {{ else }}
               <a href="javascript:void(0)" onclick="promoteAdmin({{ .ID }})">[promote to admin]</a>
             {{ end }}
           </td>

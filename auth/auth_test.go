@@ -395,17 +395,16 @@ func TestPromoteAdmin_Idempotent(t *testing.T) {
 	}
 }
 
-func TestPromoteAdmin_EmailUser_Refused(t *testing.T) {
+func TestPromoteAdmin_EmailUser_AddsRow(t *testing.T) {
 	a, db := newAuth(t)
 	u := auth.BlogUser{Provider: auth.ProviderEmail, ProviderID: "a@example.com", Login: "a@example.com"}
 	db.Create(&u)
 
-	err := a.PromoteAdmin(u.ID)
-	if !errors.Is(err, auth.ErrNotPromotable) {
-		t.Fatalf("expected ErrNotPromotable, got %v", err)
+	if err := a.PromoteAdmin(u.ID); err != nil {
+		t.Fatalf("PromoteAdmin: %v", err)
 	}
-	if n := countAdmins(t, db); n != 0 {
-		t.Fatalf("expected no admin rows, got %d", n)
+	if n := countAdmins(t, db); n != 1 {
+		t.Fatalf("expected 1 admin row, got %d", n)
 	}
 }
 

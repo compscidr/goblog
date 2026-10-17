@@ -1068,8 +1068,6 @@ func (a *Admin) PromoteAdmin(c *gin.Context) {
 		c.JSON(http.StatusOK, "")
 	case errors.Is(err, gorm.ErrRecordNotFound):
 		c.JSON(http.StatusNotFound, "No such user")
-	case errors.Is(err, auth.ErrNotPromotable):
-		c.JSON(http.StatusBadRequest, err.Error())
 	default:
 		log.Println("ERROR PROMOTING ADMIN: ", err)
 		c.JSON(http.StatusInternalServerError, "Error promoting user")
