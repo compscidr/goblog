@@ -4,7 +4,7 @@
     <div class="admin-panel">
     <h1>Users</h1>
     <p class="text-muted">Page {{ .page }} of {{ .total_pages }} &middot; {{ .total }} user{{ if ne .total 1 }}s{{ end }}</p>
-    <p class="text-muted">Admins can manage posts, pages, comments, settings and other users. Only GitHub users can be made admin, and the last admin can't be demoted.</p>
+    <p class="text-muted">Admins can manage posts, pages, comments, settings and other users. An email-login admin is only as secure as that mailbox. The last admin can't be demoted.</p>
 
     {{ if .users }}
     <table class="table">
