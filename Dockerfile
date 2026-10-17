@@ -1,6 +1,6 @@
 # Build stage: the Go toolchain is only needed to compile. cgo is on
-# (SQLite and Go plugins need it), so the runtime base below must be the
-# same Debian release, for a matching glibc.
+# (the SQLite driver, mattn/go-sqlite3, needs it), so the runtime base
+# below must be the same Debian release, for a matching glibc.
 FROM golang:1.26.1-trixie AS build
 
 ADD . /go/src/github.com/compscidr/goblog/
