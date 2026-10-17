@@ -17,12 +17,14 @@ require (
 )
 
 require (
+	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/extism/go-sdk v1.7.1
 	github.com/gobwas/glob v1.0.0
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/tetratelabs/wazero v1.12.0
 	github.com/traefik/yaegi v0.16.1
 	github.com/yuin/goldmark v1.8.6
+	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
 	golang.org/x/crypto v0.58.0
 	gorm.io/driver/postgres v1.6.3
 )
@@ -34,6 +36,7 @@ require (
 	github.com/bytedance/sonic v1.15.2 // indirect
 	github.com/bytedance/sonic/loader v0.5.1 // indirect
 	github.com/cloudwego/base64x v0.1.7 // indirect
+	github.com/dlclark/regexp2/v2 v2.2.1 // indirect
 	github.com/dylibso/observe-sdk/go v0.0.0-20240819160327-2d926c5d788a // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/gin-contrib/sse v1.1.1 // indirect

@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"html/template"
 
+	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer/html"
 )
@@ -15,8 +17,17 @@ import (
 // iframes, Instagram scripts) depend on it. This is a deliberate decision,
 // recorded in docs/superpowers/specs/2026-09-22-server-side-markdown-design.md;
 // a post or page can therefore run JavaScript on the site.
+//
+// Fenced code is coloured here rather than by highlight.js in the browser
+// (#625). Almost no fence in existing posts names its language, so an
+// unlabelled one is guessed; a guess chroma cannot make renders as plain
+// text, and labelling that fence fixes it. The colours are CSS classes,
+// styled in www/css/base.css so a theme can restyle them.
 var authorMarkdown = goldmark.New(
-	goldmark.WithExtensions(extension.GFM),
+	goldmark.WithExtensions(extension.GFM, highlighting.NewHighlighting(
+		highlighting.WithGuessLanguage(true),
+		highlighting.WithFormatOptions(chromahtml.WithClasses(true)),
+	)),
 	goldmark.WithRendererOptions(html.WithUnsafe()),
 )
 

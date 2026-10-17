@@ -26,9 +26,33 @@ func TestPostHTML_KeepsRawHTML(t *testing.T) {
 func TestPostHTML_RendersGFM(t *testing.T) {
 	p := Post{Content: "# Title\n\nSome **bold** and a [link](/x).\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```go\nfunc main() {}\n```\n\n- [x] done\n- [ ] todo\n\n~~struck~~\n"}
 	got := string(p.HTML())
-	for _, want := range []string{"<h1", "<strong>bold</strong>", `<a href="/x">link</a>`, "<table>", "<td>1</td>", "<code", "func main()", `type="checkbox"`, "<del>struck</del>"} {
+	for _, want := range []string{"<h1", "<strong>bold</strong>", `<a href="/x">link</a>`, "<table>", "<td>1</td>", "<code", "main", `type="checkbox"`, "<del>struck</del>"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in %q", want, got)
+		}
+	}
+}
+
+// TestPostHTML_HighlightsCode: fenced code is coloured on the server (#625).
+// A labelled fence uses its language, an unlabelled one is guessed, one that
+// cannot be guessed is plain text, and code is escaped either way.
+func TestPostHTML_HighlightsCode(t *testing.T) {
+	cases := map[string]string{
+		"labelled":    "```go\nfunc main() {}\n```\n",
+		"guessed":     "```\npackage main\n\nfunc main() {}\n```\n",
+		"unguessable": "```\nhello <script>alert(1)</script>\n```\n",
+	}
+	for name, src := range cases {
+		got := string(Post{Content: src}.HTML())
+		if !strings.Contains(got, `<pre class="chroma">`) {
+			t.Errorf("%s: not rendered by chroma: %q", name, got)
+		}
+		if strings.Contains(got, "<script>") {
+			t.Errorf("%s: code is not escaped: %q", name, got)
+		}
+		coloured := strings.Contains(got, `class="k`) // any keyword token
+		if coloured != (name != "unguessable") {
+			t.Errorf("%s: coloured = %v: %q", name, coloured, got)
 		}
 	}
 }
