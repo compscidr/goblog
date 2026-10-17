@@ -76,6 +76,29 @@ function updateSettings(redirect) {
     });
 }
 
+// Saves the GitHub OAuth app from the settings page's Login methods section,
+// then reloads so the section shows it as on.
+function saveGithubLogin() {
+    $.ajax({
+        url: "/api/v1/login-methods/github",
+        type: "put",
+        dataType: "json",
+        contentType: "application/json",
+        data: JSON.stringify({
+            client_id: $("#github_client_id").val(),
+            client_secret: $("#github_client_secret").val()
+        }),
+        success: function() {
+            window.location.hash = "login-methods";
+            window.location.reload();
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            var reason = typeof jqXHR.responseJSON === "string" ? jqXHR.responseJSON : (textStatus + " " + errorThrown);
+            $("#login-methods-result").text("ERROR: " + reason).addClass("alert-danger").show();
+        }
+    });
+}
+
 // this is mostly used by the settings page to upload a file. Post uploads use a different method since they can
 // be pasted directly into the editor, however, on the backend they use the same post method to save the file
 function uploadFile(fileInput) {

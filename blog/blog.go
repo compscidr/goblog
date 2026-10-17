@@ -1498,6 +1498,7 @@ func (b *Blog) GithubLogin(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Set(auth.OAuthStateKey, state)
 	session.Set(auth.OAuthNextKey, SafeNext(c.Query("next")))
+	session.Set(auth.OAuthAdminKey, c.Query("admin") != "")
 	if err := session.Save(); err != nil {
 		// Without a stored state the callback would reject the login, so
 		// there is no point sending them to GitHub.

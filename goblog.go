@@ -573,6 +573,7 @@ func main() {
 	router.POST("/api/v1/preview", goblog._admin.Preview)
 	router.PATCH("/api/v1/settings", goblog._admin.UpdateSettings)
 	router.PATCH("/api/v1/plugin-settings", goblog._admin.UpdatePluginSettings)
+	router.PUT("/api/v1/login-methods/github", goblog._admin.SaveGithubLogin)
 	router.GET("/api/v1/plugins/status", goblog._admin.PluginStatus)
 	router.GET("/api/v1/plugins/directory", goblog._admin.PluginDirectory)
 	router.POST("/api/v1/plugins/install", goblog._admin.InstallPlugin)

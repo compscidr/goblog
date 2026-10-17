@@ -28,6 +28,10 @@ const (
 	// the flow; this package reads them when GitHub returns.
 	OAuthStateKey = "oauth_state"
 	OAuthNextKey  = "oauth_next"
+	// OAuthAdminKey asks GithubCallback to make the GitHub account that
+	// comes back an admin, if the browser was signed in as an admin when it
+	// returned: how a password admin moves to GitHub login (#668).
+	OAuthAdminKey = "oauth_admin"
 )
 
 // NewOAuthState returns an unguessable value to tie an authorize request to
@@ -51,12 +55,15 @@ func (a *Auth) GithubCallback(c *gin.Context) {
 
 	want, _ := session.Get(OAuthStateKey).(string)
 	next, _ := session.Get(OAuthNextKey).(string)
+	// Asked before completeGithubLogin replaces the session's user.
+	promote := session.Get(OAuthAdminKey) == true && a.IsAdmin(c)
 
 	// One shot: whether or not it matches, this state is spent. Every path
 	// below saves, so a rejected callback still clears it and the same code
 	// and state cannot be presented twice.
 	session.Delete(OAuthStateKey)
 	session.Delete(OAuthNextKey)
+	session.Delete(OAuthAdminKey)
 
 	reject := func(reason string) {
 		log.Println("OAuth callback: " + reason)
@@ -112,7 +119,7 @@ func (a *Auth) GithubCallback(c *gin.Context) {
 
 	// completeGithubLogin puts the token on the session; the single save
 	// below persists it together with the cleared state.
-	if err := a.completeGithubLogin(c, code); err != nil {
+	if err := a.completeGithubLogin(c, code, promote); err != nil {
 		reject(err.Error())
 		return
 	}
