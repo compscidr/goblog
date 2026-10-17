@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"goblog/blog"
-	gplugin "goblog/plugin"
-	"goblog/plugins/directory/registry"
+	"github.com/goblogplatform/goblog/blog"
+	gplugin "github.com/goblogplatform/goblog/plugin"
+	"github.com/goblogplatform/goblog/plugins/directory/registry"
 
 	"github.com/gin-gonic/gin"
 )

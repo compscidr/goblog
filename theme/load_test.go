@@ -211,3 +211,16 @@ func TestStaticHandler_FallsBackToDefault(t *testing.T) {
 		t.Errorf("HEAD: %d %q", w.Code, w.Body.String())
 	}
 }
+
+// TestCommaList: a comma-separated setting renders inside a <script> as a
+// JSON array of its trimmed, non-empty items.
+func TestCommaList(t *testing.T) {
+	tmpl := template.Must(template.New("").Funcs(FuncMap()).Parse(`<script>{{ commaList . }}</script>`))
+	var b bytes.Buffer
+	if err := tmpl.Execute(&b, ` Go, , "Mesh" networking `); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := b.String(), `<script>["Go","\"Mesh\" networking"]</script>`; got != want {
+		t.Errorf("got %s, want %s", got, want)
+	}
+}

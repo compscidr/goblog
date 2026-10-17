@@ -1,7 +1,7 @@
 package blog_test
 
 import (
-	. "goblog/blog"
+	. "github.com/goblogplatform/goblog/blog"
 	"strings"
 	"testing"
 	"time"

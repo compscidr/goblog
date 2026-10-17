@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"goblog/blog"
+	"github.com/goblogplatform/goblog/blog"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

@@ -3,7 +3,7 @@ package admin
 import (
 	"sort"
 
-	"goblog/blog"
+	"github.com/goblogplatform/goblog/blog"
 )
 
 // SettingField is one site setting as the Settings page renders it: the
@@ -52,6 +52,11 @@ var settingGroups = []settingGroupDef{
 		{Key: "site_description", Label: "Site description", Help: "One or two sentences about the site, shown by search engines and link previews for pages without their own description."},
 		{Key: "site_image", Label: "Site image", Help: "Picture shown in link previews (Open Graph) for pages without their own, and as the fallback image in a post's structured data."},
 		{Key: "site_is_person", Label: "This site is about a person", Help: "Tells search engines the home page belongs to a person: the site title is their name, and the profiles set in the Social Icons plugin are theirs. Leave off for a project or an organisation."},
+		{Key: "person_job_title", Label: "Job title", Help: "The person's role, for example \"CTO\". Only used when the site is about a person; leave blank to omit."},
+		{Key: "person_works_for", Label: "Works for", Help: "Name of the organisation the person works for. Only used when the site is about a person."},
+		{Key: "person_works_for_url", Label: "Works for URL", Help: "Website of that organisation."},
+		{Key: "person_alumni_of", Label: "Alumni of", Help: "School or university the person graduated from."},
+		{Key: "person_knows_about", Label: "Knows about", Help: "Comma-separated topics the person is an expert in."},
 		{Key: "site_url", Label: "Site URL", Help: "Public address of this site, used for links in feeds, emails and the sitemap."},
 		{Key: "robots_tag", Label: "Robots tag", Help: "Value of the robots meta tag, for example \"index, follow\"."},
 	}},

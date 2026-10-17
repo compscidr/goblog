@@ -12,14 +12,14 @@ import (
 	"strings"
 	"testing"
 
-	"goblog/admin"
-	"goblog/auth"
-	"goblog/blog"
-	pinstaller "goblog/plugin/installer"
-	"goblog/plugins/directory"
-	"goblog/plugins/directory/registry"
-	"goblog/theme"
-	tinstaller "goblog/theme/installer"
+	"github.com/goblogplatform/goblog/admin"
+	"github.com/goblogplatform/goblog/auth"
+	"github.com/goblogplatform/goblog/blog"
+	pinstaller "github.com/goblogplatform/goblog/plugin/installer"
+	"github.com/goblogplatform/goblog/plugins/directory"
+	"github.com/goblogplatform/goblog/plugins/directory/registry"
+	"github.com/goblogplatform/goblog/theme"
+	tinstaller "github.com/goblogplatform/goblog/theme/installer"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
@@ -310,9 +310,7 @@ func TestAdminThemesPage(t *testing.T) {
 	h := newThemesHarness(t)
 	h.auth.On("IsAdmin", mock.Anything).Return(true)
 	h.auth.On("IsLoggedIn", mock.Anything).Return(true)
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
 	h.router.SetHTMLTemplate(tmpl)
 	h.router.GET("/admin/themes", h.ad.AdminThemes)

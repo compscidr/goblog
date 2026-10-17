@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin"
 )
 
 // sidecar is plugins/wasm/<name>.json next to <name>.wasm.

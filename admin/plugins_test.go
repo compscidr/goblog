@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/goblogplatform/goblog/theme"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -13,11 +14,11 @@ import (
 	"strings"
 	"testing"
 
-	"goblog/admin"
-	"goblog/auth"
-	"goblog/blog"
-	"goblog/plugin"
-	"goblog/plugin/installer"
+	"github.com/goblogplatform/goblog/admin"
+	"github.com/goblogplatform/goblog/auth"
+	"github.com/goblogplatform/goblog/blog"
+	"github.com/goblogplatform/goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin/installer"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
@@ -229,9 +230,7 @@ func TestAdminPluginsPage(t *testing.T) {
 	h := newPluginsHarness(t)
 	h.auth.On("IsAdmin", mock.Anything).Return(true)
 	h.auth.On("IsLoggedIn", mock.Anything).Return(true)
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
 	h.router.SetHTMLTemplate(tmpl)
 	h.router.GET("/admin/plugins", func(c *gin.Context) { adminFromHarness(h).AdminPlugins(c) })
@@ -296,9 +295,7 @@ func pluginPageHarness(t *testing.T) *pluginsHarness {
 			t.Fatal(err)
 		}
 	}
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
 	h.router.SetHTMLTemplate(tmpl)
 	h.router.GET("/admin/plugins/:name", func(c *gin.Context) { adminFromHarness(h).AdminPluginSettings(c) })

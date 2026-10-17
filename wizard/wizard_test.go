@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"goblog/auth"
+	"github.com/goblogplatform/goblog/auth"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

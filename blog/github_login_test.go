@@ -10,8 +10,8 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
-	"goblog/auth"
-	"goblog/blog"
+	"github.com/goblogplatform/goblog/auth"
+	"github.com/goblogplatform/goblog/blog"
 )
 
 // The login page used to build GitHub's authorize URL in an inline script,

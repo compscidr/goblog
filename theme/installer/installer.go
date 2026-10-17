@@ -22,10 +22,10 @@ import (
 	"sync"
 	"time"
 
-	pinstaller "goblog/plugin/installer"
-	"goblog/plugins/directory"
-	"goblog/plugins/directory/registry"
-	"goblog/theme"
+	pinstaller "github.com/goblogplatform/goblog/plugin/installer"
+	"github.com/goblogplatform/goblog/plugins/directory"
+	"github.com/goblogplatform/goblog/plugins/directory/registry"
+	"github.com/goblogplatform/goblog/theme"
 )
 
 // DefaultIndexURL is the public theme directory index.

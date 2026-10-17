@@ -1,6 +1,6 @@
 package directory
 
-import "goblog/plugins/directory/registry"
+import "github.com/goblogplatform/goblog/plugins/directory/registry"
 
 // Entry, Detail and Release are the wire types of index.json and
 // /plugins/<name>.json. The registry package builds them; the installer

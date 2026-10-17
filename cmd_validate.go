@@ -6,8 +6,8 @@ import (
 	"io"
 	"strings"
 
-	gplugin "goblog/plugin"
-	"goblog/plugin/wasm"
+	gplugin "github.com/goblogplatform/goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin/wasm"
 )
 
 // runValidatePlugin implements `goblog validate-plugin <file.go|file.wasm>`:

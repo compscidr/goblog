@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin"
 )
 
 // memSource is an in-memory Source for validator/builder tests.

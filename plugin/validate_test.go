@@ -1,7 +1,7 @@
 package plugin_test
 
 import (
-	"goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin"
 	"os"
 	"path/filepath"
 	"testing"

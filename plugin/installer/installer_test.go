@@ -17,9 +17,9 @@ import (
 	"testing"
 	"time"
 
-	"goblog/blog"
-	"goblog/plugin"
-	"goblog/plugin/wasm"
+	"github.com/goblogplatform/goblog/blog"
+	"github.com/goblogplatform/goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin/wasm"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

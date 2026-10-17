@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/goblogplatform/goblog/theme"
 
-	"goblog/admin"
-	"goblog/auth"
-	"goblog/blog"
-	"goblog/plugin"
+	"github.com/goblogplatform/goblog/admin"
+	"github.com/goblogplatform/goblog/auth"
+	"github.com/goblogplatform/goblog/blog"
+	"github.com/goblogplatform/goblog/plugin"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -194,12 +195,8 @@ func TestBlogWorkflow(t *testing.T) {
 	//html tests
 
 	//get tag
-	router.SetFuncMap(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	})
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	router.SetFuncMap(theme.FuncMap())
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
 	router.SetHTMLTemplate(tmpl)
 	a.On("IsAdmin", mock.Anything).Return(false).Once()
@@ -1127,7 +1124,7 @@ func renderPostPage(t *testing.T, theme string, user *auth.BlogUser, requireLogi
 // renderPostPageVia renders a post whose permalink date is substituted into
 // pathFmt ("/posts/%s" for the routed handler, "/%s" for the legacy
 // date-only URL that NoRoute resolves) as an admin or a regular visitor.
-func renderPostPageVia(t *testing.T, theme string, user *auth.BlogUser, admin bool, requireLogin string, pathFmt string) string {
+func renderPostPageVia(t *testing.T, themeName string, user *auth.BlogUser, admin bool, requireLogin string, pathFmt string) string {
 	t.Helper()
 	db, _ := gorm.Open(sqlite.Open(":memory:"))
 	db.AutoMigrate(&auth.BlogUser{}, &blog.PostType{}, &blog.Post{}, &blog.Tag{}, &blog.Comment{}, &blog.Setting{}, &blog.Page{}, &blog.Backlink{}, &blog.ExternalBacklink{})
@@ -1141,10 +1138,8 @@ func renderPostPageVia(t *testing.T, theme string, user *auth.BlogUser, admin bo
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
-	template.Must(tmpl.ParseGlob("../themes/" + theme + "/templates/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
+	template.Must(tmpl.ParseGlob("../themes/" + themeName + "/templates/*.html"))
 	router.SetHTMLTemplate(tmpl)
 	router.GET("/posts/:yyyy/:mm/:dd/:slug", b.Post)
 	router.NoRoute(b.NoRoute)
@@ -1153,7 +1148,7 @@ func renderPostPageVia(t *testing.T, theme string, user *auth.BlogUser, admin bo
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
-		t.Fatalf("%s: expected 200, got %d", theme, w.Code)
+		t.Fatalf("%s: expected 200, got %d", themeName, w.Code)
 	}
 	return w.Body.String()
 }
@@ -1299,9 +1294,7 @@ func TestPluginPageSubPaths(t *testing.T) {
 
 	router := gin.New()
 	router.Use(plugin.Middleware(reg))
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
 	router.SetHTMLTemplate(tmpl)
 	router.NoRoute(b.NoRoute)
@@ -1375,9 +1368,7 @@ func TestUnownedPluginPageIsHidden(t *testing.T) {
 
 	router := gin.New()
 	router.Use(plugin.Middleware(reg))
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
 	router.SetHTMLTemplate(tmpl)
 	router.NoRoute(b.NoRoute)
@@ -1427,8 +1418,8 @@ func (p *searchingPlugin) Search(_ *plugin.HookContext, q string) []plugin.Searc
 // plugin.Searcher contribute — through goblog's shared _search_results
 // partial, so a theme need not know what kinds of result exist.
 func TestSearchIncludesPluginResults(t *testing.T) {
-	for _, theme := range []string{"default"} {
-		t.Run(theme, func(t *testing.T) {
+	for _, themeName := range []string{"default"} {
+		t.Run(themeName, func(t *testing.T) {
 			db, _ := gorm.Open(sqlite.Open(":memory:"))
 			db.AutoMigrate(&auth.BlogUser{}, &blog.PostType{}, &blog.Post{}, &blog.Tag{}, &blog.Comment{}, &blog.Page{}, &blog.Setting{}, &plugin.PluginSetting{})
 			pt := blog.PostType{Name: "Post", Slug: "posts"}
@@ -1444,10 +1435,8 @@ func TestSearchIncludesPluginResults(t *testing.T) {
 
 			router := gin.New()
 			router.Use(plugin.Middleware(reg))
-			tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-				"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-			}).ParseGlob("../templates/shared/*.html"))
-			template.Must(tmpl.ParseGlob("../themes/" + theme + "/templates/*.html"))
+			tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
+			template.Must(tmpl.ParseGlob("../themes/" + themeName + "/templates/*.html"))
 			router.SetHTMLTemplate(tmpl)
 			router.GET("/search", b.Search)
 
@@ -1510,9 +1499,7 @@ func TestSearchResultsPartial(t *testing.T) {
 
 	router := gin.New()
 	router.Use(plugin.Middleware(reg))
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
 	// A theme that overrides search.html with the bare minimum.
 	template.Must(tmpl.New("search.html").Parse(`{{ template "header.html" . }}<main id="bare">{{ template "_search_results" . }}</main>{{ template "footer.html" . }}`))
@@ -1720,9 +1707,7 @@ func TestHeadMetadata(t *testing.T) {
 
 	router := gin.New()
 	router.Use(plugin.Middleware(reg))
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
 	router.SetHTMLTemplate(tmpl)
 	router.GET("/", b.Home)
@@ -1841,6 +1826,28 @@ func TestHeadMetadata(t *testing.T) {
 	if same, _ := person["sameAs"].([]any); len(same) != 2 || same[0] != "https://github.com/me" || same[1] != "https://www.linkedin.com/in/me/" {
 		t.Errorf("sameAs = %v", person["sameAs"])
 	}
+	if _, ok := person["jobTitle"]; ok {
+		t.Errorf("unset person_* settings must be omitted: %v", person)
+	}
+
+	// The optional person_* settings fill in role, employer, school and expertise.
+	for k, v := range map[string]string{"person_job_title": "CTO", "person_works_for": "Acme", "person_works_for_url": "https://acme.test", "person_alumni_of": "Some University", "person_knows_about": " Go, , \"Mesh\" networking "} {
+		db.Create(&blog.Setting{Key: k, Value: v})
+	}
+	h = head(get("/"))
+	ld = h[strings.LastIndex(h, `<script type="application/ld+json">`)+len(`<script type="application/ld+json">`):]
+	ld = ld[:strings.Index(ld, "</script>")]
+	person = nil
+	if err := json.Unmarshal([]byte(ld), &person); err != nil {
+		t.Fatalf("person structured data is not JSON (%v):\n%s", err, ld)
+	}
+	works, _ := person["worksFor"].(map[string]any)
+	alma, _ := person["alumniOf"].(map[string]any)
+	knows, _ := person["knowsAbout"].([]any)
+	if person["jobTitle"] != "CTO" || works["name"] != "Acme" || works["url"] != "https://acme.test" || alma["name"] != "Some University" ||
+		len(knows) != 2 || knows[0] != "Go" || knows[1] != `"Mesh" networking` {
+		t.Errorf("person = %v", person)
+	}
 	if h := head(get("/dir/hello")); strings.Contains(h, `"sameAs"`) {
 		t.Errorf("only the home page carries the person:\n%s", h)
 	}
@@ -1875,9 +1882,7 @@ func TestPluginPageTitle(t *testing.T) {
 	b.PageFilter = blog.PluginPageFilter(reg)
 	router := gin.New()
 	router.Use(plugin.Middleware(reg))
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
 	router.SetHTMLTemplate(tmpl)
 	router.NoRoute(b.NoRoute)
@@ -1920,9 +1925,7 @@ func TestRSS(t *testing.T) {
 	a.On("IsWizardMode", mock.Anything).Return(false)
 	b := blog.New(db, a, "test")
 	router := gin.New()
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
 	router.SetHTMLTemplate(tmpl)
 	router.GET("/rss.xml", b.RSS)
@@ -2029,9 +2032,7 @@ func TestPostPage_ServerRendered(t *testing.T) {
 	b := blog.New(db, a, "test")
 
 	router := gin.New()
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
 	router.SetHTMLTemplate(tmpl)
 	router.GET("/posts/:yyyy/:mm/:dd/:slug", b.Post)
@@ -2094,9 +2095,7 @@ func TestCustomPage_ServerRendered(t *testing.T) {
 	b := blog.New(db, a, "test")
 
 	router := gin.New()
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
 	router.SetHTMLTemplate(tmpl)
 	router.NoRoute(b.NoRoute)

@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"goblog/auth"
-	"goblog/blog"
-	gplugin "goblog/plugin"
+	"github.com/goblogplatform/goblog/auth"
+	"github.com/goblogplatform/goblog/blog"
+	gplugin "github.com/goblogplatform/goblog/plugin"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"log"
@@ -336,6 +336,11 @@ func seedDefaultSettings(db *gorm.DB) {
 		{Key: "site_description", Type: "textarea", Value: ""},
 		{Key: "site_image", Type: "file", Value: ""},
 		{Key: "site_is_person", Type: "checkbox", Value: "false"},
+		{Key: "person_job_title", Type: "text", Value: ""},
+		{Key: "person_works_for", Type: "text", Value: ""},
+		{Key: "person_works_for_url", Type: "text", Value: ""},
+		{Key: "person_alumni_of", Type: "text", Value: ""},
+		{Key: "person_knows_about", Type: "text", Value: ""},
 		{Key: "comments_require_login", Type: "checkbox", Value: "true"},
 		{Key: "plugin_directory_url", Type: "text", Value: "https://www.goblog.live/plugins/index.json"},
 		{Key: "theme_directory_url", Type: "text", Value: "https://www.goblog.live/themes/index.json"},

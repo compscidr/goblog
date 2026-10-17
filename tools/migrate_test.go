@@ -1,8 +1,8 @@
 package tools_test
 
 import (
-	"goblog/blog"
-	"goblog/tools"
+	"github.com/goblogplatform/goblog/blog"
+	"github.com/goblogplatform/goblog/tools"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"os"

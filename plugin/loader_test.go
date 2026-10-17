@@ -1,7 +1,7 @@
 package plugin_test
 
 import (
-	"goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -118,6 +118,11 @@ func TestLoadDynamicPluginBytes(t *testing.T) {
 	}
 	if p.Name() != "hello" || p.Version() != "1.0.0" {
 		t.Errorf("loaded %q %q", p.Name(), p.Version())
+	}
+	// The example imports the "goblog/plugin" alias; the module path works too.
+	canonical := strings.Replace(string(src), `"goblog/plugin"`, `"github.com/goblogplatform/goblog/plugin"`, 1)
+	if p, err := plugin.LoadDynamicPluginBytes([]byte(canonical)); err != nil || p.Name() != "hello" {
+		t.Errorf("module-path import: %v", err)
 	}
 	if _, err := plugin.LoadDynamicPluginBytes([]byte("package main\nfunc NewPlugin() int { return 1 }\n")); err == nil {
 		t.Error("NewPlugin returning a non-plugin should fail")

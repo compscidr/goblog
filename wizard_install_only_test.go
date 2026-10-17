@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"goblog/auth"
-	"goblog/tools"
-	"goblog/wizard"
+	"github.com/goblogplatform/goblog/auth"
+	"github.com/goblogplatform/goblog/tools"
+	"github.com/goblogplatform/goblog/wizard"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"

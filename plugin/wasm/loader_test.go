@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
