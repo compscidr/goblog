@@ -83,7 +83,7 @@
       }
     }
   </script>
-  {{- /* A personal site says whose it is: the site title is the person's name, and sameAs lists the profiles the Social Icons plugin holds (.plugins.socialicons.links), which is how a search engine ties them to this site. Off unless site_is_person is set. */}}
+  {{- /* A personal site says whose it is: the site title is the person's name, and sameAs lists the profiles the Social Icons plugin holds (.plugins.socialicons.links), which is how a search engine ties them to this site; the optional person_* settings add role, employer, school and expertise. Off unless site_is_person is set. */}}
   {{ with index .settings "site_is_person" }}{{ if eq .Value "true" }}
   <script type="application/ld+json">
     {
@@ -92,6 +92,10 @@
       "name": "{{ $.settings.site_title.Value }}",
       {{ if $description }}"description": "{{ $description }}",{{ end }}
       {{ if $image }}"image": "{{ $image }}",{{ end }}
+      {{ with index $.settings "person_job_title" }}{{ if .Value }}"jobTitle": "{{ .Value }}",{{ end }}{{ end }}
+      {{ with index $.settings "person_works_for" }}{{ if .Value }}"worksFor": { "@type": "Organization", "name": "{{ .Value }}"{{ with index $.settings "person_works_for_url" }}{{ if .Value }}, "url": "{{ .Value }}"{{ end }}{{ end }} },{{ end }}{{ end }}
+      {{ with index $.settings "person_alumni_of" }}{{ if .Value }}"alumniOf": { "@type": "CollegeOrUniversity", "name": "{{ .Value }}" },{{ end }}{{ end }}
+      {{ with index $.settings "person_knows_about" }}{{ with commaList .Value }}"knowsAbout": {{ . }},{{ end }}{{ end }}
       "sameAs": [
         {{- with $.plugins }}{{ with index . "socialicons" }}{{ range $i, $l := index . "links" }}{{ if $i }},{{ end }}
         "{{ $l.URL }}"
