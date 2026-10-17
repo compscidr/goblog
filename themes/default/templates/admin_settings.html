@@ -59,6 +59,33 @@
         </button>
     </form>
 
+    <h2 class="mt-5" id="login-methods">Login methods</h2>
+    <div id="login-methods-result" class="alert" role="alert" style="display: none;"></div>
+    <h3>GitHub</h3>
+    <p>
+        {{ if .github_client_id }}<span class="badge text-bg-success">On</span> Client ID <code>{{ .github_client_id }}</code>.
+        {{ else }}<span class="badge text-bg-secondary">Off</span>{{ end }}
+        Create an OAuth app at <a href="https://github.com/settings/developers" target="_blank" rel="noopener">github.com/settings/developers</a>
+        with this Authorization callback URL: <code>{{ .github_callback_url }}</code>
+    </p>
+    <div id="github-login" class="mb-3">
+        <div class="mb-3">
+            <label for="github_client_id" class="form-label">Client ID</label>
+            <input type="text" id="github_client_id" class="form-control" value="{{ .github_client_id }}">
+        </div>
+        <div class="mb-3">
+            <label for="github_client_secret" class="form-label">Client Secret</label>
+            <input type="password" id="github_client_secret" class="form-control" autocomplete="off">
+        </div>
+        <div class="form-text mb-3">GitHub accounts that sign in are not admins; promote yours on the <a href="/admin/users">Users</a> page.</div>
+        <button type="button" class="btn btn-primary" onclick="saveGithubLogin();">Save GitHub login</button>
+    </div>
+    <h3>Email</h3>
+    <p>
+        {{ if .email_login_enabled }}<span class="badge text-bg-success">On</span> SMTP is configured, so visitors can sign in with a code sent by email.
+        {{ else }}<span class="badge text-bg-secondary">Off</span> Set <code>smtp_host</code> and the other <code>smtp_</code> settings in <code>.env</code> and restart to let visitors sign in with a code sent by email.{{ end }}
+    </p>
+
     </div> <!-- / admin-panel -->
 </div> <!-- / container -->
 

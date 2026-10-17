@@ -14,12 +14,14 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"gorm.io/gorm"
 )
 
@@ -723,6 +725,9 @@ func (a *Admin) AdminSettings(c *gin.Context) {
 		return
 	}
 	settings := a.b.GetSettings()
+	// The install wizard appends client_id to .env without touching the
+	// environment; load it so a site installed that way shows as configured.
+	_ = godotenv.Load(datadir.Path(".env"))
 	c.HTML(http.StatusOK, "admin_settings.html", gin.H{
 		"posts":          a.b.GetPosts(true),
 		"logged_in":      a.auth.IsLoggedIn(c),
@@ -734,6 +739,11 @@ func (a *Admin) AdminSettings(c *gin.Context) {
 		"setting_groups": GroupSettings(settings),
 		"nav_pages":      a.b.GetNavPages(),
 		"themes":         ListThemes(),
+
+		// The Login methods section (#668).
+		"github_client_id":    os.Getenv("client_id"),
+		"github_callback_url": blog.RequestOrigin(c) + "/login",
+		"email_login_enabled": a.auth.EmailLoginEnabled(),
 	})
 }
 
