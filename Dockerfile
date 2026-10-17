@@ -1,19 +1,28 @@
-# Start from a Debian image with the latest version of Go installed
-# and a workspace (GOPATH) configured at /go.
-FROM golang:1.26.1
+# Build stage: the Go toolchain is only needed to compile. cgo is on
+# (SQLite and Go plugins need it), so the runtime base below must be the
+# same Debian release, for a matching glibc.
+FROM golang:1.26.1-trixie AS build
 
-# Copy the local package files to the container's workspace.
 ADD . /go/src/github.com/compscidr/goblog/
 
-# Build the outyet command inside the container.
-# (You may fetch or manage dependencies here,
-# either manually or with a tool like "godep".)
 ARG VERSION
 RUN cd /go/src/github.com/compscidr/goblog/ && go build -ldflags="-X 'main.Version=$VERSION'" -v .
 
-# Run the outyet command by default when the container starts.
-# So `docker exec <container> ./goblog reset-admin-password` finds .env.
+FROM debian:trixie-slim
+
+# ca-certificates: outgoing HTTPS (OAuth, the plugin directory, SMTP over TLS).
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Same path as before, so existing bind mounts still line up, and
+# `docker exec <container> ./goblog reset-admin-password` finds .env.
 WORKDIR /go/src/github.com/compscidr/goblog
+
+# The binary plus what it reads from the working directory at runtime.
+COPY --from=build /go/src/github.com/compscidr/goblog/goblog ./
+COPY www ./www
+COPY themes ./themes
+COPY templates ./templates
 
 ENTRYPOINT cd /go/src/github.com/compscidr/goblog && ./goblog
 
