@@ -475,6 +475,10 @@ func (a *Admin) DeleteComment(c *gin.Context) {
 }
 
 func (a *Admin) PublishPost(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
 	id := c.Param("id")
 	log.Println("Publishing post: ", id)
 
@@ -485,6 +489,10 @@ func (a *Admin) PublishPost(c *gin.Context) {
 }
 
 func (a *Admin) DraftPost(c *gin.Context) {
+	if !a.auth.IsAdmin(c) {
+		c.JSON(http.StatusUnauthorized, "Not Authorized")
+		return
+	}
 	id := c.Param("id")
 	log.Println("Drafting post: ", id)
 	var post blog.Post
@@ -575,14 +583,15 @@ func (a *Admin) GetSetting(c *gin.Context) {
 		return
 	}
 
-	key := c.Param("key")
+	key := c.Param("slug")
 	log.Println("Getting setting: ", key)
 
-	err := (*a.db).Where(map[string]any{"key": key}).First(&blog.Setting{}).Error
+	var setting blog.Setting
+	err := (*a.db).Where(map[string]any{"key": key}).First(&setting).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, "Setting not found")
 	} else {
-		c.JSON(http.StatusOK, blog.Setting{})
+		c.JSON(http.StatusOK, setting)
 	}
 }
 
