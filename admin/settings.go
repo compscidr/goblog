@@ -74,6 +74,8 @@ var settingGroups = []settingGroupDef{
 	{ID: "directories", Title: "Directories", Settings: []settingMeta{
 		{Key: "plugin_directory_url", Label: "Plugin directory URL", Help: "Index the Plugins page installs from."},
 		{Key: "theme_directory_url", Label: "Theme directory URL", Help: "Index the Themes page installs from."},
+		{Key: "auto_update_themes", Label: "Auto-update themes", Help: "At startup, update installed directory themes to the directory's latest compatible version. A theme whose update fails to download or parse is left as it was."},
+		{Key: "auto_update_plugins", Label: "Auto-update plugins", Help: "At startup, update installed directory plugins to the directory's latest compatible version. Plugins run code, so this is off unless you trust the directory to change it unattended."},
 	}},
 }
 

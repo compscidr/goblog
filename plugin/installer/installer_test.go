@@ -1031,3 +1031,39 @@ type compiledPlugin struct{ plugin.BasePlugin }
 func (compiledPlugin) Name() string        { return "scholar" }
 func (compiledPlugin) DisplayName() string { return "Scholar" }
 func (compiledPlugin) Version() string     { return "1.0.0" }
+
+// TestAutoUpdate: an update this goblog cannot run is neither offered nor
+// attempted; a compatible one is applied.
+func TestAutoUpdate(t *testing.T) {
+	f := newFixture(t)
+	f.entries = []map[string]any{f.wasmEntry("echo", "1.2.3", nil)}
+	inst := newInstaller(t, f)
+	ctx := context.Background()
+	if _, err := inst.Install(ctx, "echo"); err != nil {
+		t.Fatal(err)
+	}
+
+	future := f.wasmEntryV2(nil)
+	future["min_goblog_version"] = "9.0.0"
+	f.entries = []map[string]any{future}
+	if err := inst.Refresh(); err != nil {
+		t.Fatal(err)
+	}
+	if st := inst.Status(); st.Installed[0].UpdateAvailable {
+		t.Errorf("an incompatible update must not be offered: %+v", st.Installed[0])
+	}
+	if res := inst.AutoUpdate(ctx); len(res) != 0 {
+		t.Errorf("an incompatible update must not be applied: %+v", res)
+	}
+
+	f.entries = []map[string]any{f.wasmEntryV2(nil)}
+	if err := inst.Refresh(); err != nil {
+		t.Fatal(err)
+	}
+	if res := inst.AutoUpdate(ctx); len(res) != 1 || res[0].Version != "1.2.4" {
+		t.Errorf("auto-update = %+v", res)
+	}
+	if dyn := inst.Registry.Dynamic(); dyn[0].Version != "1.2.4" {
+		t.Errorf("registry = %+v", dyn)
+	}
+}

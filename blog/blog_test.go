@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"goblog/theme"
+	"github.com/goblogplatform/goblog/theme"
 
 	"github.com/goblogplatform/goblog/admin"
 	"github.com/goblogplatform/goblog/auth"

@@ -163,6 +163,8 @@ Full guide: [goblog.live/docs/writing-a-theme](https://www.goblog.live/docs/writ
 
 **Admin → Themes** browses the [theme directory](https://www.goblog.live/themes), installs a theme into `themes/installed/` (bind-mount it in Docker, set with `THEMES_INSTALLED_DIR`, or installs vanish on restart), activates it, updates it when the directory has a newer release, and removes it. The directory URL is the `theme_directory_url` setting; see [Publishing a theme](https://www.goblog.live/docs/publishing-a-theme) to publish one.
 
+At startup goblog updates installed directory themes to the latest release compatible with it, in the background, and logs each update or failure (a failed update leaves the theme as it was). Turn this off with **Settings → Directories → Auto-update themes**. **Auto-update plugins** does the same for directory plugins and is off by default, since a plugin runs code.
+
 A theme is code: once activated its templates render every page, including the admin, with the same template functions and data goblog's own templates get. The directory's validation checks that a theme is well-formed, not that it is benign, and a listing on goblog.live is a maintainer's approval, not a code audit — install only themes you trust, as with plugins.
 
 ## Plugins

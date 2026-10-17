@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"goblog/theme"
+	"github.com/goblogplatform/goblog/theme"
 	"html/template"
 	"net/http"
 	"net/http/httptest"

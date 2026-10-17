@@ -13,7 +13,7 @@ var seededSettings = map[string]string{
 	"site_title": "text", "site_subtitle": "text", "site_logo_letters": "text", "site_tags": "text",
 	"landing_page_image": "file", "favicon": "file", "custom_header_code": "textarea", "custom_footer_code": "textarea",
 	"theme": "text", "robots_tag": "text", "site_url": "text", "comments_require_login": "checkbox",
-	"plugin_directory_url": "text", "theme_directory_url": "text",
+	"plugin_directory_url": "text", "theme_directory_url": "text", "auto_update_themes": "checkbox", "auto_update_plugins": "checkbox",
 	"site_description": "textarea", "site_image": "file", "show_powered_by": "checkbox",
 }
 

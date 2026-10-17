@@ -3,6 +3,7 @@ package main
 //this implements https://jsonapi.org/format/ as best as possible
 
 import (
+	"context"
 	"github.com/goblogplatform/goblog/admin"
 	"github.com/goblogplatform/goblog/auth"
 	"github.com/goblogplatform/goblog/blog"
@@ -27,6 +28,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -545,6 +547,22 @@ func main() {
 		log.Printf("Theme installer: startup sweep of %s: %v", themeInstaller.Dir, err)
 	}
 	loadTheme(initialTheme)
+
+	// Auto-update in the background so an unreachable directory never
+	// delays startup. Themes default on (an old theme can lock the admin
+	// out after a goblog upgrade, #640); plugins run code, so opt-in.
+	if db != nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+			defer cancel()
+			if _blog.SettingValue("auto_update_themes", "true") == "true" {
+				themeInstaller.AutoUpdate(ctx)
+			}
+			if _blog.SettingValue("auto_update_plugins", "false") == "true" {
+				pluginInstaller.AutoUpdate(ctx)
+			}
+		}()
+	}
 
 	// Wire up hot-reload callback so theme changes take effect without restart
 	_admin.OnThemeChange = func(name string) {

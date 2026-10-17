@@ -567,3 +567,48 @@ func TestSweep(t *testing.T) {
 		t.Errorf("sweep of a missing root: %v", err)
 	}
 }
+
+// TestAutoUpdate: a compatible update is applied; an incompatible one is
+// neither offered nor attempted; one whose templates do not parse leaves
+// the installed theme in place.
+func TestAutoUpdate(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	if _, err := h.inst.Install(ctx, "ocean"); err != nil {
+		t.Fatal(err)
+	}
+	read := func() string {
+		b, _ := os.ReadFile(filepath.Join(h.root, "ocean", "templates", "home.html"))
+		return string(b)
+	}
+	setV110 := func(home, min string) {
+		h.zips["/o/ocean/archive/refs/tags/v1.1.0.zip"] = zipOf(t, "ocean-1.1.0/", map[string]string{"templates/home.html": home})
+		h.index[0].Version = "1.1.0"
+		h.index[0].DownloadURL = h.srv.URL + "/o/ocean/archive/refs/tags/v1.1.0.zip"
+		h.index[0].SHA256 = registry.ContentHash(map[string][]byte{"templates/home.html": []byte(home)})
+		h.index[0].MinGoblogVersion = min
+		if err := h.inst.Refresh(); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	setV110("ocean 2", "9.0.0")
+	for _, i := range h.inst.Status().Installed {
+		if i.Name == "ocean" && i.UpdateAvailable {
+			t.Errorf("an incompatible update must not be offered: %+v", i)
+		}
+	}
+	if res := h.inst.AutoUpdate(ctx); len(res) != 0 || read() != "ocean" {
+		t.Errorf("incompatible update applied: %+v %q", res, read())
+	}
+
+	setV110("{{ if }}", "0.5.0")
+	if res := h.inst.AutoUpdate(ctx); len(res) != 0 || read() != "ocean" {
+		t.Errorf("a theme that does not parse must leave the old one in place: %+v %q", res, read())
+	}
+
+	setV110("ocean 2", "0.5.0")
+	if res := h.inst.AutoUpdate(ctx); len(res) != 1 || res[0].Version != "1.1.0" || read() != "ocean 2" {
+		t.Errorf("auto-update = %+v %q", res, read())
+	}
+}
