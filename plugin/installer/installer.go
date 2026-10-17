@@ -273,7 +273,9 @@ func (i *Installer) Status() Status {
 			row.Path = d.Path
 			if e, ok := byName[p.Name()]; ok {
 				row.LatestVersion = e.Version
-				row.UpdateAvailable = Newer(e.Version, p.Version())
+				// An update this goblog cannot run is not offered: Update
+				// would refuse it with ErrIncompatible.
+				row.UpdateAvailable = Newer(e.Version, p.Version()) && Compatible(i.Version, e.MinGoblogVersion)
 			}
 		}
 		st.Installed = append(st.Installed, row)
@@ -512,6 +514,29 @@ func (i *Installer) Update(ctx context.Context, name string) (Result, error) {
 	closePlugin(old)
 	log.Printf("Updated plugin %s to v%s from %s", e.Name, e.Version, e.DownloadURL)
 	return Result{Name: e.Name, Version: e.Version, Message: fmt.Sprintf("Updated %s to v%s", e.DisplayName, e.Version)}, nil
+}
+
+// AutoUpdate updates every installed dynamic plugin that Status says has a
+// compatible update. A failure is logged and leaves that plugin as it was
+// (Update rolls back); it never stops the others.
+func (i *Installer) AutoUpdate(ctx context.Context) []Result {
+	if !i.WasmEnabled {
+		return nil
+	}
+	var done []Result
+	for _, row := range i.Status().Installed {
+		if !row.UpdateAvailable {
+			continue
+		}
+		res, err := i.Update(ctx, row.Name)
+		if err != nil {
+			log.Printf("Plugin auto-update: %s v%s → v%s failed, keeping the installed version: %v", row.Name, row.Version, row.LatestVersion, err)
+			continue
+		}
+		log.Printf("Plugin auto-update: %s", res.Message)
+		done = append(done, res)
+	}
+	return done
 }
 
 // Uninstall unregisters a dynamic plugin, releases its instance and deletes

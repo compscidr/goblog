@@ -339,6 +339,8 @@ func seedDefaultSettings(db *gorm.DB) {
 		{Key: "comments_require_login", Type: "checkbox", Value: "true"},
 		{Key: "plugin_directory_url", Type: "text", Value: "https://www.goblog.live/plugins/index.json"},
 		{Key: "theme_directory_url", Type: "text", Value: "https://www.goblog.live/themes/index.json"},
+		{Key: "auto_update_themes", Type: "checkbox", Value: "true"},
+		{Key: "auto_update_plugins", Type: "checkbox", Value: "false"},
 	}
 	for _, s := range defaults {
 		db.Where(map[string]any{"key": s.Key}).FirstOrCreate(&s)

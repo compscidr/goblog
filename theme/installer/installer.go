@@ -241,7 +241,9 @@ func (i *Installer) Status() Status {
 		}
 		if e, ok := byName[name]; ok && !row.Builtin {
 			row.LatestVersion = e.Version
-			row.UpdateAvailable = row.Version != "" && pinstaller.Newer(e.Version, row.Version)
+			// An update this goblog cannot run is not offered: Update would
+			// refuse it with ErrIncompatible.
+			row.UpdateAvailable = row.Version != "" && pinstaller.Newer(e.Version, row.Version) && pinstaller.Compatible(i.Version, e.MinGoblogVersion)
 			row.ScreenshotURL = e.ScreenshotURL
 		}
 		if _, ok := theme.Screenshot(name); ok {
@@ -404,6 +406,26 @@ func (i *Installer) Update(ctx context.Context, name string) (Result, error) {
 	}
 	log.Printf("Updated theme %s to v%s", e.Name, e.Version)
 	return Result{Name: e.Name, Version: e.Version, Message: fmt.Sprintf("Updated %s to v%s", e.DisplayName, e.Version)}, nil
+}
+
+// AutoUpdate updates every installed directory theme that Status says has
+// a compatible update. A failure is logged and leaves that theme as it
+// was; it never stops the others.
+func (i *Installer) AutoUpdate(ctx context.Context) []Result {
+	var done []Result
+	for _, row := range i.Status().Installed {
+		if !row.UpdateAvailable {
+			continue
+		}
+		res, err := i.Update(ctx, row.Name)
+		if err != nil {
+			log.Printf("Theme auto-update: %s v%s → v%s failed, keeping the installed version: %v", row.Name, row.Version, row.LatestVersion, err)
+			continue
+		}
+		log.Printf("Theme auto-update: %s", res.Message)
+		done = append(done, res)
+	}
+	return done
 }
 
 // place writes files into a temp dir under Dir and swaps it into
