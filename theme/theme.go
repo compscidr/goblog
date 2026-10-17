@@ -6,7 +6,7 @@
 package theme
 
 import (
-	"goblog/datadir"
+	"github.com/goblogplatform/goblog/datadir"
 	"os"
 	"path/filepath"
 	"regexp"

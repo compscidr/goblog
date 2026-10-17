@@ -3,8 +3,8 @@ package admin_test
 import (
 	"testing"
 
-	"goblog/admin"
-	"goblog/blog"
+	"github.com/goblogplatform/goblog/admin"
+	"github.com/goblogplatform/goblog/blog"
 )
 
 // seededSettings mirrors tools/migrate.go seedDefaultSettings: every key a

@@ -16,18 +16,25 @@ import (
 // an interpreted type satisfy the compiled Plugin interface; they follow the
 // shape `yaegi extract` generates. Registry internals are deliberately not
 // exported: a plugin only needs the types it implements or receives.
+//
+// Yaegi finds the _Plugin wrapper under the type's real package path, so the
+// symbols are keyed by the module path; "goblog/plugin" is kept as an alias
+// because that is the import existing dynamic plugins use.
 var Symbols = map[string]map[string]reflect.Value{
-	"goblog/plugin/plugin": {
-		"Plugin":            reflect.ValueOf((*Plugin)(nil)),
-		"BasePlugin":        reflect.ValueOf((*BasePlugin)(nil)),
-		"HookContext":       reflect.ValueOf((*HookContext)(nil)),
-		"SettingDefinition": reflect.ValueOf((*SettingDefinition)(nil)),
-		"ScheduledJob":      reflect.ValueOf((*ScheduledJob)(nil)),
-		"PageDefinition":    reflect.ValueOf((*PageDefinition)(nil)),
+	"github.com/goblogplatform/goblog/plugin/plugin": symbols,
+	"goblog/plugin/plugin":                           symbols,
+}
 
-		// interface wrapper definitions
-		"_Plugin": reflect.ValueOf((*_goblog_plugin_Plugin)(nil)),
-	},
+var symbols = map[string]reflect.Value{
+	"Plugin":            reflect.ValueOf((*Plugin)(nil)),
+	"BasePlugin":        reflect.ValueOf((*BasePlugin)(nil)),
+	"HookContext":       reflect.ValueOf((*HookContext)(nil)),
+	"SettingDefinition": reflect.ValueOf((*SettingDefinition)(nil)),
+	"ScheduledJob":      reflect.ValueOf((*ScheduledJob)(nil)),
+	"PageDefinition":    reflect.ValueOf((*PageDefinition)(nil)),
+
+	// interface wrapper definitions
+	"_Plugin": reflect.ValueOf((*_goblog_plugin_Plugin)(nil)),
 }
 
 // _goblog_plugin_Plugin is an interface wrapper for Plugin type

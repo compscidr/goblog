@@ -16,11 +16,11 @@ import (
 	"testing"
 	"time"
 
-	"goblog/plugins/directory"
-	"goblog/plugins/directory/registry"
-	"goblog/theme"
+	"github.com/goblogplatform/goblog/plugins/directory"
+	"github.com/goblogplatform/goblog/plugins/directory/registry"
+	"github.com/goblogplatform/goblog/theme"
 
-	pinstaller "goblog/plugin/installer"
+	pinstaller "github.com/goblogplatform/goblog/plugin/installer"
 )
 
 func zipOf(t *testing.T, prefix string, entries map[string]string) []byte {

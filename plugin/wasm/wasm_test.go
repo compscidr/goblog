@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"

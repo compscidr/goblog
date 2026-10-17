@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	gplugin "goblog/plugin"
+	gplugin "github.com/goblogplatform/goblog/plugin"
 
 	"github.com/gin-gonic/gin"
 )

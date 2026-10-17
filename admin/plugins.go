@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	gplugin "goblog/plugin"
-	"goblog/plugin/installer"
-	"goblog/plugins/directory"
+	gplugin "github.com/goblogplatform/goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin/installer"
+	"github.com/goblogplatform/goblog/plugins/directory"
 
 	"github.com/gin-gonic/gin"
 )

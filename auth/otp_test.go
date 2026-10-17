@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"goblog/auth"
+	"github.com/goblogplatform/goblog/auth"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"

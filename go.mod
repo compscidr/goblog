@@ -1,4 +1,4 @@
-module goblog
+module github.com/goblogplatform/goblog
 
 go 1.26.0
 

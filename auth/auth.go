@@ -3,7 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"errors"
-	"goblog/datadir"
+	"github.com/goblogplatform/goblog/datadir"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -18,7 +18,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"goblog/mail"
+	"github.com/goblogplatform/goblog/mail"
 )
 
 // IAuth interface for auth so that it can be mocked easier

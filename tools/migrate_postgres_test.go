@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"goblog/auth"
-	"goblog/blog"
-	"goblog/tools"
+	"github.com/goblogplatform/goblog/auth"
+	"github.com/goblogplatform/goblog/blog"
+	"github.com/goblogplatform/goblog/tools"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	gplugin "goblog/plugin"
+	gplugin "github.com/goblogplatform/goblog/plugin"
 )
 
 // matches reports whether e is a hit for query: a case-insensitive

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"goblog/datadir"
+	"github.com/goblogplatform/goblog/datadir"
 	"strings"
 
 	"github.com/gin-gonic/gin"

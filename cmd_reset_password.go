@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"goblog/auth"
+	"github.com/goblogplatform/goblog/auth"
 )
 
 // runResetAdminPassword implements `goblog reset-admin-password [email]`:

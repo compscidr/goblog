@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	. "goblog/blog"
+	. "github.com/goblogplatform/goblog/blog"
 )
 
 // TestPostHTML_KeepsRawHTML: posts are written by admins and their embeds —

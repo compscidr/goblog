@@ -14,11 +14,11 @@ import (
 	"strings"
 	"testing"
 
-	"goblog/admin"
-	"goblog/auth"
-	"goblog/blog"
-	"goblog/plugin"
-	"goblog/plugin/installer"
+	"github.com/goblogplatform/goblog/admin"
+	"github.com/goblogplatform/goblog/auth"
+	"github.com/goblogplatform/goblog/blog"
+	"github.com/goblogplatform/goblog/plugin"
+	"github.com/goblogplatform/goblog/plugin/installer"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"

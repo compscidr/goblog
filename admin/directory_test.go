@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"goblog/admin"
-	"goblog/auth"
-	"goblog/blog"
-	"goblog/plugin"
-	"goblog/plugins/directory"
-	"goblog/plugins/directory/registry"
+	"github.com/goblogplatform/goblog/admin"
+	"github.com/goblogplatform/goblog/auth"
+	"github.com/goblogplatform/goblog/blog"
+	"github.com/goblogplatform/goblog/plugin"
+	"github.com/goblogplatform/goblog/plugins/directory"
+	"github.com/goblogplatform/goblog/plugins/directory/registry"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"

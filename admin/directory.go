@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"goblog/plugins/directory"
+	"github.com/goblogplatform/goblog/plugins/directory"
 
 	"github.com/gin-gonic/gin"
 )
