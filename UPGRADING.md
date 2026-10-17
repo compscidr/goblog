@@ -2,6 +2,13 @@
 
 Notes for upgrading an existing GoBlog site across releases that need manual steps. Newest first.
 
+## Code highlighting moved to the server
+
+Fenced code in posts and pages is now coloured when the markdown is rendered, and goblog no longer loads highlight.js. Two things to do:
+
+- **Label your code fences.** A fence with no language (```` ``` ```` rather than ```` ```go ````) is guessed, and chroma's guess only works for code with a clear signature, such as Go's `package` line or a `#!/bin/bash` shebang. Anything else renders as plain text until you add the language: ```` ```bash ````, ```` ```python ````, ```` ```yaml ```` and so on ([chroma's list](https://github.com/alecthomas/chroma#supported-languages)).
+- **Themes:** drop any `hljs.highlightAll()` call from `footer.html`; `hljs` is no longer defined, so the call throws. To restyle code, override the `.chroma` classes in your `goblog.css`; the defaults are in `www/css/base.css`.
+
 ## Moving an existing site into `GOBLOG_DATA_DIR`
 
 Optional, from 0.14.0. A site set up before `GOBLOG_DATA_DIR` existed keeps its files in goblog's working directory (`/go/src/github.com/compscidr/goblog` in the Docker image), usually with one bind mount per path. It keeps working as it is. To move it to a single data directory instead:
