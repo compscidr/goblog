@@ -310,9 +310,7 @@ func TestAdminThemesPage(t *testing.T) {
 	h := newThemesHarness(t)
 	h.auth.On("IsAdmin", mock.Anything).Return(true)
 	h.auth.On("IsLoggedIn", mock.Anything).Return(true)
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
 	h.router.SetHTMLTemplate(tmpl)
 	h.router.GET("/admin/themes", h.ad.AdminThemes)

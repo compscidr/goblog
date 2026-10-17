@@ -3,6 +3,7 @@ package admin_test
 import (
 	"bytes"
 	"encoding/json"
+	"goblog/theme"
 
 	"goblog/admin"
 	"goblog/auth"
@@ -462,9 +463,7 @@ func TestCreatePost(t *testing.T) {
 	}
 
 	//get admin: /admin is the dashboard's front door and redirects there
-	router.SetFuncMap(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	})
+	router.SetFuncMap(theme.FuncMap())
 	router.LoadHTMLGlob("../themes/default/templates/*")
 	a.On("IsAdmin", mock.Anything).Return(true).Once()
 	req, _ = http.NewRequest("GET", "/admin", bytes.NewBuffer(jsonValue))
@@ -747,9 +746,7 @@ func TestAdminComments(t *testing.T) {
 	router := gin.Default()
 	store := cookie.NewStore([]byte("changelater"))
 	router.Use(sessions.Sessions("www.jasonernst.com", store))
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
 	router.SetHTMLTemplate(tmpl)
 	router.GET("/admin/comments", ad.AdminComments)
@@ -885,9 +882,7 @@ func newSettingsPage(t *testing.T, isAdmin bool, rows ...blog.Setting) (int, str
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	router.Use(sessions.Sessions("s", cookie.NewStore([]byte("test"))))
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
 	router.SetHTMLTemplate(tmpl)
 	router.GET("/admin/settings", ad.AdminSettings)
@@ -1249,13 +1244,11 @@ const overlayTheme = "overlay"
 // themeTemplates parses the templates the way theme.Load layers them: the
 // shared set, then default, then the named theme on top — so a theme that
 // ships no admin templates renders default's.
-func themeTemplates(t *testing.T, theme string) *template.Template {
+func themeTemplates(t *testing.T, themeName string) *template.Template {
 	t.Helper()
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
-	}).ParseGlob("../templates/shared/*.html"))
+	tmpl := template.Must(template.New("").Funcs(theme.FuncMap()).ParseGlob("../templates/shared/*.html"))
 	template.Must(tmpl.ParseGlob("../themes/default/templates/*.html"))
-	if theme != "default" {
+	if themeName != "default" {
 		dir := t.TempDir()
 		if err := os.WriteFile(filepath.Join(dir, "home.html"), []byte("<p>overlay home</p>"), 0o644); err != nil {
 			t.Fatal(err)

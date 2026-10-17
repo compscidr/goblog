@@ -26,6 +26,17 @@ const MaxTemplateBytes = 256 << 10
 func FuncMap() template.FuncMap {
 	return template.FuncMap{
 		"rawHTML": func(s string) template.HTML { return template.HTML(s) },
+		// commaList splits a comma-separated setting into its trimmed,
+		// non-empty items; inside a <script> it renders as a JSON array.
+		"commaList": func(s string) []string {
+			var out []string
+			for _, item := range strings.Split(s, ",") {
+				if item = strings.TrimSpace(item); item != "" {
+					out = append(out, item)
+				}
+			}
+			return out
+		},
 	}
 }
 
